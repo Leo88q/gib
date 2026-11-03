@@ -1,0 +1,20 @@
+import { DEFAULT_READING, parseReadingPreferences, applyReadingPreferences, shouldReduceMotion, saveReadingPreferences, readReadingPreferences, READING_KEY, READING_EVENT } from '../lib/reading-preferences.ts';
+function check(v: unknown, message: string): asserts v { if (!v) throw Error(message); }
+check(shouldReduceMotion(false, true) && shouldReduceMotion(true, false) && !shouldReduceMotion(false, false), 'системная и пользовательская настройка движения учитываются');
+check(JSON.stringify(parseReadingPreferences(null)) === JSON.stringify(DEFAULT_READING), 'умолчания');
+check(JSON.stringify(parseReadingPreferences('{')) === JSON.stringify(DEFAULT_READING), 'битый JSON');
+check(JSON.stringify(parseReadingPreferences(JSON.stringify({ font: 'evil', largeText: 'yes', reduceMotion: 1 }))) === JSON.stringify(DEFAULT_READING), 'недопустимые значения отклонены');
+const p = { font: 'opendyslexic', largeText: true, reduceMotion: true } as const;
+check(JSON.stringify(parseReadingPreferences(JSON.stringify(p))) === JSON.stringify(p), 'значения восстанавливаются');
+const dataset: Record<string, string> = {};
+let savedKey = '', savedValue = '', eventName = '';
+(globalThis as any).document = { documentElement: { dataset } };
+(globalThis as any).localStorage = { setItem(k: string, v: string) { savedKey = k; savedValue = v; }, getItem() { return savedValue; } };
+(globalThis as any).window = { dispatchEvent(event: Event) { eventName = event.type; return true; } };
+applyReadingPreferences(p);
+check(dataset.readingFont === 'opendyslexic' && dataset.largeText === 'true' && dataset.reduceMotion === 'true', 'атрибуты применяются');
+check(saveReadingPreferences(p) && savedKey === READING_KEY && eventName === READING_EVENT, 'настройки сохраняются и событие отправляется');
+check(JSON.stringify(readReadingPreferences()) === JSON.stringify(p), 'повторное чтение настроек');
+(globalThis as any).localStorage = { setItem() { throw Error('blocked'); }, getItem() { throw Error('blocked'); } };
+check(!saveReadingPreferences(p) && JSON.stringify(readReadingPreferences()) === JSON.stringify(DEFAULT_READING), 'блокировка хранилища не ломает приложение');
+console.log('Настройки чтения: валидация, сохранение, применение и отказ хранилища проверены');
