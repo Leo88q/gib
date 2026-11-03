@@ -23,6 +23,7 @@ import { accessoryVariantOf, bodyVariantOf, petVariantOf } from '@/lib/gamificat
 import { TIME_ZONES, DEFAULT_TIME_ZONE } from '@/lib/calendar';
 import { switchDraftKey } from '@/lib/switch-draft';
 import { selectionDraftKey } from '@/lib/selection-draft';
+import { exerciseDraftKey, removeProfileExerciseDrafts } from '@/lib/exercise-draft';
 import { PENDING_ANSWER_KEY, parsePendingAnswer, clearMatchingPendingAnswer, type PendingAnswer } from '@/lib/pending-answer';
 import { hideBackButton, apiFetch, setupTelegram, showBackButton, haptic } from '@/lib/telegramClient';
 
@@ -305,7 +306,7 @@ export default function Home() {
     pendingAnswer.current = null;
     acknowledgedAnswer.current = pending;
     // Retain the answer for replay after a reload until the child dismisses the result.
-    try { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); } catch { /* storage may be disabled */ }
+    try { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'single')); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'digits')); } catch { /* storage may be disabled */ }
     const reward = data.reward ?? {};
     if (pending.item.type === 'scenario' || (pending.item.type === 'task' && pending.item.instance.kind === 'social-practice')) {
       // A story choice is not an incorrect cognitive answer.
@@ -545,7 +546,7 @@ export default function Home() {
     return <div className="wrap game">
       <Hud data={hud} compact />
       <div className="panel story-deck" aria-busy={storySending}>
-        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
+        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" width={64} height={64} /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
         <div className="story-deck-cards">
           {storyOffer.map((card, index) => <button type="button" className="story-deck-card" key={card.id} disabled={storySending || Boolean(pendingStory && pendingStory !== card.id)} onClick={() => void chooseStory(card.id)}>
             <span className="story-deck-number">{index + 1}</span><strong>{card.title}</strong><span>{pendingStory === card.id ? 'Повторить выбор →' : 'Открыть →'}</span>
@@ -560,7 +561,7 @@ export default function Home() {
     return (
       <div className="wrap game">
         <Hud data={hud} compact />
-        {requestError && <div className="request-error" role="alert">{requestError} {pendingAnswer.current && <button type="button" onClick={() => { const pending = pendingAnswer.current; if (pending) void answer(pending.payload, pending.ms, pending).catch(() => {}); }}>Повторить отправку</button>} <button type="button" onClick={() => { const pending = pendingAnswer.current; pendingAnswer.current = null; try { sessionStorage.removeItem(PENDING_ANSWER_KEY); if (pending) { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); } } catch {} setRequestError(''); setStage('home'); }}>{pendingAnswer.current ? 'Не восстанавливать и домой' : 'Домой'}</button></div>}
+        {requestError && <div className="request-error" role="alert">{requestError} {pendingAnswer.current && <button type="button" onClick={() => { const pending = pendingAnswer.current; if (pending) void answer(pending.payload, pending.ms, pending).catch(() => {}); }}>Повторить отправку</button>} <button type="button" onClick={() => { const pending = pendingAnswer.current; pendingAnswer.current = null; try { sessionStorage.removeItem(PENDING_ANSWER_KEY); if (pending) { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'single')); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'digits')); } } catch {} setRequestError(''); setStage('home'); }}>{pendingAnswer.current ? 'Не восстанавливать и домой' : 'Домой'}</button></div>}
 
         {missionNotice && <p role="status" className="chip">{missionNotice}</p>}
         <div className="step-bar" role="progressbar" aria-label="Прогресс миссии" aria-valuemin={0} aria-valuemax={steps} aria-valuenow={step} aria-valuetext={`Шаг ${step + 1} из ${steps}`}>
@@ -570,20 +571,32 @@ export default function Home() {
         </div>
 
         {item?.type === 'task' && item.boss && (
-          <div className="boss-banner">🛡️ ИСПЫТАНИЕ РАЙОНА — на скорость!</div>
+          <div className="boss-banner">🛡️ Финальное задание недели</div>
         )}
 
-        <div className="quest">
-          <img src="/art/mascot-think.png" alt="" />
-          <div className="quest-text">
-            {item?.type === 'task' && item.quest}
-            {item?.type === 'scenario' && item.quest}
-          </div>
+        <div className="exercise-toolbar">
+          <button type="button" className="exercise-pause" onClick={() => { setRequestError(''); setStage('home'); }}>
+            ⏸ Пауза и домой
+          </button>
+          <details className="exercise-pause-help">
+            <summary>Что будет с прогрессом?</summary>
+            <p className="muted small">Прогресс и незавершённые отметки сохранятся. При возврате текущее задание засчитается как практика: награда за миссию не изменится.</p>
+          </details>
         </div>
+
+        {!(item?.type === 'task' && item.instance.kind !== 'social-practice') && (
+          <div className="quest">
+            <img src="/art/mascot-think.png" alt="" width={64} height={64} />
+            <div className="quest-text">
+              {item?.type === 'task' && item.quest}
+              {item?.type === 'scenario' && item.quest}
+            </div>
+          </div>
+        )}
 
         <div className="panel">
           <fieldset className="task-fieldset" disabled={answerSending || Boolean(feedback) || Boolean(requestError && pendingAnswer.current)} aria-busy={answerSending}>
-          {item?.type === 'task' && item.instance.kind !== 'social-practice' && <TaskView key={`${sessionId}-${step}`} instance={item.instance} resumedPractice={resumedPractice} draftKey={profile && sessionId ? switchDraftKey(profile.id, sessionId, step) : undefined} selectionKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(payload, ms) => { void answer(payload, ms).catch(() => {}); }} />}
+          {item?.type === 'task' && item.instance.kind !== 'social-practice' && <TaskView key={`${sessionId}-${step}`} instance={item.instance} band={profile?.band ?? '8-10'} profileId={profile?.id} sessionId={sessionId ?? undefined} step={step} resumedPractice={resumedPractice} draftKey={profile && sessionId ? switchDraftKey(profile.id, sessionId, step) : undefined} selectionKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(payload, ms) => { void answer(payload, ms).catch(() => {}); }} />}
           {item?.type === 'task' && item.instance.kind === 'social-practice' && item.instance.rounds && <SupportPractice key={`${sessionId}-${step}`} rounds={item.instance.rounds} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(cells, ms) => { void answer({ cells }, ms).catch(() => {}); }} onSkip={(ms) => { void answer({ skip: true }, ms).catch(() => {}); }} />}
           {item?.type === 'scenario' && (
             <ScenarioView key={`${sessionId}-${step}`} band={profile?.band ?? '8-10'} scenario={item} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(a) => answer(a, 0)} />

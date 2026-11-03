@@ -709,6 +709,7 @@ a {
 
 .quest img {
   width: 64px;
+  height: 64px;
   flex: 0 0 64px;
   animation: bob 2.8s ease-in-out infinite;
 }
@@ -1713,3 +1714,90 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .story-second-page { margin-top: 16px; padding: 16px; border: 3px solid #38283b; border-radius: 18px; background: #fff7e4; }
 .story-second-text { font-size: 1.1rem; line-height: 1.5; font-weight: 700; }
 .story-second-page > .btn { margin: 8px 8px 0 0; }
+
+/* ==========================================================================
+   Окно упражнения и игровые механические цели.
+   Визуальная рамка не меняет ответ, награду и серверную проверку.
+   Все интерактивные цели не меньше 44×44 px и работают касанием и клавиатурой.
+   ========================================================================== */
+.exercise-window {
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: linear-gradient(#fffdf6, #fff3d6);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+.exercise-window-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.exercise-window-title { margin: 0; font-size: 1.05rem; letter-spacing: .02em; }
+.exercise-window-glyph { color: var(--orange); font-size: 1.1rem; }
+.exercise-instruction { margin: 0 0 10px; font-weight: 700; color: var(--ink-soft); }
+.exercise-window .read-aloud { margin: 4px 0 10px; }
+.exercise-stage { margin-top: 6px; }
+.exercise-progress { height: 12px; border: 2px solid var(--ink); border-radius: 99px; background: #fff; overflow: hidden; }
+.exercise-progress > span { display: block; height: 100%; background: var(--mint); transition: width .2s ease; }
+.exercise-progress-text { margin: 6px 0 0; font-size: .92rem; font-weight: 700; }
+.exercise-status { margin: 8px 0 0; font-weight: 700; }
+.exercise-restored { margin: 10px 0; padding: 8px 10px; border: 2px dashed var(--ink); border-radius: 12px; background: #e9fbf3; font-weight: 700; }
+.exercise-undo { margin-top: 12px; }
+.exercise-actions { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
+@media (min-width: 520px) { .exercise-actions { flex-direction: row; } .exercise-actions > * { flex: 1; } }
+
+/* Пол и рамка «театра» для заданий на память: цели крупные, вспышки заметны без анимации. */
+.memory-stage { padding: 8px; border: 3px dashed var(--ink-soft); border-radius: 18px; background: #fffdf7; }
+.cell.theater { position: relative; min-height: 52px; border-radius: 18px; background: #fff; }
+.cell.theater::after {
+  content: ''; position: absolute; inset: 7px; border: 2px dashed rgba(27, 27, 47, .18); border-radius: 13px; pointer-events: none;
+}
+.cell.theater.lit { background: var(--yellow); }
+.cell-glow { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: #7a5100; }
+.big-targets > .cell, .big-targets > .card-shape, .big-targets > .signal-cell { min-height: 64px; }
+.memory-badge { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; min-width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; color: #1b1b2f; font-size: 16px; font-weight: 900; line-height: 1; z-index: 1; }
+
+/* Варианты ответа: видимая метка выбора, цветовая заплатка для Stroop. */
+.options .option { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.option-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; font-weight: 900; }
+.option[aria-checked="true"] .option-mark { background: var(--mint); }
+.option-swatch { flex: none; width: 26px; height: 26px; margin-left: auto; border: 2px solid var(--ink); border-radius: 50%; }
+
+.rule-banner { margin: 0 0 12px; padding: 10px 12px; border: 3px solid var(--ink); border-radius: 14px; background: #ffdf8d; }
+.card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.switch-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.order-drag { margin-left: auto; font-size: 1.2rem; color: var(--ink-soft); }
+
+/* Сигналы go/no-go: лампа и подпись, отметка видна без цвета. */
+.signals { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 380px; margin: 0 auto; }
+.signal-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; font-size: clamp(11px, 3vw, 15px); color: #1b1b2f; }
+.signal-lamp { width: 26px; height: 26px; border: 3px solid #1b1b2f; border-radius: 50%; background: rgba(255, 255, 255, .75); }
+.signal-label { font-weight: 800; overflow-wrap: anywhere; text-align: center; }
+.signal-check { position: absolute; right: 4px; top: 2px; font-size: 1.2rem; }
+.signal-cell.picked { box-shadow: inset 0 0 0 4px #1b1b2f; }
+
+/* Ввод цифр: слоты одинаковой ширины, крупная клавиатура. */
+.digit-display { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+.digit-display:focus-visible { outline: 4px solid #1264c4; outline-offset: 4px; }
+.digit-slot { display: grid; place-items: center; min-width: 46px; height: 58px; padding: 0 6px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-size: 30px; font-weight: 900; }
+.digit-slot.empty { color: #b9b4c9; }
+.digit-display.typing .digit-slot { background: #fff7dd; }
+
+/* Уменьшение движения: убираем подпрыгивания, но не саму игру. */
+@media (prefers-reduced-motion: reduce) {
+  .cell, .option, .card-shape, .btn, .order-card { transition: none !important; }
+  .cell:active, .option:active, .btn:active, .key:active { transform: none; }
+}
+html[data-reduce-motion="true"] .cell:active,
+html[data-reduce-motion="true"] .option:active,
+html[data-reduce-motion="true"] .btn:active,
+html[data-reduce-motion="true"] .key:active { transform: none; }
+html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
+
+/* Пауза без потери прогресса: серверная сессия остаётся активной, черновики — во вкладке. */
+.exercise-toolbar { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+.exercise-pause { align-self: flex-start; min-height: 44px; padding: 8px 14px; border: 2px solid var(--ink); border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.exercise-pause:hover { background: #fff7dd; }
+.exercise-pause:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
+.exercise-toolbar .small { font-size: .9rem; margin: 4px 0 0; }
+/* Пояснение к паузе свёрнуто: на маленьком экране важнее сама игра. */
+.exercise-pause-help summary { cursor: pointer; font-weight: 700; font-size: .9rem; color: var(--ink-soft); min-height: 32px; display: flex; align-items: center; }
+.exercise-pause-help summary:focus-visible { outline: 3px solid #1264c4; outline-offset: 2px; }

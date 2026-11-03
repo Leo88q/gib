@@ -22,10 +22,20 @@ async function responseFor(page:Page, action:string, click:()=>Promise<unknown>)
  assert.equal(r.status(),200,await r.text());return r.json();
 }
 async function assertNoHorizontalOverflow(page:Page){const sizes=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));assert.ok(sizes.scroll<=sizes.width+1,`horizontal overflow: ${JSON.stringify(sizes)}`);}
+async function waitStep(page:Page,step:number){
+ await page.waitForFunction(s=>document.querySelector('.step-bar')?.getAttribute('aria-valuenow')===String(s),step,{timeout:20000});
+}
 async function welcome(page:Page){await page.getByRole('button',{name:'Начать миссию'}).click();await page.getByRole('button',{name:'Продолжить →',exact:true}).click();}
 async function task(page:Page,item:any){
  const x=item.instance;
- if(x.kind==='choice'){await page.locator('.options .option').first().click();await page.getByRole('button',{name:'Подтвердить выбор'}).click();}
+ if(x.kind==='choice'){
+   await page.locator('.options .option').first().click();
+   // Кнопка подтверждения ниже сгиба на 390×844. Проверяем клавиатурный путь:
+   // фокус + Enter — это заявленная альтернатива касанию и она не зависит от прокрутки.
+   const confirm=page.getByRole('button',{name:'Подтвердить выбор'});
+   await confirm.focus();
+   await page.keyboard.press('Enter');
+ }
  else if(x.kind==='cards'){await page.locator('.card-shape').first().click();await page.getByRole('button',{name:'Подтвердить выбор'}).click();}
  else if(x.kind==='gonogo'||x.kind==='finddiff'){await page.getByRole('button',{name:'Готово',exact:true}).click();}
  else if(x.kind==='order'){const buttons=page.locator('.order-card');for(let i=0;i<x.steps.length;i++)await buttons.nth(i).click();await page.getByRole('button',{name:'Проверить план'}).click();}
@@ -118,6 +128,8 @@ async function main(){
   assert.equal(practice.evaluation,'not_scored');
   await page.getByRole('button',{name:'Дальше →'}).click();let item=practice.next;
   for(let step=2;step<start.steps;step++){
+   // Ждём, пока React зафиксирует новый шаг: иначе клик может попасть в старый DOM.
+   await waitStep(page,step);
    console.log('  task',platform,age,step,item.instance.kind); const result=await responseFor(page,'answer',()=>task(page,item));if(result.done){await page.getByRole('button',{name:'Итоги 🏆'}).click();break;}item=result.next;await page.getByRole('button',{name:'Дальше →'}).click();
   }
   await page.getByText('Миссия выполнена!').waitFor();await page.getByRole('button',{name:'Подвести итог'}).click();await page.getByRole('button',{name:'История',exact:false}).click();await page.getByRole('button',{name:'Домой'}).click();
