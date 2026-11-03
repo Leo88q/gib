@@ -70,9 +70,17 @@ async function main() {
   assert.equal(answered.status, 200, 'текущий шаг принимается');
   // Сервер не помнит старые шаги: неизвестный номер отклоняется как некорректный,
   // но никогда не засчитывается как новый ответ. Оба варианта безопасны.
-  const past = await post('/api/session', { action: 'answer', sessionId, step: Math.max(0, step - 1), answer: { index: 0 } });
-  assert.ok(past.status === 409 || past.status === 400, 'ответ на прошедший шаг отклонён');
-  assert.ok(past.data.error === 'step_conflict' || past.data.error === 'invalid_answer', 'причина отказа явная');
+  if (step > 0) {
+    const past = await post('/api/session', { action: 'answer', sessionId, step: step - 1, answer: { index: 0 } });
+    assert.ok(past.status === 409 || past.status === 400, 'ответ на прошедший шаг отклонён');
+    assert.ok(past.data.error === 'step_conflict' || past.data.error === 'invalid_answer', 'причина отказа явная');
+  } else {
+    // На нулевом шаге проверяем то же свойство иначе: другой ответ на уже принятый шаг.
+    const other = item?.type === 'scenario' ? { index: 1 } : { cells: [999] };
+    const past = await post('/api/session', { action: 'answer', sessionId, step, answer: other });
+    assert.equal(past.status, 409, 'другой ответ на принятый шаг отклонён');
+    assert.equal(past.data.error, 'step_conflict');
+  }
 
   /* 3. Повтор запроса после потери ответа: тот же шаг, тот же ответ — та же квитанция. */
   const replay = await post('/api/session', { action: 'answer', sessionId, step, answer: answerFor(item) });
