@@ -2,6 +2,7 @@ import { DEFAULT_TIME_ZONE, isTimeZone } from '@/lib/calendar';
 import { readJsonObject } from '@/lib/http-body';
 import { NextResponse } from 'next/server';
 import { store } from '@/lib/store';
+import { eventJournal } from '@/lib/events/journal';
 import { ensureSkills } from '@/lib/engine/session';
 import { bandOf } from '@/lib/engine/adaptive';
 import { requireParent, ownedProfile } from '@/lib/auth';
@@ -84,6 +85,8 @@ export async function DELETE(req: Request) {
     if (!ownedProfile(auth.parentId, profileId)) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
     if (store.payments(profileId).some(p => p.status === 'creating' || p.status === 'pending')) return NextResponse.json({ error: 'payment_in_progress' }, { status: 409 });
     store.deleteProfile(profileId);
+    // Журнал технических событий удаляется вместе с профилем: он не переживает удаление данных.
+    eventJournal.removeProfile(profileId);
     return NextResponse.json({ ok: true });
   });
 }

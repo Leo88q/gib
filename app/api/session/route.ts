@@ -4,6 +4,7 @@ import { requireParent, ownedProfile } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
+import { eventJournal } from '@/lib/events/journal';
 import {
   ALL_SCENARIOS,
   answerStep,
@@ -88,21 +89,25 @@ export async function POST(req: Request) {
     cardId?: string;
   };
 
+  // Журнал технических событий: пишется в той же транзакции, что и прогресс.
+  // Явная копия методов: движок получает тот же store, но с журналом и владельцем.
+  const context = { ...store, journal: eventJournal, ownerId: auth.parentId };
+
   if (body.action === 'start') {
     if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean')) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
-    return store.transaction(() => {
+    return context.transaction(() => {
       const profile = body.profileId ? ownedProfile(auth.parentId, body.profileId) : undefined;
       if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-      return NextResponse.json(startSession(profile, Boolean(body.repeat), store, { storyChoice: body.storyChoice, journey: body.journey }));
+      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey }));
     });
   }
 
   if (body.action === 'select_story') {
     if (typeof body.sessionId !== 'string' || !body.sessionId || typeof body.cardId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.cardId)) return NextResponse.json({ error: 'invalid_story' }, { status: 400 });
-    return store.transaction(() => {
+    return context.transaction(() => {
       const session = store.getSession(body.sessionId!);
       if (!session || !ownedProfile(auth.parentId, session.profileId)) return NextResponse.json({ error: 'session_not_found' }, { status: 404 });
-      const result = selectSessionStory(body.sessionId!, body.cardId!);
+      const result = selectSessionStory(body.sessionId!, body.cardId!, context);
       if ('error' in result) return NextResponse.json(result, { status: result.error === 'story_conflict' ? 409 : 400 });
       const selected = store.getSession(body.sessionId!);
       const profile = selected && ownedProfile(auth.parentId, selected.profileId);
@@ -118,7 +123,7 @@ export async function POST(req: Request) {
     const session = store.getSession(body.sessionId);
     if (!session || !ownedProfile(auth.parentId, session.profileId)) return NextResponse.json({ error: 'session_not_found' }, { status: 404 });
     if (!Number.isInteger(body.step) || body.step! < 0) return NextResponse.json({ error: 'step_required' }, { status: 400 });
-    const res = answerStep(body.sessionId, body.answer ?? {}, Number(body.ms) || 0, body.step!);
+    const res = answerStep(body.sessionId, body.answer ?? {}, Number(body.ms) || 0, body.step!, context);
     if ('error' in res) return NextResponse.json(res, { status: ['step_conflict', 'story_selection_required', 'story_flow_conflict'].includes(res.error) ? 409 : res.error === 'invalid_answer' ? 400 : 404 });
     return NextResponse.json(res);
   }

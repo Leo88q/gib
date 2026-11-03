@@ -12,6 +12,7 @@ import { hasSupportPractice, makeSupportPractice } from '../content/support-prac
 import { STORYLETS_BY_ID } from '../content/storylets';
 import { selectStoryCards, DAY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
 import { nextDayStage } from '../day/day-machine';
+import { eventJournal, dedupeKeyFor, type EventJournal } from '../events/journal';
 import { nextJourneyStage } from '../day/journey-machine';
 import { weekOneInk } from './week-one-ink-catalog';
 import { remainingInk } from './remaining-ink-catalog';
@@ -102,7 +103,22 @@ export type Runtime = {
 };
 
 
-export type SessionStore = Pick<typeof store, 'transaction' | 'skills' | 'addSkill' | 'updateSkill' | 'programState' | 'setProgramState' | 'playerState' | 'setPlayerState' | 'sessions' | 'addSession' | 'getSession' | 'updateSession' | 'profile'>;
+export type SessionStore = Pick<typeof store, 'transaction' | 'skills' | 'addSkill' | 'updateSkill' | 'programState' | 'setProgramState' | 'playerState' | 'setPlayerState' | 'sessions' | 'addSession' | 'getSession' | 'updateSession' | 'profile'> & {
+  /** Журнал технических событий. Необязателен: старые вызовы и тесты работают без него. */
+  journal?: EventJournal;
+  /** Владелец профиля для изоляции журнала; по умолчанию — владелец из хранилища. */
+  ownerId?: string;
+};
+
+/**
+ * Записывает событие в журнал той же операции. Сбой журнала не должен
+ * ломать игру ребёнка: журнал вторичен по отношению к прогрессу.
+ */
+function recordEvent(context: SessionStore, profileId: string, sessionId: string, step: number, kind: string, event: Parameters<EventJournal['append']>[3]) {
+  const journal = context.journal ?? eventJournal;
+  const owner = context.ownerId ?? context.profile(profileId)?.parentId ?? 'owner';
+  try { journal.append(owner, profileId, dedupeKeyFor(sessionId, step, kind), event); } catch { /* журнал необязателен */ }
+}
 
 export function ensureSkills(profile: Profile, context: SessionStore = store): (SkillState & { profileId: string })[] {
   const existing = context.skills(profile.id);
@@ -291,6 +307,7 @@ export function startSession(
     runtime: rt,
   };
   context.addSession(durable);
+  recordEvent(context, profile.id, id, 0, 'start', { v: 1, type: 'session_started', dayIndex, repeat, journey: Boolean(rt.storyFlow?.version === 2) });
 
   return { sessionId: id, item: publicItem(items[0], profile.band), steps: items.length, step: 0, resumed: false, combo: 0, autoClaimed, ...(rt.storyOffer ? { storyOffer: rt.storyOffer, storySelected: null } : {}) };
   });
@@ -325,6 +342,7 @@ export function selectSessionStory(sessionId: string, cardId: string, context: S
     delete rt.storyVersions; delete rt.supportVersions;
     const plan = session.plan.slice(); plan[index] = `scenario:${card.scenarioId}`;
     context.updateSession(sessionId, { runtime: rt, plan, storySelection: { cardId } });
+    recordEvent(context, session.profileId, sessionId, 0, 'story', { v: 1, type: 'story_selected', cardId, offerSize: rt.storyOffer?.length ?? 1 });
     return { ok: true, cardId };
   });
 }
@@ -439,6 +457,7 @@ export function answerStep(
     const earned = earnSupportPractice(player);
     rt.xpEarned += earned.xp; rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'practice_answered', skipped: payload.skip === true });
   } else if (item.type === 'task') {
     correct = checkTaskAnswer(item.instance, payload);
     const assisted = payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index));
@@ -478,6 +497,7 @@ export function answerStep(
     rt.xpEarned += earned.xp;
     rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'task_answered', taskKind: String(item.instance.kind), correct, assisted: payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index)), ms });
     refreshMissions(player, {
       dayIndex: rt.dayIndex,
       tasksDone: rt.taskAnswers.length,
@@ -504,6 +524,7 @@ export function answerStep(
     };
     // The mission tracks participation; story choices do not change task combo.
     rt.goodChoice = true;
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'story_answered', choiceIndex: Math.max(0, rt.scenarioAnswer.choice), itemCount: rt.items.length });
     const earned = earnScenario(player);
     rt.xpEarned += earned.xp;
     rt.coinsEarned += earned.coins;
@@ -585,6 +606,7 @@ export function answerStep(
       },
     };
     context.updateSession(sessionId, { runtime: undefined, lastReceipt: { step: expectedStep, fingerprint, result } });
+    recordEvent(context, rt.profileId, sessionId, expectedStep, 'complete', { v: 1, type: 'session_completed', steps: rt.taskAnswers.length, correct: rt.taskAnswers.filter(t => t.correct).length, stars: done.stars, seconds });
     return result;
   }
 
