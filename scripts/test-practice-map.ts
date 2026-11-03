@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { practiceMap } from '../lib/engine/practice-map';
+import type { Session } from '../lib/types';
+const item = (id: string, profileId: string, extra: Partial<Session> = {}): Session => ({ id, profileId, startedAt: 1, seconds: 0, tasks: [], plan: [], ...extra });
+const scenario = { scenarioId: 'w1d1', competency: 'self_awareness' as const, choice: 1, quality: 'bad' as const };
+const sessions = [item('1', 'p', { finishedAt: 2, scenario, supportPracticeCompleted: true }), item('2', 'p', { finishedAt: 3, scenario }), item('3', 'p', { scenario, supportPracticeCompleted: true }), item('4', 'other', { finishedAt: 4, scenario, supportPracticeCompleted: true }), item('5', 'p', { finishedAt: 3 })];
+const map = practiceMap('p', sessions); const first = map.find(t => t.id === 'self_awareness')!;
+assert.equal(map.length, 7); assert.equal(first.stories, 2); assert.equal(first.practices, 1);
+assert.ok(map.filter(t => t.id !== 'self_awareness').every(t => !t.stories && !t.practices));
+const serialized = JSON.stringify(map);
+for (const hidden of ['choice', 'quality', 'bad', 'scenarioId', 'profileId']) assert.ok(!serialized.includes(hidden));
+assert.deepEqual(practiceMap('missing', sessions).map(t => t.stories), [0,0,0,0,0,0,0]);
+console.log('  ok карта считает только завершённые истории владельца, повторы и завершённые практики; не раскрывает ответы');
