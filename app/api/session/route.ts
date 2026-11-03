@@ -19,6 +19,7 @@ import {
 import { TOTAL_DAYS } from '@/lib/content/program';
 import { TASK_BY_ID } from '@/lib/content/cognitive';
 import { SKILL_LABELS } from '@/lib/engine/adaptive';
+import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor } from '@/lib/review/topics';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,9 @@ export async function GET(req: Request) {
       completedDays: pos.state.completedDays,
       totalDays: TOTAL_DAYS,
       finished: pos.finished,
+      // Повтор темы предлагается, только когда наступил срок и сегодня его ещё не было.
+      review: pos.state.reviewDay === reviewDayKeyFor(profile) ? null
+        : dueReviewTopics(reviewStatesFromSessions(store.sessions(profile.id), profile.band, Date.now(), pos.state.reviewStates ?? []), profile.band, Date.now(), 1)[0] ?? null,
     },
   });
 }
@@ -87,6 +91,8 @@ export async function POST(req: Request) {
     repeat?: boolean;
     storyChoice?: boolean;
     journey?: boolean;
+    /** Необязательный отдельный заход-повторение темы из пройденного. */
+    review?: boolean;
     cardId?: string;
   };
 
@@ -97,11 +103,11 @@ export async function POST(req: Request) {
   const context = { ...store, journal, ownerId: auth.parentId };
 
   if (body.action === 'start') {
-    if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean')) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
+    if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean') || (body.review !== undefined && typeof body.review !== 'boolean')) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
     return context.transaction(() => {
       const profile = body.profileId ? ownedProfile(auth.parentId, body.profileId) : undefined;
       if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey }));
+      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey, review: body.review }));
     });
   }
 

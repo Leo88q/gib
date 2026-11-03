@@ -44,6 +44,8 @@ type ProgramInfo = {
   completedDays: number;
   totalDays: number;
   finished: boolean;
+  /** Тема, которую сервер предлагает повторить (или null). */
+  review?: { topicId: string; title: string } | null;
 };
 
 type PlayerInfo = {
@@ -118,6 +120,8 @@ export default function Home() {
   const [answerSending, setAnswerSending] = useState(false);
   const [starting, setStarting] = useState(false);
   const [repeatDay, setRepeatDay] = useState(false);
+  /** Заголовок темы, которую сейчас повторяем (только внутри захода). */
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
   const [resumedPractice, setResumedPractice] = useState(false);
   const pendingAnswer = useRef<PendingAnswer<Item> | null>(null);
   // Keep the last acknowledged answer until its feedback (or final summary) is dismissed.
@@ -223,6 +227,30 @@ export default function Home() {
     void loadPlayer(data.profile.id);
   };
 
+  /** Повтор темы: отдельный заход, только когда сервер говорит, что тема пришла в срок. */
+  const startReview = async () => {
+    if (!profile || busy.current) return;
+    busy.current = true; setStarting(true); setRequestError('');
+    try {
+      const res = await apiFetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', profileId: profile.id, review: true, storyChoice: true, journey: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.sessionId) throw new Error('start_failed');
+      if (!data.review) { setRequestError('Повтор пока недоступен — можно начать миссию дня.'); return; }
+      setRepeatDay(false);
+      setFeedback(null); setNextItem(null);
+      setSessionId(data.sessionId); setStoryOffer([]); setPendingStory(null);
+      setResumedPractice(false);
+      setItem(data.item); setSteps(data.steps ?? 1); setStep(data.step ?? 0); setCombo(0);
+      setReviewNotice(data.review.title);
+      setStage('training');
+    } catch { setRequestError('Не удалось открыть повтор. Проверьте соединение.'); }
+    finally { busy.current = false; setStarting(false); }
+  };
+
   const start = async (repeat = false) => {
     if (!profile || busy.current) return;
     let recovered: PendingAnswer<Item> | null = pendingAnswer.current?.profileId === profile.id ? pendingAnswer.current : null;
@@ -242,6 +270,7 @@ export default function Home() {
     sfx.tap();
     setCombo(0);
     setStep(0);
+    setReviewNotice(null);
     if (busy.current) return;
     busy.current = true;
     setStarting(true);
@@ -279,7 +308,7 @@ export default function Home() {
       const res = await apiFetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'select_story', sessionId, cardId }) });
       const result = await res.json();
       if (!res.ok || result.cardId !== cardId) throw new Error('selection_failed');
-      if (result.finished) { setStoryOffer([]); setPendingStory(null); setStage('home'); if (profile) { void loadPlan(profile.id); void loadPlayer(profile.id); } return; }
+      if (result.finished) { setStoryOffer([]); setPendingStory(null); setReviewNotice(null); setStage('home'); if (profile) { void loadPlan(profile.id); void loadPlayer(profile.id); } return; }
       if (result.item) { setItem(result.item); if (Number.isInteger(result.step)) setStep(result.step); if (Number.isInteger(result.steps)) setSteps(result.steps); }
       setStoryOffer([]); setPendingStory(null);
     } catch { setRequestError('Не удалось подтвердить выбор. Повтори отправку или открой миссию заново.'); }
@@ -508,6 +537,11 @@ export default function Home() {
                   ↺ Повторить прошлый день
                 </button>
               )}
+              {(program?.review ?? null) && (
+                <button type="button" className="btn ghost" onClick={() => { void startReview(); }}>
+                  🔁 Вернуться к теме «{program!.review!.title}» — по желанию
+                </button>
+              )}
             </div>
 
             <Missions missions={missions} onClaim={claimMission} />
@@ -564,6 +598,12 @@ export default function Home() {
         {requestError && <div className="request-error" role="alert">{requestError} {pendingAnswer.current && <button type="button" onClick={() => { const pending = pendingAnswer.current; if (pending) void answer(pending.payload, pending.ms, pending).catch(() => {}); }}>Повторить отправку</button>} <button type="button" onClick={() => { const pending = pendingAnswer.current; pendingAnswer.current = null; try { sessionStorage.removeItem(PENDING_ANSWER_KEY); if (pending) { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'single')); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'digits')); } } catch {} setRequestError(''); setStage('home'); }}>{pendingAnswer.current ? 'Не восстанавливать и домой' : 'Домой'}</button></div>}
 
         {missionNotice && <p role="status" className="chip">{missionNotice}</p>}
+        {/* Повтор: нейтральная подпись, без давления и без обещаний бонусов. */}
+        {reviewNotice && (
+          <p className="chip wrap-text">
+            🔁 Повтор темы «{reviewNotice}». Можно пройти до конца или уйти домой — прогресс не потеряется.
+          </p>
+        )}
         <div className="step-bar" role="progressbar" aria-label="Прогресс миссии" aria-valuemin={0} aria-valuemax={steps} aria-valuenow={step} aria-valuetext={`Шаг ${step + 1} из ${steps}`}>
           {Array.from({ length: steps }, (_, i) => (
             <span key={i} className={`step${i < step ? ' done' : ''}${i === step ? ' now' : ''}`} />

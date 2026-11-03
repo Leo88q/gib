@@ -1,4 +1,5 @@
 import { weekArt } from '@/lib/art-paths';
+import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor } from '@/lib/review/topics';
 import { requireParent, ownedProfile } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
@@ -49,7 +50,12 @@ export async function GET(req: Request) {
     }),
   }));
 
+  // Повтор в срок: предлагается, но не навязывается. Если тем нет — поля review нет.
+  const reviewStates = reviewStatesFromSessions(store.sessions(profile.id), profile.band, Date.now(), pos.state.reviewStates ?? []);
+  const review = pos.state.reviewDay === reviewDayKeyFor(profile) ? null : dueReviewTopics(reviewStates, profile.band, Date.now(), 1)[0] ?? null;
+
   return NextResponse.json({
+    review: review ? { topicId: review.topicId, title: review.title } : null,
     progress: {
       completedDays: pos.state.completedDays,
       totalDays: TOTAL_DAYS,

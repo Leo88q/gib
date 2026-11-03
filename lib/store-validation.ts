@@ -100,6 +100,7 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
         if (!object(selected) || !object(scenario) || !object(item) || selected.scenarioId !== scenario.scenarioId || selected.scenarioId !== item.scenarioId || !Array.isArray(row.plan) || !row.plan.includes(`scenario:${selected.scenarioId}`)) throw new Error('Story selection mismatch');
       }
     }
+    if (object(row.runtime) && row.runtime.review !== undefined && (!object(row.runtime.review) || !text(row.runtime.review.topicId))) throw new Error('Invalid review session');
     if (row.lastReceipt !== undefined && (!object(row.lastReceipt) || !Number.isInteger(row.lastReceipt.step) || (row.lastReceipt.step as number) < 0 || !text(row.lastReceipt.fingerprint) || !object(row.lastReceipt.result))) throw new Error('Invalid session receipt');
   }
   if (key === 'playerStates') {
@@ -108,6 +109,22 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
     if (object(row.missions) && (!arrayIfPresent(row.missions.ids) || !arrayIfPresent(row.missions.claimed) || (row.missions.progress !== undefined && !object(row.missions.progress)))) throw new Error('Invalid player missions');
   }
   if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'programStates' && row.reviewDay !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(row.reviewDay))) throw new Error('Invalid review day');
+  if (key === 'programStates' && row.reviewStates !== undefined) {
+    // Расписание повторения: только сроки и счётчики, без текстов и свободных полей.
+    if (!Array.isArray(row.reviewStates)) throw new Error('Invalid review states');
+    const seenTopics = new Set<string>();
+    for (const state of row.reviewStates) {
+      if (!object(state) || !text(state.topicId) || !['5-7', '8-10', '11-13'].includes(String(state.band))
+        || !Number.isInteger(state.reviews) || (state.reviews as number) < 0 || (state.reviews as number) > 4
+        || !Number.isInteger(state.skipped) || (state.skipped as number) < 0
+        || !(state.dueAt === null || (typeof state.dueAt === 'number' && Number.isFinite(state.dueAt) && state.dueAt >= 0))
+        || !Number.isFinite(state.updatedAt)) throw new Error('Invalid review state');
+      if (Object.keys(state).some(key => !['topicId', 'band', 'reviews', 'dueAt', 'skipped', 'updatedAt'].includes(key))) throw new Error('Invalid review state fields');
+      if (seenTopics.has(String(state.topicId))) throw new Error('Duplicate review topic');
+      seenTopics.add(String(state.topicId));
+    }
+  }
   if (key === 'events') {
     // Журнал хранит только разрешённые технические поля; свободный текст и отметки чувств здесь недопустимы.
     if (!text(row.profileId) || !text(row.ownerId) || !Number.isFinite(row.at) || !text(row.dedupeKey) || !object(row.event)) throw new Error('Invalid event record');
