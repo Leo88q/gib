@@ -194,7 +194,8 @@ a {
 }
 
 .chip.combo {
-  background: var(--orange);
+  /* Оранжевый с белым давал 2.6:1; затемнённый оттенок держит ≥5.5:1 и остаётся тёплым. */
+  background: #b8340a;
   color: #fff;
 }
 .chip.coins {
@@ -1127,7 +1128,7 @@ input[type='text']:focus {
 }
 
 .age-btn.active {
-  background: var(--orange);
+  background: #b8340a;
   color: #fff;
 }
 
@@ -1157,14 +1158,16 @@ input[type='text']:focus {
   font-weight: 700;
 }
 
+/* Знак «+»/«−» уже показан текстом; тёмные оттенки дают 7:1 вместо 3.4:1. */
 .delta.up {
-  color: var(--ok);
+  color: #12633f;
   font-weight: 800;
 }
 .delta.down {
-  color: var(--bad);
+  color: #a3243a;
   font-weight: 800;
 }
+
 .delta.flat {
   color: var(--muted);
   font-weight: 700;
