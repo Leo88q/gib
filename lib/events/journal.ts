@@ -24,12 +24,20 @@ export type LearningEvent =
   | { v: 1; type: 'story_selected'; cardId: string; offerSize: number }
   | { v: 1; type: 'story_answered'; choiceIndex: number; itemCount: number }
   | { v: 1; type: 'practice_answered'; skipped: boolean }
-  | { v: 1; type: 'task_answered'; taskKind: string; correct: boolean; assisted: boolean; ms: number }
+  | { v: 1; type: 'task_answered'; taskKind: string; taskSkill: SkillKey; correct: boolean; assisted: boolean; ms: number }
   | { v: 1; type: 'session_completed'; steps: number; correct: number; stars: number; seconds: number }
-  | { v: 1; type: 'profile_created'; band: '5-7' | '8-10' | '11-13' }
-  | { v: 1; type: 'profile_deleted'; reason: 'user_request' };
+  | { v: 1; type: 'profile_created'; band: '5-7' | '8-10' | '11-13' };
+/*
+ * События `profile_deleted` намеренно нет: запись об удалении профиля — это
+ * сохранившийся идентификатор удалённого ребёнка. Удаление и так видно по
+ * отсутствию данных, а хранить его отдельно — нарушать удаление.
+ */
 
 export type EventType = LearningEvent['type'];
+
+/** Навыки, к которым может относиться задание. Это не оценка ребёнка, а тип задания. */
+export const SKILL_KEYS = ['attention', 'working_memory', 'flexibility', 'inhibition', 'planning', 'logic'] as const;
+export type SkillKey = typeof SKILL_KEYS[number];
 
 export type StoredEvent = {
   /** Случайный идентификатор; не выводится из профиля или времени. */
@@ -54,10 +62,9 @@ const ALLOWED: Record<EventType, readonly string[]> = {
   story_selected: ['cardId', 'offerSize'],
   story_answered: ['choiceIndex', 'itemCount'],
   practice_answered: ['skipped'],
-  task_answered: ['taskKind', 'correct', 'assisted', 'ms'],
+  task_answered: ['taskKind', 'taskSkill', 'correct', 'assisted', 'ms'],
   session_completed: ['steps', 'correct', 'stars', 'seconds'],
   profile_created: ['band'],
-  profile_deleted: ['reason'],
 };
 
 /**
@@ -107,11 +114,11 @@ export function validateEvent(input: unknown): { ok: true; event: LearningEvent 
     } else if (field === 'band') {
       if (value !== '5-7' && value !== '8-10' && value !== '11-13') return { ok: false, error: 'invalid_field' };
       event[field] = value;
-    } else if (field === 'reason') {
-      if (value !== 'user_request') return { ok: false, error: 'invalid_field' };
-      event[field] = value;
     } else if (field === 'taskKind') {
       if (!safeString(value, /^[a-z][a-z-]{1,40}$/)) return { ok: false, error: 'invalid_field' };
+      event[field] = value;
+    } else if (field === 'taskSkill') {
+      if (!SKILL_KEYS.includes(value as SkillKey)) return { ok: false, error: 'invalid_field' };
       event[field] = value;
     } else if (field === 'cardId') {
       if (!safeString(value, /^[a-zA-Z0-9_-]{1,80}$/)) return { ok: false, error: 'invalid_field' };
@@ -130,10 +137,29 @@ export function dedupeKeyFor(sessionId: string, step: number, kind: string): str
   return `${sessionId}:${step}:${kind}`;
 }
 
+/** Детерминированный короткий идентификатор события (не криптографический). */
+function hashKey(value: string): string {
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < value.length; i++) {
+    h1 = Math.imul(h1 ^ value.charCodeAt(i), 0x01000193) >>> 0;
+    h2 = Math.imul(h2 + value.charCodeAt(i), 0x85ebca6b) >>> 0;
+  }
+  return h1.toString(36) + h2.toString(36);
+}
+
+/** Срок хранения журнала: технические события нужны для отчёта, но не вечно. */
+export const EVENT_RETENTION_DAYS = 90;
+
+/** Отбрасывает события старше срока хранения. Возвращает число удалённых. */
+export function pruneExpired<T extends { at: number }>(items: T[], now = Date.now(), days = EVENT_RETENTION_DAYS): { kept: T[]; removed: number } {
+  const cutoff = now - days * 24 * 60 * 60 * 1000;
+  const kept = items.filter(item => item.at >= cutoff);
+  return { kept, removed: items.length - kept.length };
+}
+
 /**
- * Журнал в памяти процесса. Отдельного хранилища и API пока нет:
- * это делает возможным тестирование контракта, но не считается
- * production-интеграцией и не отправляет данные наружу.
+ * Журнал в памяти процесса: используется тестами и как «пустой» контекст.
+ * Рабочее хранилище — постоянный журнал поверх `store` (lib/events/store-journal.ts).
  */
 export type EventJournal = {
   append(ownerId: string, profileId: string, dedupeKey: string, event: LearningEvent, at?: number): { ok: true; stored: StoredEvent } | { ok: false; error: EventError };
@@ -148,7 +174,6 @@ export function createEventJournal(limit = 5000): EventJournal {
   const events: StoredEvent[] = [];
   const byKey = new Map<string, StoredEvent>();
   let lastError: EventError | null = null;
-  let counter = 0;
   return {
     append(ownerId, profileId, dedupeKey, event, at = Date.now()) {
       const checked = validateEvent(event);
@@ -162,7 +187,8 @@ export function createEventJournal(limit = 5000): EventJournal {
         return { ok: true, stored: existing };
       }
       if (events.length >= limit) { lastError = 'too_long'; return { ok: false, error: 'too_long' }; }
-      const stored: StoredEvent = { id: `e_${(counter++).toString(36)}_${Math.random().toString(36).slice(2, 10)}`, profileId, ownerId, at, dedupeKey, event: checked.event };
+      // id выводится из ключа идемпотентности: повтор записи не создаёт новый идентификатор.
+      const stored: StoredEvent = { id: `e_${hashKey(dedupeKey)}`, profileId, ownerId, at, dedupeKey, event: checked.event };
       events.push(stored);
       byKey.set(dedupeKey, stored);
       lastError = null;

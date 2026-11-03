@@ -4,7 +4,8 @@ import { requireParent, ownedProfile } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
-import { eventJournal } from '@/lib/events/journal';
+import { createStoreJournal } from '@/lib/events/store-journal';
+import { ownedProfile as ownedProfileForOwner } from '@/lib/auth';
 import {
   ALL_SCENARIOS,
   answerStep,
@@ -90,8 +91,10 @@ export async function POST(req: Request) {
   };
 
   // Журнал технических событий: пишется в той же транзакции, что и прогресс.
-  // Явная копия методов: движок получает тот же store, но с журналом и владельцем.
-  const context = { ...store, journal: eventJournal, ownerId: auth.parentId };
+  // Явная копия методов: движок получает тот же store, но с постоянным журналом и владельцем.
+  // Журнал пишется в той же транзакции, что и прогресс, и удаляется вместе с профилем.
+  const journal = createStoreJournal(store, { persistOk: (owner, profile) => Boolean(ownedProfileForOwner(owner, profile)) });
+  const context = { ...store, journal, ownerId: auth.parentId };
 
   if (body.action === 'start') {
     if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean')) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });

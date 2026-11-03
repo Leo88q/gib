@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { buildReport } from '@/lib/engine/session';
+import { createStoreJournal } from '@/lib/events/store-journal';
+import { buildEventReport } from '@/lib/events/report';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,5 +19,8 @@ export async function GET(req: Request) {
   if (!profileId) return NextResponse.json({ error: 'profileId_required' }, { status: 400 });
   const profile = ownedProfile(auth.parentId, profileId);
   if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-  return NextResponse.json({ report: buildReport(profile), profile });
+  // Отчёт по журналу событий: только завершённые занятия, с источниками и ограничениями.
+  // Он дополняет существующий недельный отчёт, а не заменяет его.
+  const events = buildEventReport(createStoreJournal(store), auth.parentId, profileId, { days: 7 });
+  return NextResponse.json({ report: buildReport(profile), profile, events });
 }

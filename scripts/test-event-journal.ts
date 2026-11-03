@@ -11,7 +11,7 @@ import type { AgeBand, Profile } from '../lib/types';
  */
 
 /* ------------------------- 1. схема события ------------------------- */
-assert.deepEqual(validateEvent({ v: EVENT_VERSION, type: 'task_answered', taskKind: 'choice', correct: true, assisted: false, ms: 1200 }).ok, true);
+assert.deepEqual(validateEvent({ v: EVENT_VERSION, type: 'task_answered', taskKind: 'choice', taskSkill: 'attention' as const, correct: true, assisted: false, ms: 1200 }).ok, true);
 assert.deepEqual(validateEvent({ v: EVENT_VERSION, type: 'practice_answered', skipped: true }).ok, true);
 assert.deepEqual(validateEvent({ v: EVENT_VERSION, type: 'session_started', dayIndex: 0, repeat: false, journey: true }).ok, true);
 
@@ -19,13 +19,13 @@ assert.deepEqual(validateEvent({ v: EVENT_VERSION, type: 'session_started', dayI
 assert.equal((validateEvent({ v: 1, type: 'child_said_something', text: 'привет' }) as any).error, 'unknown_type');
 assert.equal((validateEvent({ v: 2, type: 'practice_answered', skipped: true }) as any).error, 'invalid_field');
 // Лишние поля не отбрасываются молча: утечка должна быть видна.
-assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', correct: true, assisted: false, ms: 10, name: 'Миша' }) as any).error, 'invalid_field');
-assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', correct: true, assisted: false, ms: 10, answer: [1, 2] }) as any).error, 'invalid_field');
+assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', taskSkill: 'attention' as const, correct: true, assisted: false, ms: 10, name: 'Миша' }) as any).error, 'invalid_field');
+assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', taskSkill: 'attention' as const, correct: true, assisted: false, ms: 10, answer: [1, 2] }) as any).error, 'invalid_field');
 // Свободный текст в идентификаторе карточки не пройдёт.
 assert.equal((validateEvent({ v: 1, type: 'story_selected', cardId: 'Привет, меня зовут Миша', offerSize: 3 }) as any).error, 'invalid_field');
 // Числовые диапазоны ограничены.
 assert.equal((validateEvent({ v: 1, type: 'session_completed', steps: 3, correct: 3, stars: 9, seconds: 10 }) as any).error, 'invalid_field');
-assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', correct: true, assisted: false, ms: 999_999 }) as any).error, 'invalid_field');
+assert.equal((validateEvent({ v: 1, type: 'task_answered', taskKind: 'choice', taskSkill: 'attention' as const, correct: true, assisted: false, ms: 999_999 }) as any).error, 'invalid_field');
 assert.equal((validateEvent({ v: 1, type: 'session_started', dayIndex: 60, repeat: false, journey: true }) as any).error, 'invalid_field');
 assert.equal((validateEvent(null) as any).error, 'invalid_event');
 assert.equal((validateEvent([1, 2]) as any).error, 'invalid_event');
@@ -36,7 +36,7 @@ const key = dedupeKeyFor('s_abc', 2, 'answer');
 assert.equal(key, 's_abc:2:answer');
 assert.equal(dedupeKeyFor('s abc', 2, 'answer'), '', 'мусорный идентификатор сессии не даёт ключ');
 
-const event = { v: 1 as const, type: 'task_answered' as const, taskKind: 'choice', correct: true, assisted: false, ms: 800 };
+const event = { v: 1 as const, type: 'task_answered' as const, taskKind: 'choice', taskSkill: 'attention' as const, correct: true, assisted: false, ms: 800 };
 const first = journal.append('owner-a', 'p1', key, event, 1000);
 assert.ok(first.ok);
 // Повтор того же шага возвращает первое событие и не создаёт второе.

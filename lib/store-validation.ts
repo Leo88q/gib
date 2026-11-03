@@ -2,8 +2,9 @@ import { validateInkVariant } from './engine/ink-snapshot.ts';
 import { validateDeepInkVariant } from './engine/deep-ink.ts';
 import type { ScenarioVariant } from './content/softskills.ts';
 import { validFamilyState } from './engine/family.ts';
+import { validateEvent } from './events/journal.ts';
 /** Partial structural validation. It intentionally does not claim full data integrity. */
-export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments'] as const;
+export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments', 'events'] as const;
 type Collection = typeof STORE_COLLECTIONS[number];
 const object = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 const text = (x: unknown): x is string => typeof x === 'string' && x.length > 0;
@@ -34,11 +35,12 @@ export function validateStore(value: unknown): void {
     const seen = new Set<string>();
     for (const row of list) {
       if (!object(row)) throw new Error(`Invalid store record: ${key}`);
-      const id = key === 'profiles' || key === 'sessions' || key === 'payments' ? row.id : row.profileId;
+      const id = key === 'profiles' || key === 'sessions' || key === 'payments' || key === 'events' ? row.id : row.profileId;
       if (!text(id) || (key !== 'profiles' && !text(row.profileId))) throw new Error(`Invalid store identity: ${key}`);
       if (key === 'profiles' && !text(row.parentId)) throw new Error('Invalid store identity: profiles');
       if (key === 'skills' && !text(row.skill)) throw new Error('Invalid store identity: skills');
-      const unique = key === 'skills' ? JSON.stringify([id, row.skill]) : id;
+      // Дедупликация событий проверяется по ключу, а не только по id: логика журнала опирается на «одно событие на шаг».
+      const unique = key === 'skills' ? JSON.stringify([id, row.skill]) : key === 'events' ? String(row.dedupeKey ?? id) : id;
       if (seen.has(unique as string)) throw new Error(`Duplicate store identity: ${key}`);
       seen.add(unique as string);
       validateRecord(key, row);
@@ -106,4 +108,11 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
     if (object(row.missions) && (!arrayIfPresent(row.missions.ids) || !arrayIfPresent(row.missions.claimed) || (row.missions.progress !== undefined && !object(row.missions.progress)))) throw new Error('Invalid player missions');
   }
   if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'events') {
+    // Журнал хранит только разрешённые технические поля; свободный текст и отметки чувств здесь недопустимы.
+    if (!text(row.profileId) || !text(row.ownerId) || !Number.isFinite(row.at) || !text(row.dedupeKey) || !object(row.event)) throw new Error('Invalid event record');
+    const checked = validateEvent(row.event);
+    if (!checked.ok) throw new Error(`Invalid event: ${checked.error}`);
+    if (row.event.type === 'profile_deleted') throw new Error('Invalid event: deletion is not journalled');
+  }
 }

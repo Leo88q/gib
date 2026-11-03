@@ -4,6 +4,8 @@ import { DatabaseSync } from 'node:sqlite';
 import type { Payment, PlayerState, Profile, ProgramState, Session, SkillState, Subscription } from './types.ts';
 import { emptyStats, todayKey } from './gamification.ts';
 import { validateStore } from './store-validation.ts';
+import type { StoredEvent } from './events/journal.ts';
+import { pruneExpired } from './events/journal.ts';
 
 type DB = {
   profiles: Profile[];
@@ -13,6 +15,8 @@ type DB = {
   programStates: ProgramState[];
   playerStates: PlayerState[];
   payments: Payment[];
+  /** Журнал технических событий (lib/events/journal.ts). */
+  events: StoredEvent[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
@@ -63,6 +67,7 @@ function empty(): DB {
     programStates: [],
     playerStates: [],
     payments: [],
+    events: [],
   };
 }
 
@@ -74,6 +79,9 @@ function parseState(value: unknown): DB {
   for (const key of Object.keys(defaults) as (keyof DB)[]) {
     if (input[key] !== undefined && !Array.isArray(input[key])) throw new Error(`Invalid store collection: ${key}`);
   }
+  // Срок хранения журнала: старые технические события не загружаются в память.
+  const events = input.events === undefined ? [] : pruneExpired(input.events as StoredEvent[]).kept;
+  input.events = events;
   return { ...defaults, ...Object.fromEntries((Object.keys(defaults) as (keyof DB)[]).map(key => [key, input[key] ?? defaults[key]])) } as DB;
 }
 

@@ -50,6 +50,16 @@ type Report = {
   };
 };
 
+/** Отчёт по журналу технических событий: только завершённые занятия, с источниками. */
+type EventsReport = {
+  from: number;
+  to: number;
+  student: { sessions: number; minutes: number; tasks: number; excludedTasks: number; stories: number; practices: number; skippedPractices: number; stars: number };
+  skills: { skill: string; accuracy: number | null; tasks: number; excluded: number }[];
+  sources: { event: string; version: 1; records: number }[];
+  limits: string[];
+};
+
 type ProgramDay = {
   day: number;
   theme: string;
@@ -94,6 +104,7 @@ export default function ParentPage() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ name: string; age: number; band: string; timeZone?: string } | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [eventsReport, setEventsReport] = useState<EventsReport | null>(null);
   const [sub, setSub] = useState<Sub>(null);
   const [plans, setPlans] = useState<Record<string, { title: string; price: number; perks: string[] }>>({});
   const [program, setProgram] = useState<{
@@ -133,6 +144,7 @@ export default function ParentPage() {
         if (controller.signal.aborted) return;
         if (!rep.profile || !rep.report) throw new Error('invalid_report');
         setProfile(rep.profile); setSelectedZone(profileZone(rep.profile.timeZone)); setReport(rep.report);
+        setEventsReport(rep.events ?? null);
         setSub(sb.subscription ?? null); setPlans(sb.plans ?? {});
         setBillingAvailable(Boolean(sb.available));
         if (pr.weeks) { setProgram(pr); setOpenWeek(pr.progress.currentWeek ?? 1); }
@@ -151,7 +163,8 @@ export default function ParentPage() {
       const updated = await res.json();
       const rep = await apiFetch(`/api/report?profileId=${encodeURIComponent(profileId)}`);
       if (!rep.ok) throw new Error('report_failed');
-      setProfile(updated.profile); setReport((await rep.json()).report);
+      const updatedReport = await rep.json();
+      setProfile(updated.profile); setReport(updatedReport.report); setEventsReport(updatedReport.events ?? null);
       setZoneMessage('Часовой пояс сохранён. Недельный отчёт обновлён.');
     } catch { setZoneMessage('Не удалось обновить данные. Проверьте соединение и попробуйте снова.'); }
     finally { setDataBusy(false); }
@@ -363,6 +376,44 @@ export default function ParentPage() {
             Внутри тренажёра ребёнок копит опыт, монетки и значки, а гардероб и питомца
             открывает за игровую валюту — реальных платежей детям нет.
           </p>
+        </div>
+      )}
+
+      {/* -------- отчёт по журналу событий: только завершённые занятия -------- */}
+      {eventsReport && (
+        <div className="card">
+          <h2>Из журнала занятий</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Считается только по завершённым занятиям за последние 7 дней. Незаконченная тренировка сюда не попадает.
+          </p>
+          <div className="stat"><span>Завершённых занятий</span><b>{eventsReport.student.sessions}</b></div>
+          <div className="stat"><span>Минут от начала до конца</span><b>{eventsReport.student.minutes}</b></div>
+          <div className="stat"><span>Ответов на задания</span><b>{eventsReport.student.tasks}</b></div>
+          <div className="stat"><span>Историй разобрано</span><b>{eventsReport.student.stories}</b></div>
+          <div className="stat"><span>Игр с идеями поддержки (пропущено: {eventsReport.student.skippedPractices})</span><b>{eventsReport.student.practices}</b></div>
+          <div className="stat"><span>Заданий с подсказкой или повтором (не влияют на точность)</span><b>{eventsReport.student.excludedTasks}</b></div>
+          {eventsReport.student.sessions === 0 && (
+            <p className="muted" style={{ marginBottom: 0 }}>Завершённых занятий на этой неделе пока нет — отчёт пуст, и это нормально.</p>
+          )}
+          {eventsReport.student.sessions > 0 && (
+            <details style={{ marginTop: 10 }}>
+              <summary>Откуда эти числа</summary>
+              <ul className="muted">
+                {eventsReport.sources.map(source => (
+                  <li key={source.event}>{source.event} (v{source.version}): {source.records} записей</li>
+                ))}
+                {eventsReport.skills.filter(skill => skill.tasks > 0).map(skill => (
+                  <li key={skill.skill}>
+                    {skill.skill}: {Math.round((skill.accuracy ?? 0) * 100)}% верных из {skill.tasks} заданий
+                    {skill.excluded ? `, ${skill.excluded} с подсказкой не учитывались` : ''}
+                  </li>
+                ))}
+              </ul>
+              <ul className="muted">
+                {eventsReport.limits.map(limit => <li key={limit}>{limit}</li>)}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 

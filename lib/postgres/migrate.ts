@@ -75,10 +75,11 @@ export async function importLegacy(client: SqlClient, input: unknown): Promise<R
     for (const [i,s] of state.programStates.entries()) await client.query('INSERT INTO gib.program_states(profile_id,ordinal,data) VALUES($1,$2,$3::jsonb)', [s.profileId, i, JSON.stringify(s)]);
     for (const [i,s] of state.playerStates.entries()) await client.query('INSERT INTO gib.player_states(profile_id,ordinal,data) VALUES($1,$2,$3::jsonb)', [s.profileId, i, JSON.stringify(s)]);
     for (const [i,p] of state.payments.entries()) await client.query('INSERT INTO gib.payments(id,ordinal,profile_id,provider_id,status,data) VALUES($1,$2,$3,$4,$5,$6::jsonb)', [p.id, i, p.profileId, p.providerId ?? null, p.status, JSON.stringify(p)]);
+    for (const [i,e] of state.events.entries()) await client.query('INSERT INTO gib.events(id,ordinal,profile_id,owner_id,at,dedupe_key,data) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)', [e.id, i, e.profileId, e.ownerId, e.at, e.dedupeKey, JSON.stringify(e)]);
     // Verify every record and original array order before the transaction is committed.
     const mapping: Record<typeof STORE_COLLECTIONS[number], typeof TABLES[number]> = {
       profiles: 'profiles', skills: 'skills', sessions: 'sessions', subs: 'subscriptions',
-      programStates: 'program_states', playerStates: 'player_states', payments: 'payments',
+      programStates: 'program_states', playerStates: 'player_states', payments: 'payments', events: 'events',
     };
     for (const key of STORE_COLLECTIONS) {
       const actual = await client.query(`SELECT data FROM gib.${mapping[key]} ORDER BY ordinal`);

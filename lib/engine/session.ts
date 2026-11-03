@@ -497,7 +497,7 @@ export function answerStep(
     rt.xpEarned += earned.xp;
     rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
-    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'task_answered', taskKind: String(item.instance.kind), correct, assisted: payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index)), ms });
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'task_answered', taskKind: String(item.instance.kind), taskSkill: item.instance.skill, correct, assisted: payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index)), ms });
     refreshMissions(player, {
       dayIndex: rt.dayIndex,
       tasksDone: rt.taskAnswers.length,

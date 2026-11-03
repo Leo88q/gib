@@ -1,7 +1,7 @@
 /** Experimental schema v1. Identity and queryable values are relational; per-record details remain JSONB. */
 export const SCHEMA_VERSION = 1;
 export const LOCK_ID = 726391804;
-export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments'] as const;
+export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments', 'events'] as const;
 export const SCHEMA_V1 = `
 CREATE TABLE gib.profiles (
   id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), parent_id TEXT NOT NULL UNIQUE, age SMALLINT NOT NULL CHECK (age BETWEEN 5 AND 13),
@@ -42,4 +42,11 @@ CREATE TABLE gib.payments (
     AND data->>'providerId' IS NOT DISTINCT FROM provider_id AND data->>'status' IS NOT DISTINCT FROM status)
 );
 CREATE INDEX payments_profile_status ON gib.payments(profile_id, status);
+CREATE TABLE gib.events (
+  id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), profile_id TEXT NOT NULL REFERENCES gib.profiles(id) ON DELETE CASCADE,
+  owner_id TEXT NOT NULL, at BIGINT NOT NULL CHECK (at >= 0), dedupe_key TEXT NOT NULL UNIQUE, data JSONB NOT NULL,
+  CHECK (jsonb_typeof(data)='object' AND data->>'id' IS NOT DISTINCT FROM id AND data->>'profileId' IS NOT DISTINCT FROM profile_id
+    AND data->>'ownerId' IS NOT DISTINCT FROM owner_id AND data->>'at' IS NOT DISTINCT FROM at::text AND data->>'dedupeKey' IS NOT DISTINCT FROM dedupe_key)
+);
+CREATE INDEX events_profile_at ON gib.events(profile_id, at DESC);
 `;
