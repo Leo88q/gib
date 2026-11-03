@@ -6,6 +6,7 @@ import FamilyIdeas from '@/components/FamilyIdeas';
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
 import { removeProfileExerciseDrafts } from '@/lib/exercise-draft';
+import { removeProfileJourneyResumes } from '@/components/useJourneyResume';
 import { PENDING_ANSWER_KEY, parsePendingAnswer } from '@/lib/pending-answer';
 
 import { competencyArt, skillArt, DEFAULT_ART } from '@/lib/art-paths';
@@ -184,7 +185,7 @@ export default function ParentPage() {
         return;
       }
       try { localStorage.removeItem('gib:profileId'); } catch { /* storage is optional */ }
-      try { if (parsePendingAnswer(sessionStorage.getItem(PENDING_ANSWER_KEY), profileId)) sessionStorage.removeItem(PENDING_ANSWER_KEY); removeProfileSwitchDrafts(sessionStorage, profileId); removeProfileSelectionDrafts(sessionStorage, profileId); removeProfileExerciseDrafts(sessionStorage, profileId); } catch { /* storage may be disabled */ }
+      try { if (parsePendingAnswer(sessionStorage.getItem(PENDING_ANSWER_KEY), profileId)) sessionStorage.removeItem(PENDING_ANSWER_KEY); removeProfileSwitchDrafts(sessionStorage, profileId); removeProfileSelectionDrafts(sessionStorage, profileId); removeProfileExerciseDrafts(sessionStorage, profileId); removeProfileJourneyResumes(sessionStorage, profileId); } catch { /* storage may be disabled */ }
       window.location.assign('/');
     } catch { setDataError('Не удалось удалить профиль. Проверьте соединение и попробуйте снова.'); }
     finally { setDataBusy(false); }

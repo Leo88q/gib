@@ -539,8 +539,8 @@ export default function Home() {
       </div>
     );
 
-  if (stage === 'welcome' && profile) return <DayWelcome band={profile.band} starting={starting} error={requestError} onStart={() => { void start(repeatDay); }} onBack={() => { setRequestError(''); setStage('home'); }} />;
-  if (stage === 'reflection') return <DayReflection onDone={() => setStage('home')} />;
+  if (stage === 'welcome' && profile) return <DayWelcome band={profile.band} starting={starting} error={requestError} profileId={profile.id} day={program?.completedDays ?? 0} onStart={() => { void start(repeatDay); }} onBack={() => { setRequestError(''); setStage('home'); }} />;
+  if (stage === 'reflection') return <DayReflection profileId={profile?.id} day={program?.completedDays ?? 0} onDone={() => setStage('home')} />;
 
   if (stage === 'training' && storyOffer.length > 0)
     return <div className="wrap game">
