@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
+import FeelingsConsent from '@/components/FeelingsConsent';
 
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
@@ -302,6 +303,7 @@ export default function ParentPage() {
 
       <PracticeMap profileId={profileId} />
       <FamilyIdeas profileId={profileId} parentView />
+      <FeelingsConsent profileId={profileId} />
 
       {/* ---------------- недели программы ---------------- */}
       {program && (

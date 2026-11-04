@@ -142,6 +142,14 @@ export type PlayerState = {
   equipped: Equipped;
   missions: MissionState;
   family?: import('./engine/family').FamilyState;
+  /**
+   * Добровольные отметки чувств. Отсутствуют, пока взрослый не дал согласие.
+   * Не участвуют в наградах, миссиях и отчёте по активности.
+   */
+  feelings?: {
+    prefs: import('./feelings/state').FeelingsPreferences;
+    items: import('./feelings/state').FeelingCheckIn[];
+  };
   stats: PlayerStats;
   startedAt: number;
 };

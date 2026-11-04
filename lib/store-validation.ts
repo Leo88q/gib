@@ -3,6 +3,7 @@ import { validateDeepInkVariant } from './engine/deep-ink.ts';
 import type { ScenarioVariant } from './content/softskills.ts';
 import { validFamilyState } from './engine/family.ts';
 import { validateEvent } from './events/journal.ts';
+import { validCheckIn, validPreferences, MAX_CHECKINS } from './feelings/state.ts';
 /** Partial structural validation. It intentionally does not claim full data integrity. */
 export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments', 'events'] as const;
 type Collection = typeof STORE_COLLECTIONS[number];
@@ -105,6 +106,15 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
   }
   if (key === 'playerStates') {
     if (row.family !== undefined && !validFamilyState(row.family)) throw new Error('Invalid family state');
+    if (row.feelings !== undefined) {
+      const feelings = row.feelings;
+      if (!object(feelings) || !validPreferences(feelings.prefs) || !Array.isArray(feelings.items)) throw new Error('Invalid feelings state');
+      // Отметки без согласия — ошибка данных, а не просто «пусто».
+      if (!feelings.prefs.saveEnabled && feelings.items.length > 0) throw new Error('Feelings saved without consent');
+      if (!feelings.items.every(validCheckIn)) throw new Error('Invalid feeling check-in');
+      if (feelings.items.length > MAX_CHECKINS) throw new Error('Too many feeling check-ins');
+      if (new Set(feelings.items.map((item: { id: string }) => item.id)).size !== feelings.items.length) throw new Error('Duplicate feeling check-in');
+    }
     if (!arrayIfPresent(row.badges) || !arrayIfPresent(row.inventory) || (row.stats !== undefined && !object(row.stats)) || (row.equipped !== undefined && !object(row.equipped)) || (row.missions !== undefined && !object(row.missions))) throw new Error('Invalid player state');
     if (object(row.missions) && (!arrayIfPresent(row.missions.ids) || !arrayIfPresent(row.missions.claimed) || (row.missions.progress !== undefined && !object(row.missions.progress)))) throw new Error('Invalid player missions');
   }

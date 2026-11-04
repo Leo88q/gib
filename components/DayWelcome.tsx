@@ -34,8 +34,8 @@ export default function DayWelcome({ band, starting, error, onStart, onBack, pro
     {restored && <p className="muted day-welcome-restored" role="status">Ты вернулся на этот экран. Отметки не сохранялись — начать можно заново или сразу перейти к миссии.</p>}
     {phase === 'checkin' ? <>
       <button type="button" className="day-feelings-toggle" aria-expanded={showFeelings} onClick={() => setShowFeelings(open => !open)} disabled={starting}>💬 {showFeelings ? 'Закрыть отметку' : 'Как я сейчас? (необязательно)'}</button>
-      {showFeelings && <FeelingsCheckIn band={band} />}
-      <p className="muted">Отметка необязательна, не сохраняется и не отправляется в отчёт.</p>
+      {showFeelings && <FeelingsCheckIn band={band} profileId={profileId} />}
+      <p className="muted">Отметка необязательна. Сохраняется только если взрослый разрешил это в кабинете, и никогда не попадает в отчёт по занятиям.</p>
       <div className="day-welcome-actions"><button type="button" className="btn big" onClick={next}>Продолжить →</button><button type="button" className="btn ghost" onClick={onBack}>Домой</button></div>
     </> : <>
       <SupportKit competency="" band={band} />

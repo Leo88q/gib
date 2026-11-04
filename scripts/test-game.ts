@@ -53,7 +53,7 @@ check('в каждый день программы — 3 миссии', true);
 check('в первый день миссия «Помощь другу»', missionsForDay(0).some((m) => m.id === 'helper'));
 check('на 5-й день недели — испытание', missionsForDay(4).some((m) => m.id === 'boss'));
 check('на 10-й день недели — испытание', missionsForDay(9).some((m) => m.id === 'boss'));
-check('через 7 дней — миссия «Идеальный день»', missionsForDay(6).some((m) => m.id === 'perfect'));
+check('через 7 дней — миссия «День завершён»', missionsForDay(6).some((m) => m.id === 'dayDone'));
 check('все миссии существуют в каталоге', missionsForDay(33).every((m) => MISSIONS.some((x) => x.id === m.id)));
 check('у миссий есть цель > 0', MISSIONS.every((m) => m.target > 0));
 
@@ -104,7 +104,7 @@ check('на день выдано 3 миссии', missionViews(player).length =
 
 refreshMissions(player, {
   dayIndex: 0,
-  tasksDone: 3,
+  tasksDone: 5, // «Пять заданий» считается по числу пройденных, а не по ошибкам
   comboBest: 5,
   correctStreak: 3,
   goodChoice: true,
@@ -113,13 +113,14 @@ refreshMissions(player, {
   stars: 2,
 });
 const views = missionViews(player);
-check('миссия «Серия ×5» засчитана', views.find((m) => m.id === 'combo5')?.done === true);
-check('миссия «Без промахов» засчитана', views.find((m) => m.id === 'careful3')?.done === true);
+check('миссия «Пять заданий» засчитана за участие', views.find((m) => m.id === 'practice5')?.done === true);
+check('миссия «Не сдаваться» засчитана за три попытки, даже с ошибками', views.find((m) => m.id === 'tries3')?.done === true);
+check('серия верных ответов больше ничего не засчитывает', views.find((m) => m.id === 'combo5' || m.id === 'careful3') === undefined);
 check('миссия «Помощь другу» засчитана', views.find((m) => m.id === 'helper')?.done === true);
 
-const reward = claimMission(player, 'combo5');
+const reward = claimMission(player, 'practice5');
 check('миссия забирается', reward !== null && reward.coins === COINS.mission);
-check('повторно миссию не забрать', claimMission(player, 'combo5') === null);
+check('повторно миссию не забрать', claimMission(player, 'practice5') === null);
 
 const done = completeDay(player, {
   tasks: 3,
@@ -134,7 +135,8 @@ const done = completeDay(player, {
 });
 check('идеальный день даёт 3 звезды', done.stars === 3);
 check('выдан значок «Первый шаг»', done.newBadges.includes('first_step'));
-check('выдан значок «Идеальный день»', done.newBadges.includes('perfect_day'));
+check('значок за безошибочный день больше не выдаётся', !done.newBadges.includes('perfect_day') && !done.newBadges.includes('perfect_5'));
+check('значок за серию верных ответов больше не выдаётся', !done.newBadges.includes('combo_master'));
 check('старые поля серии не меняются при завершении дня', player.streak === 0 && player.bestStreak === 0 && player.lastActiveDay === '');
 check('опыт накоплен', player.xp > 0);
 check('заработаны монетки', player.coins > 200);
