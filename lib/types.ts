@@ -70,6 +70,8 @@ export type Session = {
   /** Persisted receipt for the optional story choice, including after completion. */
   storySelection?: { cardId: string };
   supportPracticeCompleted?: boolean;
+  /** Заход-повтор темы: не двигает программу и не даёт «награду за день». */
+  review?: { topicId: string; title?: string };
 };
 
 export type Subscription = {

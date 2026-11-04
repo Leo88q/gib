@@ -1849,3 +1849,26 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   margin: 2px 0 8px;
   text-align: center;
 }
+
+/* Дни занятий: нейтральная полоса. Пустой день не выделяется как «плохой». */
+.activity-strip { margin-top: 14px; }
+.activity-days {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 3px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.activity-day {
+  aspect-ratio: 1;
+  min-height: 16px;
+  border-radius: 5px;
+  background: #eef1f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.activity-day.on { background: #bfe7cf; border: 1px solid #1f6f43; }
+.activity-day.review { background: #dbeafe; border: 1px solid #1d4ed8; }
