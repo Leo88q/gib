@@ -21,6 +21,8 @@ type DB = {
   parentPins: { parentId: string; pin: import('./family/roles.ts').ParentPin }[];
   /** Настройки семьи: размер общей цели. Одно число на владельца, без разбивки по детям. */
   familySettings: { parentId: string; goalTarget: number }[];
+  /** Настройки уведомлений взрослому: по умолчанию их нет. */
+  notificationSettings: { parentId: string; settings: import('./family/notifications.ts').NotificationSettings }[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
@@ -74,6 +76,7 @@ function empty(): DB {
     events: [],
     parentPins: [],
     familySettings: [],
+    notificationSettings: [],
   };
 }
 
@@ -171,6 +174,14 @@ const implementation = {
   removeParentPin(parentId: string) {
     const db = load();
     db.parentPins = db.parentPins.filter((row) => row.parentId !== parentId);
+    persist();
+  },
+  notificationSettings: (parentId: string) => load().notificationSettings.find((row) => row.parentId === parentId)?.settings,
+  setNotificationSettings(parentId: string, settings: import('./family/notifications.ts').NotificationSettings) {
+    const list = load().notificationSettings;
+    const existing = list.find((row) => row.parentId === parentId);
+    if (existing) existing.settings = settings;
+    else list.push({ parentId, settings });
     persist();
   },
   familyGoalTarget: (parentId: string) => load().familySettings.find((row) => row.parentId === parentId)?.goalTarget,

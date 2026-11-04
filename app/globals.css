@@ -1903,3 +1903,8 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .data-decisions li { margin-bottom: 8px; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .data-actions .btn { flex: 1 1 180px; }
+
+/* Уведомления взрослому: по умолчанию выключены, частота видна. */
+.notifications h2 { font-size: 20px; margin: 0 0 8px; }
+.notify-choice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.notify-choice .btn { flex: 1 1 140px; }

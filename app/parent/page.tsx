@@ -4,6 +4,7 @@ import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import FamilyGoal from '@/components/FamilyGoal';
 import DataControls from '@/components/DataControls';
+import NotificationSettings from '@/components/NotificationSettings';
 import FeelingsConsent from '@/components/FeelingsConsent';
 import ParentGate from '@/components/ParentGate';
 import ParentPinSettings from '@/components/ParentPinSettings';
@@ -571,6 +572,7 @@ function ParentPage() {
         {dataError && <p role="alert">{dataError}</p>}
       </div>
 
+      <NotificationSettings profileId={profileId} />
       <DataControls profileId={profileId} busy={dataBusy} onExport={exportProfile} onDelete={deleteProfile} />
 
       <p className="muted">Открытые компоненты: <a href="/licenses/xstate-mit.txt">XState — MIT</a>, <a href="/licenses/simple-qbn-mit.txt">SimpleQBN — MIT</a> (зависимости: <a href="/licenses/mingo-mit.txt">Mingo — MIT</a>, <a href="/licenses/uuid-mit.txt">uuid — MIT</a>), <a href="/licenses/ts-fsrs-mit.txt">ts-fsrs — MIT</a>, <a href="/licenses/pocketbase-js-mit.txt">PocketBase SDK — MIT</a>, <a href="/licenses/phaser.txt">Phaser — MIT</a>, <a href="/licenses/inkjs.txt">inkjs — MIT</a>, <a href="/licenses/blockly.txt">Blockly — Apache-2.0</a>, <a href="/licenses/opendyslexic-ofl.txt">OpenDyslexic — SIL OFL 1.1</a>; значки <a href="https://openmoji.org/">OpenMoji</a> — <a href="/licenses/openmoji-cc-by-sa-4.0.txt">CC BY-SA 4.0</a>, без изменений; Tilli Godot: <a href="/licenses/tilli-godot-license.txt">LICENSE</a> и <a href="/licenses/tilli-godot-license-md.txt">LICENSE.md</a>.</p>
