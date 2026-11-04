@@ -1891,3 +1891,15 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .family-goal-panel select { width: 100%; max-width: 220px; font: inherit; padding: 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); }
 .family-goal-panel label { display: block; margin: 12px 0 6px; font-weight: bold; }
 @media (prefers-reduced-motion: reduce) { .family-goal-bar span { transition: none; } }
+
+/* Данные и согласия: категории и количество, без содержимого. */
+.data-controls h2 { font-size: 20px; margin: 0 0 8px; }
+.data-controls h3 { font-size: 16px; margin: 16px 0 6px; }
+.data-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
+.data-counts > div { border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
+.data-counts dt { font-size: 13px; }
+.data-counts dd { margin: 2px 0 0; font-size: 20px; font-weight: bold; }
+.data-decisions { padding-left: 18px; }
+.data-decisions li { margin-bottom: 8px; }
+.data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.data-actions .btn { flex: 1 1 180px; }
