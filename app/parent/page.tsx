@@ -120,6 +120,7 @@ export default function ParentPage() {
   const [selectedZone, setSelectedZone] = useState('Europe/Moscow');
   const [zoneMessage, setZoneMessage] = useState('');
   const [loadingState, setLoadingState] = useState<'loading' | 'ready' | 'no-profile' | 'error'>('loading');
+  const [children, setChildren] = useState<{ id: string; name: string; age: number }[]>([]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -136,6 +137,10 @@ export default function ParentPage() {
           return response.json();
         };
         const safeId = encodeURIComponent(id);
+        void apiFetch('/api/profile')
+          .then(r => (r.ok ? r.json() : null))
+          .then(d => { if (d && Array.isArray(d.profiles) && !controller.signal.aborted) setChildren(d.profiles); })
+          .catch(() => { /* список детей не обязателен для отчёта */ });
         const [rep, sb, pr] = await Promise.all([
           fetchJson(`/api/report?profileId=${safeId}`),
           fetchJson(`/api/subscribe?profileId=${safeId}`),
@@ -247,6 +252,26 @@ export default function ParentPage() {
           </p>
         </div>
       </div>
+
+      {children.length > 1 && (
+        <div className="card">
+          <h2>Дети в семье</h2>
+          <p className="muted small">Отчёт, карта и семейные идеи открываются для выбранного ребёнка. Общая цель семьи считает всех вместе.</p>
+          <div className="child-switch" role="group" aria-label="Выбрать ребёнка">
+            {children.map(child => (
+              <button
+                key={child.id}
+                type="button"
+                className={`chip child-chip${child.id === profileId ? ' on' : ''}`}
+                aria-pressed={child.id === profileId}
+                onClick={() => window.location.assign(`/parent?profileId=${encodeURIComponent(child.id)}`)}
+              >
+                {child.name}, {child.age}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ---------------- прогресс программы ---------------- */}
       {program && (

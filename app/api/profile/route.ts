@@ -19,8 +19,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'too_many_requests' }, { status: 429 });
   }
   const { parentId } = auth;
-  const profile = store.profileByParent(parentId);
-  return NextResponse.json({ profile: profile ?? null });
+  const profiles = store.profilesByParent(parentId);
+  // `profile` — ребёнок по умолчанию (первый). Новые клиенты берут `profiles` и
+  // помнят выбор сами; старые продолжают получать одно поле и не ломаются.
+  const selectedId = new URL(req.url).searchParams.get('profileId');
+  const selected = (selectedId ? profiles.find(p => p.id === selectedId) : undefined) ?? profiles[0];
+  return NextResponse.json({
+    profile: selected ?? null,
+    profiles: profiles.map(p => ({ id: p.id, name: p.name, age: p.age, band: p.band })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -37,6 +44,7 @@ export async function POST(req: Request) {
     age?: number;
     initData?: string;
     timeZone?: string;
+    addChild?: boolean;
   };
   const { parentId } = auth;
   if (!Number.isInteger(body.age) || body.age! < 5 || body.age! > 13 || typeof body.name !== 'string' || body.name.trim().length > 24) return NextResponse.json({ error: 'invalid_profile' }, { status: 400 });
@@ -46,7 +54,10 @@ export async function POST(req: Request) {
   const name = body.name.trim() || 'Друг';
   return store.transaction(() => {
     const existing = store.profileByParent(parentId);
-    if (existing) {
+    // Повторный запрос без addChild возвращает того же ребёнка: так работают
+    // старые клиенты и повторная отправка формы. Второй ребёнок создаётся
+    // только по явному запросу, чтобы сбой сети не плодил профили.
+    if (existing && body.addChild !== true) {
       ensureSkills(existing);
       return NextResponse.json({ profile: existing, created: false });
     }

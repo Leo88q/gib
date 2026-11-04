@@ -27,6 +27,32 @@ async function main() {
       const player = await req(parent, `/api/player?profileId=${id}`);
       rows.push({ parent, id, age, xp:player.data.player.xp, coins:player.data.player.coins });
     }
+    // Несколько детей в одной семье: второй профиль только по явному запросу,
+    // общая цель складывает подтверждения, разбивки по детям наружу нет.
+    const multi = `family-multi-${Date.now()}`;
+    const first = await req(multi, '/api/profile', { name:'Старший', age: 11 });
+    const second = await req(multi, '/api/profile', { name:'Младший', age: 6, addChild: true });
+    const dup = await req(multi, '/api/profile', { name:'Повтор', age: 7 });
+    check(first.status === 200 && second.status === 200 && second.data.created === true, 'второй ребёнок создаётся отдельным запросом');
+    check(dup.data.profile.id === first.data.profile.id, 'повтор формы не создаёт третьего ребёнка');
+    const listed = await req(multi, '/api/profile');
+    check(listed.data.profiles.length === 2, 'оба ребёнка видны в списке');
+    const foreign = await req('foreign', `/api/profile?profileId=${second.data.profile.id}`);
+    check(foreign.data.profile === null && Array.isArray(foreign.data.profiles) && foreign.data.profiles.length === 0, 'чужая семья не видит ребёнка и не получает чужой профиль');
+    const goalOf = async (id: string, ops: string) => {
+      await req(multi, '/api/family', { profileId:id, action:'choose', expectedVersion:0, operationId:`${ops}c`, ideaId:'story' });
+      await req(multi, '/api/family', { profileId:id, action:'report', expectedVersion:1, operationId:`${ops}r` });
+      return req(multi, '/api/family', { profileId:id, action:'confirm', expectedVersion:2, operationId:`${ops}f` });
+    };
+    const one = await goalOf(first.data.profile.id, 'm1');
+    check(one.data.goal.confirmed === 1 && one.data.goal.members === 1, 'одна отметка одного ребёнка');
+    const two = await goalOf(second.data.profile.id, 'm2');
+    check(two.data.goal.confirmed === 2 && two.data.goal.members === 2, 'отметки двух детей складываются в общую цель');
+    check(!JSON.stringify(two.data.goal).includes(first.data.profile.id) && !JSON.stringify(two.data.goal).includes(second.data.profile.id), 'в цели нет идентификаторов детей');
+    await req(multi, `/api/profile?profileId=${second.data.profile.id}`, undefined, 'DELETE');
+    const afterDelete = await req(multi, `/api/family?profileId=${first.data.profile.id}`);
+    check(afterDelete.data.goal.confirmed === 1 && afterDelete.data.goal.members === 1, 'удалённый ребёнок выпадает из общей цели');
+
     fs.writeFileSync(file, JSON.stringify(rows));
   } else if (phase === 'resume') {
     const rows = JSON.parse(fs.readFileSync(file, 'utf8'));

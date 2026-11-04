@@ -1818,3 +1818,28 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 /* Пояснение к паузе свёрнуто: на маленьком экране важнее сама игра. */
 .exercise-pause-help summary { cursor: pointer; font-weight: 700; font-size: .9rem; color: var(--ink-soft); min-height: 32px; display: flex; align-items: center; }
 .exercise-pause-help summary:focus-visible { outline: 3px solid #1264c4; outline-offset: 2px; }
+
+/* Переключатель детей в семье: те же чипы, но с явным выбранным состоянием. */
+.child-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+.child-switch .child-chip {
+  cursor: pointer;
+  min-height: 44px;
+  background: #fff;
+  color: var(--ink, #1f2933);
+  border: 2px solid #cfd8e3;
+}
+.child-switch .child-chip.on {
+  border-color: #1f6f43;
+  box-shadow: inset 0 0 0 2px #1f6f43;
+}
+.family-goal {
+  background: #eef7ee;
+  border-radius: 12px;
+  padding: 8px 12px;
+}

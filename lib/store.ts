@@ -159,6 +159,8 @@ const implementation = {
   profiles: () => load().profiles,
   profile: (id: string) => load().profiles.find((p) => p.id === id),
   profileByParent: (parentId: string) => load().profiles.find((p) => p.parentId === parentId),
+  /** Все профили одного владельца: семья может вести несколько детей. */
+  profilesByParent: (parentId: string) => load().profiles.filter((p) => p.parentId === parentId),
   addProfile(p: Profile) {
     load().profiles.push(p);
     persist();

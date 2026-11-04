@@ -95,6 +95,8 @@ export default function Home() {
   const [stage, setStage] = useState<'boot' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
   const [tab, setTab] = useState<'home' | 'map' | 'family' | 'badges' | 'shop'>('home');
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [children, setChildren] = useState<{ id: string; name: string; age: number; band: string }[]>([]);
+  const [addingChild, setAddingChild] = useState(false);
   const [plan, setPlan] = useState<PlanRow[]>([]);
   const [program, setProgram] = useState<ProgramInfo | null>(null);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
@@ -187,7 +189,10 @@ export default function Home() {
     (async () => {
       let data;
       try {
-        const res = await apiFetch('/api/profile');
+        // Выбранный ребёнок хранится в браузере; сервер проверяет владение сам.
+        let wanted = '';
+        try { wanted = localStorage.getItem('gib:profileId') ?? ''; } catch { /* storage is optional */ }
+        const res = await apiFetch(`/api/profile${wanted ? `?profileId=${encodeURIComponent(wanted)}` : ''}`);
         if (!res.ok) throw new Error('profile');
         data = await res.json();
       } catch {
@@ -195,6 +200,7 @@ export default function Home() {
         return;
       }
       if (cancelled) return;
+      if (Array.isArray(data.profiles)) setChildren(data.profiles);
       if (data.profile) {
         setProfile(data.profile);
         try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
@@ -215,16 +221,36 @@ export default function Home() {
     const res = await apiFetch('/api/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, age, timeZone }),
+      body: JSON.stringify({ name, age, timeZone, ...(addingChild ? { addChild: true } : {}) }),
     });
     if (!res.ok) throw new Error('profile_failed');
     const data = await res.json();
     if (!data.profile?.id) throw new Error('profile_failed');
     setProfile(data.profile);
+    setChildren(prev => {
+      const others = prev.filter(c => c.id !== data.profile.id);
+      return [...others, { id: data.profile.id, name: data.profile.name, age: data.profile.age, band: data.profile.band }];
+    });
+    setAddingChild(false);
     try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
     setStage('home');
     void loadPlan(data.profile.id);
     void loadPlayer(data.profile.id);
+  };
+
+  /**
+   * Переключение между детьми одной семьи.
+   * Выбор живёт только в этом браузере: сервер не смешивает данные профилей,
+   * а семейная цель считает их общий вклад.
+   */
+  const switchChild = (id: string) => {
+    const next = children.find(c => c.id === id);
+    if (!next || next.id === profile?.id) return;
+    setRequestError('');
+    setProgram(null); setPlayer(null);
+    try { localStorage.setItem('gib:profileId', next.id); } catch { /* optional convenience only */ }
+    // Данные профиля приходят с сервера: локальных копий прогресса нет.
+    window.location.assign(`/?profileId=${encodeURIComponent(next.id)}`);
   };
 
   /** Повтор темы: отдельный заход, только когда сервер говорит, что тема пришла в срок. */
@@ -450,13 +476,31 @@ export default function Home() {
       </div>
     );
 
-  if (stage === 'onboarding') return <Onboarding onDone={createProfile} />;
+  if (stage === 'onboarding') return <Onboarding onDone={createProfile} onCancel={children.length > 0 ? () => setAddingChild(false) : undefined} />;
 
   if (stage === 'home')
     return (
       <div className="wrap">
         <Hud data={hud} />
         {requestError && <p className="request-error" role="alert">{requestError}</p>}
+
+        {/* Несколько детей в одной семье: переключатель виден только когда их больше одного. */}
+        {children.length > 1 && (
+          <div className="child-switch" role="group" aria-label="Выбрать ребёнка">
+            <span className="muted small">Занимается:</span>
+            {children.map(child => (
+              <button
+                key={child.id}
+                type="button"
+                className={`chip child-chip${child.id === profile?.id ? ' on' : ''}`}
+                aria-pressed={child.id === profile?.id}
+                onClick={() => switchChild(child.id)}
+              >
+                {child.name}, {child.age}
+              </button>
+            ))}
+          </div>
+        )}
 
         <Room
           avatar={{
@@ -487,6 +531,13 @@ export default function Home() {
             👕 Гардероб
           </button>
           <Link href={`/parent?profileId=${profile?.id}`}>👨‍👩‍👧 Родителю</Link>
+          <button
+            type="button"
+            className="chip add-child"
+            onClick={() => { setAddingChild(true); setStage('onboarding'); }}
+          >
+            ➕ Ещё ребёнок
+          </button>
         </nav>
 
         {tab === 'home' && (
@@ -712,7 +763,7 @@ function greeting(program: ProgramInfo | null, player: PlayerInfo | null): strin
   return `День ${program.day} недели ${program.week}: ${program.dayTheme}. Поехали!`;
 }
 
-function Onboarding({ onDone }: { onDone: (name: string, age: number, timeZone: string) => Promise<void> }) {
+function Onboarding({ onDone, onCancel }: { onDone: (name: string, age: number, timeZone: string) => Promise<void>; onCancel?: () => void }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState(8);
   const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
@@ -767,8 +818,9 @@ function Onboarding({ onDone }: { onDone: (name: string, age: number, timeZone: 
         <p className="muted">От него зависят календарные расчёты и границы недель в отчёте. Для существующих профилей используется Москва.</p>
         {error && <p role="alert">{error}</p>}
         <button type="button" className="btn big" disabled={saving} onClick={submit}>
-          🚀 В город!
+          {onCancel ? '🚀 Добавить ребёнка' : '🚀 В город!'}
         </button>
+        {onCancel && <button type="button" className="btn ghost" disabled={saving} onClick={onCancel}>Отмена</button>}
         <p className="muted legal">
           Программа: 12 недель, 5 тренировок в неделю. В демо сохраняются ник, возраст, часовой пояс, идентификатор родителя и игровой прогресс. Профиль создаёт законный представитель. Не вводите реальные данные в демо.
         </p>
