@@ -20,6 +20,7 @@ import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
 import { sfx } from '@/lib/sound';
 import { accessoryVariantOf, bodyVariantOf, petVariantOf } from '@/lib/gamification';
+import { petMood, petMoodText } from '@/lib/pet-mood';
 import { TIME_ZONES, DEFAULT_TIME_ZONE } from '@/lib/calendar';
 import { switchDraftKey } from '@/lib/switch-draft';
 import { selectionDraftKey } from '@/lib/selection-draft';
@@ -46,6 +47,8 @@ type ProgramInfo = {
   finished: boolean;
   /** Тема, которую сервер предлагает повторить (или null). */
   review?: { topicId: string; title: string } | null;
+  /** Когда завершилось последнее занятие — для настроения питомца. */
+  lastFinishedAt?: number | null;
 };
 
 type PlayerInfo = {
@@ -516,7 +519,11 @@ export default function Home() {
             plant: player?.equipped.room === 'room_plant',
           }}
           bubble={greeting(program, player)}
+          petMood={moodFor(program)}
         />
+        {player?.equipped.pet && (
+          <p className="pet-mood-note muted small">{petMoodText(moodFor(program))}</p>
+        )}
 
         <nav className="tabs">
           <button className={tab === 'home' ? 'on' : ''} onClick={() => setTab('home')}>
@@ -752,6 +759,19 @@ export default function Home() {
       />
     </div>
   );
+}
+
+/**
+ * Настроение питомца: только художественная реакция на недавнюю игру.
+ * Перерыв не делает питомца грустным и ничего не отнимает.
+ */
+function moodFor(program: ProgramInfo | null): ReturnType<typeof petMood> {
+  const completedDays = program?.completedDays ?? 0;
+  const last = program?.lastFinishedAt ?? null;
+  // Считаем целые календарные дни по местному времени ребёнка — грубо, но честно:
+  // полдня перерыва не должны менять настроение.
+  const daysSinceLast = last ? Math.floor((Date.now() - last) / 86_400_000) : null;
+  return petMood({ completedDays, daysSinceLast });
 }
 
 function greeting(program: ProgramInfo | null, player: PlayerInfo | null): string {

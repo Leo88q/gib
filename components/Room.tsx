@@ -2,11 +2,13 @@
 
 import { avatarParts, INK, type AvatarOptions } from './avatarParts';
 import Pet, { type PetVariant } from './Pet';
+import type { PetMood } from '@/lib/pet-mood';
 
 export type RoomProps = {
   avatar?: AvatarOptions;
   pet?: PetVariant | null;
   petLevel?: number;
+  petMood?: PetMood;
   decor?: { rug?: boolean; lamp?: boolean; poster?: boolean; plant?: boolean };
   mascot?: string;
   bubble?: string;
@@ -20,6 +22,7 @@ export default function Room({
   avatar = {},
   pet = null,
   petLevel = 1,
+  petMood,
   decor = {},
   mascot = '/art/mascot-main.png',
   bubble,
@@ -94,7 +97,7 @@ export default function Room({
         {/* питомец */}
         {pet && (
           <g transform="translate(60,118) scale(0.62)" className="room-pet">
-            <Pet variant={pet} level={petLevel} />
+            <Pet variant={pet} level={petLevel} mood={petMood} />
           </g>
         )}
       </svg>

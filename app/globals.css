@@ -1843,3 +1843,9 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   border-radius: 12px;
   padding: 8px 12px;
 }
+
+/* Подпись настроения питомца: спокойная, без наград и требований. */
+.pet-mood-note {
+  margin: 2px 0 8px;
+  text-align: center;
+}

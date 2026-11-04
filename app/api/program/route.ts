@@ -54,8 +54,12 @@ export async function GET(req: Request) {
   const reviewStates = reviewStatesFromSessions(store.sessions(profile.id), profile.band, Date.now(), pos.state.reviewStates ?? []);
   const review = pos.state.reviewDay === reviewDayKeyFor(profile) ? null : dueReviewTopics(reviewStates, profile.band, Date.now(), 1)[0] ?? null;
 
+  // Когда было последнее завершённое занятие: нужно только для настроения питомца.
+  const lastFinished = store.sessions(profile.id).reduce((max, s) => (typeof s.finishedAt === 'number' && s.finishedAt > max ? s.finishedAt : max), 0);
+
   return NextResponse.json({
     review: review ? { topicId: review.topicId, title: review.title } : null,
+    lastFinishedAt: lastFinished || null,
     progress: {
       completedDays: pos.state.completedDays,
       totalDays: TOTAL_DAYS,
