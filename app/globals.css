@@ -1883,3 +1883,11 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .parent-pin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .parent-pin-actions .btn { flex: 1 1 160px; }
 @media (prefers-reduced-motion: reduce) { .parent-gate, .parent-pin { animation: none; } }
+
+/* Общая цель семьи: одно число на семью, без имён и сравнения. */
+.family-goal-panel h2 { font-size: 20px; margin: 0 0 8px; }
+.family-goal-bar { height: 16px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); overflow: hidden; margin: 10px 0; }
+.family-goal-bar span { display: block; height: 100%; background: #bfe7cf; transition: width .3s ease; }
+.family-goal-panel select { width: 100%; max-width: 220px; font: inherit; padding: 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); }
+.family-goal-panel label { display: block; margin: 12px 0 6px; font-weight: bold; }
+@media (prefers-reduced-motion: reduce) { .family-goal-bar span { transition: none; } }

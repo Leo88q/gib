@@ -19,6 +19,8 @@ type DB = {
   events: StoredEvent[];
   /** PIN взрослого для входа в кабинет: один на владельца аккаунта. */
   parentPins: { parentId: string; pin: import('./family/roles.ts').ParentPin }[];
+  /** Настройки семьи: размер общей цели. Одно число на владельца, без разбивки по детям. */
+  familySettings: { parentId: string; goalTarget: number }[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
@@ -71,6 +73,7 @@ function empty(): DB {
     payments: [],
     events: [],
     parentPins: [],
+    familySettings: [],
   };
 }
 
@@ -168,6 +171,14 @@ const implementation = {
   removeParentPin(parentId: string) {
     const db = load();
     db.parentPins = db.parentPins.filter((row) => row.parentId !== parentId);
+    persist();
+  },
+  familyGoalTarget: (parentId: string) => load().familySettings.find((row) => row.parentId === parentId)?.goalTarget,
+  setFamilyGoalTarget(parentId: string, goalTarget: number) {
+    const list = load().familySettings;
+    const existing = list.find((row) => row.parentId === parentId);
+    if (existing) existing.goalTarget = goalTarget;
+    else list.push({ parentId, goalTarget });
     persist();
   },
   setParentPin(parentId: string, pin: import('./family/roles.ts').ParentPin) {

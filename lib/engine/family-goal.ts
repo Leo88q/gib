@@ -11,6 +11,19 @@ import type { Profile } from '../types';
  */
 
 export const FAMILY_GOAL_TARGET = 12;
+/** Допустимые размеры цели: семья сама решает, сколько отметок ей хочется. */
+export const FAMILY_GOAL_MIN = 4;
+export const FAMILY_GOAL_MAX = 60;
+/** Шаг изменения — 4 отметки: не превращаем настройку в соревнование на десятки. */
+export const FAMILY_GOAL_STEP = 4;
+
+export function validGoalTarget(value: unknown): value is number {
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value >= FAMILY_GOAL_MIN
+    && value <= FAMILY_GOAL_MAX
+    && value % FAMILY_GOAL_STEP === 0;
+}
 
 export type FamilyGoalProfile = { profileId: string; confirmed: number };
 
@@ -24,7 +37,11 @@ export type FamilyGoal = {
 };
 
 /** Отметки сверх цели не теряются: ребёнок может продолжать без «перевыполнения». */
-export function familyGoal(profiles: Pick<Profile, 'id'>[], confirmedByProfile: Map<string, number>): FamilyGoal {
+export function familyGoal(
+  profiles: Pick<Profile, 'id'>[],
+  confirmedByProfile: Map<string, number>,
+  target: number = FAMILY_GOAL_TARGET,
+): FamilyGoal {
   let confirmed = 0;
   let members = 0;
   for (const profile of profiles) {
@@ -34,7 +51,9 @@ export function familyGoal(profiles: Pick<Profile, 'id'>[], confirmedByProfile: 
       members += 1;
     }
   }
-  return { confirmed, target: FAMILY_GOAL_TARGET, members, reached: confirmed >= FAMILY_GOAL_TARGET };
+  const safeTarget = validGoalTarget(target) ? target : FAMILY_GOAL_TARGET;
+  // Цель семьи не рейтинг: достигнутая цель не отнимает уже накопленные отметки.
+  return { confirmed, target: safeTarget, members, reached: confirmed >= safeTarget };
 }
 
 /**

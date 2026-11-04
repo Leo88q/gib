@@ -20,7 +20,7 @@ function goalFor(parentId: string) {
     const state = store.all().playerStates.find(p => p.profileId === profile.id)?.family;
     confirmed.set(profile.id, state?.completed ?? 0);
   }
-  const goal = familyGoal(profiles, confirmed);
+  const goal = familyGoal(profiles, confirmed, store.familyGoalTarget(parentId) ?? undefined);
   return { ...goal, notice: familyGoalNotice(goal) };
 }
 export async function GET(req: Request) {

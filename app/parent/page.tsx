@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
+import FamilyGoal from '@/components/FamilyGoal';
 import FeelingsConsent from '@/components/FeelingsConsent';
 import ParentGate from '@/components/ParentGate';
 import ParentPinSettings from '@/components/ParentPinSettings';
@@ -309,6 +310,7 @@ function ParentPage() {
       )}
 
       <PracticeMap profileId={profileId} />
+      <FamilyGoal profileId={profileId} />
       <FamilyIdeas profileId={profileId} parentView />
       <FeelingsConsent profileId={profileId} />
       <ParentPinSettings />
