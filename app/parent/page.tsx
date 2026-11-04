@@ -191,8 +191,12 @@ function ParentPage() {
 
   // Выключатель повторов: решение взрослого, не оценка ребёнка. Прогресс не меняется.
   const toggleReview = async (reviewOff: boolean) => {
-    if (!profileId || reviewBusy) return;
+    if (!profileId || reviewBusy || !program) return;
+    // Переключатель контролируемый: сначала показываем новый выбор, чтобы
+    // браузер не откатывал его назад, пока идёт запрос. При ошибке возвращаем как было.
+    const previous = program.reviewOff === true;
     setReviewBusy(true); setReviewMessage('');
+    setProgram(current => current ? { ...current, reviewOff } : current);
     try {
       const res = await apiFetch('/api/program', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -202,8 +206,10 @@ function ParentPage() {
       if (!res.ok) throw new Error('save_failed');
       setProgram(current => current ? { ...current, reviewOff: data.reviewOff } : current);
       setReviewMessage(data.notice);
-    } catch { setReviewMessage('Не удалось сохранить настройку повторов. Попробуйте снова.'); }
-    finally { setReviewBusy(false); }
+    } catch {
+      setProgram(current => current ? { ...current, reviewOff: previous } : current);
+      setReviewMessage('Не удалось сохранить настройку повторов. Попробуйте снова.');
+    } finally { setReviewBusy(false); }
   };
 
   const exportProfile = async () => {

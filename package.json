@@ -79,6 +79,7 @@
     "test:notifications-page": "tsx scripts/test-notifications-page.ts",
     "test:review-choice": "tsx scripts/test-review-choice.ts",
     "test:review-off-http": "tsx scripts/test-review-off-http.ts",
+    "test:review-choices-page": "tsx scripts/test-review-choices-page.ts",
     "backup:encrypted": "node --experimental-strip-types scripts/backup-sqlite-encrypted.ts",
     "restore:encrypted": "node --experimental-strip-types scripts/restore-sqlite-encrypted.ts",
     "test:encrypted-backup": "node --experimental-strip-types scripts/test-encrypted-backup.ts",
