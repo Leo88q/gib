@@ -60,6 +60,7 @@
     "test:feelings-save": "tsx scripts/test-feelings-save.ts",
     "test:feelings-ui": "tsx scripts/test-feelings-ui.tsx",
     "test:feelings-http": "tsx scripts/test-feelings-http.ts",
+    "test:stale-tab": "tsx scripts/test-stale-tab.ts",
     "backup:encrypted": "node --experimental-strip-types scripts/backup-sqlite-encrypted.ts",
     "restore:encrypted": "node --experimental-strip-types scripts/restore-sqlite-encrypted.ts",
     "test:encrypted-backup": "node --experimental-strip-types scripts/test-encrypted-backup.ts",

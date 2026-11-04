@@ -330,6 +330,34 @@ export default function Home() {
     finally { busy.current = false; setStarting(false); }
   };
 
+  /**
+   * Восстановление после устаревшего шага: сервер возвращает актуальную сессию,
+   * клиент переезжает на её шаг. Награды при этом не начисляются повторно —
+   * сервер уже учёл прежний ответ.
+   */
+  const resyncSession = async (profileId: string) => {
+    try {
+      const res = await apiFetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', profileId, storyChoice: true, journey: true }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.sessionId) return;
+      setSessionId(data.sessionId);
+      const offered = Array.isArray(data.storyOffer) && !data.storySelected ? data.storyOffer as StoryCardView[] : [];
+      setStoryOffer(offered); setPendingStory(null);
+      setFeedback(null); setNextItem(null);
+      setResumedPractice(Boolean(data.resumed && data.item?.type === 'task' && !offered.length));
+      setItem(data.item);
+      setSteps(data.steps ?? 4);
+      setStep(data.step ?? 0);
+      setCombo(data.combo ?? 0);
+      setStage('training');
+    } catch { setRequestError('Не удалось открыть миссию заново. Вернитесь домой и попробуйте ещё раз.'); }
+  };
+
   const chooseStory = async (cardId: string) => {
     if (!sessionId || storySending || (pendingStory && pendingStory !== cardId)) return;
     setPendingStory(cardId); setStorySending(true); setRequestError('');
@@ -410,7 +438,16 @@ export default function Home() {
       void loadPlayer(profile!.id);
     }
     } catch (error) {
-      setRequestError(error instanceof Error && error.message === 'step_conflict' ? 'Этот шаг уже изменился. Выйдите домой и откройте миссию снова.' : 'Не удалось получить результат. Повторите отправку: награда не начислится дважды.');
+      if (error instanceof Error && error.message === 'step_conflict') {
+        // Устаревшая вкладка или второй экран: сервер уже ушёл вперёд. Не заставляем
+        // ребёнка выходить домой — заново открываем ту же сессию и встаём на её шаг.
+        pendingAnswer.current = null;
+        try { sessionStorage.removeItem(PENDING_ANSWER_KEY); } catch { /* storage may be disabled */ }
+        setRequestError('Этот шаг уже изменился — открываем миссию заново.');
+        await resyncSession(pending.profileId);
+      } else {
+        setRequestError('Не удалось получить результат. Повторите отправку: награда не начислится дважды.');
+      }
       throw error;
     } finally { busy.current = false; setAnswerSending(false); }
   };
