@@ -3,6 +3,8 @@ import Link from 'next/link';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import FeelingsConsent from '@/components/FeelingsConsent';
+import ParentGate from '@/components/ParentGate';
+import ParentPinSettings from '@/components/ParentPinSettings';
 
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
@@ -101,7 +103,12 @@ const COMPETENCY_LABEL: Record<string, string> = {
   growth_mindset: 'Мышление роста',
 };
 
-export default function ParentPage() {
+/** Кабинет обёрнут воротами PIN: если взрослый задал код, вход требует его. */
+export default function ParentPageWrapper() {
+  return <ParentGate><ParentPage /></ParentGate>;
+}
+
+function ParentPage() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ name: string; age: number; band: string; timeZone?: string } | null>(null);
   const [report, setReport] = useState<Report | null>(null);
@@ -304,6 +311,7 @@ export default function ParentPage() {
       <PracticeMap profileId={profileId} />
       <FamilyIdeas profileId={profileId} parentView />
       <FeelingsConsent profileId={profileId} />
+      <ParentPinSettings />
 
       {/* ---------------- недели программы ---------------- */}
       {program && (

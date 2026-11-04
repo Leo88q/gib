@@ -1872,3 +1872,14 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 }
 .activity-day.on { background: #bfe7cf; border: 1px solid #1f6f43; }
 .activity-day.review { background: #dbeafe; border: 1px solid #1d4ed8; }
+
+/* Код взрослого: ворота кабинета и настройка PIN. */
+.parent-gate { max-width: 420px; margin: 24px auto; }
+.parent-gate h1 { font-size: 22px; margin: 0 0 8px; }
+.parent-gate label { display: block; margin: 14px 0 6px; font-weight: bold; }
+.parent-gate input,
+.parent-pin input { width: 100%; font-size: 22px; letter-spacing: 8px; text-align: center; padding: 12px; }
+.parent-gate .btn { width: 100%; margin-top: 12px; }
+.parent-pin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.parent-pin-actions .btn { flex: 1 1 160px; }
+@media (prefers-reduced-motion: reduce) { .parent-gate, .parent-pin { animation: none; } }

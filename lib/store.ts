@@ -17,6 +17,8 @@ type DB = {
   payments: Payment[];
   /** Журнал технических событий (lib/events/journal.ts). */
   events: StoredEvent[];
+  /** PIN взрослого для входа в кабинет: один на владельца аккаунта. */
+  parentPins: { parentId: string; pin: import('./family/roles.ts').ParentPin }[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
@@ -68,6 +70,7 @@ function empty(): DB {
     playerStates: [],
     payments: [],
     events: [],
+    parentPins: [],
   };
 }
 
@@ -161,6 +164,19 @@ const implementation = {
   profileByParent: (parentId: string) => load().profiles.find((p) => p.parentId === parentId),
   /** Все профили одного владельца: семья может вести несколько детей. */
   profilesByParent: (parentId: string) => load().profiles.filter((p) => p.parentId === parentId),
+  parentPin: (parentId: string) => load().parentPins.find((row) => row.parentId === parentId)?.pin,
+  removeParentPin(parentId: string) {
+    const db = load();
+    db.parentPins = db.parentPins.filter((row) => row.parentId !== parentId);
+    persist();
+  },
+  setParentPin(parentId: string, pin: import('./family/roles.ts').ParentPin) {
+    const list = load().parentPins;
+    const existing = list.find((row) => row.parentId === parentId);
+    if (existing) existing.pin = pin;
+    else list.push({ parentId, pin });
+    persist();
+  },
   addProfile(p: Profile) {
     load().profiles.push(p);
     persist();

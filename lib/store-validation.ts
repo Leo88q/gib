@@ -4,8 +4,13 @@ import type { ScenarioVariant } from './content/softskills.ts';
 import { validFamilyState } from './engine/family.ts';
 import { validateEvent } from './events/journal.ts';
 import { validCheckIn, validPreferences, MAX_CHECKINS } from './feelings/state.ts';
+import { validParentPin } from './family/roles.ts';
 /** Partial structural validation. It intentionally does not claim full data integrity. */
 export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments', 'events'] as const;
+/**
+ * PIN взрослого хранится рядом с коллекциями, но не входит в `STORE_COLLECTIONS`:
+ * это состояние аккаунта, а не данные ребёнка, и в перенос в PostgreSQL оно не идёт.
+ */
 type Collection = typeof STORE_COLLECTIONS[number];
 const object = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 const text = (x: unknown): x is string => typeof x === 'string' && x.length > 0;
@@ -45,6 +50,18 @@ export function validateStore(value: unknown): void {
       if (seen.has(unique as string)) throw new Error(`Duplicate store identity: ${key}`);
       seen.add(unique as string);
       validateRecord(key, row);
+    }
+  }
+  // PIN взрослого: только владелец и корректная запись, без повторов.
+  const pins = (value as { parentPins?: unknown }).parentPins;
+  if (pins !== undefined) {
+    if (!Array.isArray(pins)) throw new Error('Invalid store collection: parentPins');
+    const owners = new Set<string>();
+    for (const row of pins) {
+      if (!object(row) || !text(row.parentId) || !validParentPin(row.pin)) throw new Error('Invalid parent pin record');
+      const owner = String(row.parentId);
+      if (owners.has(owner)) throw new Error('Duplicate store identity: parentPins');
+      owners.add(owner);
     }
   }
 }
