@@ -47,6 +47,8 @@ type ProgramInfo = {
   finished: boolean;
   /** Тема, которую сервер предлагает повторить (или null). */
   review?: { topicId: string; title: string } | null;
+  /** Все темы, срок которых пришёл: ребёнок может выбрать любую. */
+  reviewOptions?: { topicId: string; title: string }[];
   /** Когда завершилось последнее занятие — для настроения питомца. */
   lastFinishedAt?: number | null;
 };
@@ -257,14 +259,14 @@ export default function Home() {
   };
 
   /** Повтор темы: отдельный заход, только когда сервер говорит, что тема пришла в срок. */
-  const startReview = async () => {
+  const startReview = async (topicId?: string) => {
     if (!profile || busy.current) return;
     busy.current = true; setStarting(true); setRequestError('');
     try {
       const res = await apiFetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start', profileId: profile.id, review: true, storyChoice: true, journey: true }),
+        body: JSON.stringify({ action: 'start', profileId: profile.id, review: true, reviewTopicId: topicId, storyChoice: true, journey: true }),
       });
       const data = await res.json();
       if (!res.ok || !data.sessionId) throw new Error('start_failed');
@@ -632,7 +634,16 @@ export default function Home() {
                   ↺ Повторить прошлый день
                 </button>
               )}
-              {(program?.review ?? null) && (
+              {(program?.reviewOptions?.length ?? 0) > 1 ? (
+                <div className="review-choices">
+                  <p className="muted small">Можно вернуться к одной из тем — по желанию, это не задание.</p>
+                  {program!.reviewOptions!.map(topic => (
+                    <button key={topic.topicId} type="button" className="btn ghost" onClick={() => { void startReview(topic.topicId); }}>
+                      🔁 «{topic.title}»
+                    </button>
+                  ))}
+                </div>
+              ) : (program?.review ?? null) && (
                 <button type="button" className="btn ghost" onClick={() => { void startReview(); }}>
                   🔁 Вернуться к теме «{program!.review!.title}» — по желанию
                 </button>

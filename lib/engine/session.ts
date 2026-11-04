@@ -286,14 +286,18 @@ export function startSession(
   profile: Profile,
   repeat = false,
   context: SessionStore = store,
-  options: { storyChoice?: boolean; journey?: boolean; review?: boolean } = {}
+  options: { storyChoice?: boolean; journey?: boolean; review?: boolean; reviewTopicId?: string } = {}
 ): { sessionId: string; item: unknown; steps: number; step: number; resumed: boolean; combo: number; storyOffer?: StoryChoice[]; storySelected?: string | null; autoClaimed?: { count: number; xp: number; coins: number }; review?: { topicId: string; title: string } } {
   return context.transaction(() => {
   /* --- повторение темы: необязательный отдельный заход, не блокирует новый день --- */
   const stateNow = context.programState(profile.id);
   const reviewStates = reviewStatesFromSessions(context.sessions(profile.id), profile.band, Date.now(), stateNow.reviewStates ?? []);
-  if (!repeat && options.review === true && stateNow.reviewDay !== reviewDayKeyFor(profile)) {
-    const due = dueReviewTopics(reviewStates, profile.band, Date.now(), 1)[0];
+  if (!repeat && options.review === true && stateNow.reviewOff !== true && stateNow.reviewDay !== reviewDayKeyFor(profile)) {
+    // Если тем несколько, ребёнок может выбрать любую из подходящих по сроку.
+    // Выбор — предпочтение, а не оценка: все варианты одинаково «созрели».
+    const candidates = dueReviewTopics(reviewStates, profile.band, Date.now(), 5);
+    const picked = options.reviewTopicId ? candidates.find(t => t.topicId === options.reviewTopicId) : undefined;
+    const due = picked ?? candidates[0];
     if (due) {
       const started = startReviewSession(profile, due, reviewStates, context);
       if (started) return started;

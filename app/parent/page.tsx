@@ -121,7 +121,10 @@ function ParentPage() {
   const [program, setProgram] = useState<{
     progress: { completedDays: number; totalDays: number; finished: boolean; currentWeek: number };
     weeks: ProgramWeek[];
+    reviewOff?: boolean;
   } | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
   const [billingError, setBillingError] = useState('');
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingAvailable, setBillingAvailable] = useState(false);
@@ -184,6 +187,23 @@ function ParentPage() {
       setZoneMessage('Часовой пояс сохранён. Недельный отчёт обновлён.');
     } catch { setZoneMessage('Не удалось обновить данные. Проверьте соединение и попробуйте снова.'); }
     finally { setDataBusy(false); }
+  };
+
+  // Выключатель повторов: решение взрослого, не оценка ребёнка. Прогресс не меняется.
+  const toggleReview = async (reviewOff: boolean) => {
+    if (!profileId || reviewBusy) return;
+    setReviewBusy(true); setReviewMessage('');
+    try {
+      const res = await apiFetch('/api/program', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, reviewOff }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error('save_failed');
+      setProgram(current => current ? { ...current, reviewOff: data.reviewOff } : current);
+      setReviewMessage(data.notice);
+    } catch { setReviewMessage('Не удалось сохранить настройку повторов. Попробуйте снова.'); }
+    finally { setReviewBusy(false); }
   };
 
   const exportProfile = async () => {
@@ -308,6 +328,22 @@ function ParentPage() {
             Каждый день программы открывается после предыдущего. Пропущенный день можно
             повторить — кнопка «Повторить предыдущий день» в тренажёре.
           </p>
+          <div className="review-toggle">
+            <label htmlFor="review-switch">Предлагать повторение тем</label>
+            <input
+              id="review-switch"
+              type="checkbox"
+              checked={!program.reviewOff}
+              disabled={reviewBusy}
+              onChange={e => void toggleReview(!e.target.checked)}
+            />
+            <p className="muted small">
+              Повтор предлагается по расписанию и никогда не блокирует новый день.
+              Если выключить, предложения пропадут, а прогресс и сроки останутся.
+              Это решение взрослого, а не оценка ребёнка.
+            </p>
+            {reviewMessage && <p role="status" className="muted small">{reviewMessage}</p>}
+          </div>
         </div>
       )}
 

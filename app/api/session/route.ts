@@ -67,8 +67,12 @@ export async function GET(req: Request) {
       totalDays: TOTAL_DAYS,
       finished: pos.finished,
       // Повтор темы предлагается, только когда наступил срок и сегодня его ещё не было.
-      review: pos.state.reviewDay === reviewDayKeyFor(profile) ? null
+      reviewOff: pos.state.reviewOff === true,
+      review: pos.state.reviewOff === true || pos.state.reviewDay === reviewDayKeyFor(profile) ? null
         : dueReviewTopics(reviewStatesFromSessions(store.sessions(profile.id), profile.band, Date.now(), pos.state.reviewStates ?? []), profile.band, Date.now(), 1)[0] ?? null,
+      // Если тем несколько, показываем все подходящие: выбрать можно любую.
+      reviewOptions: pos.state.reviewOff === true || pos.state.reviewDay === reviewDayKeyFor(profile) ? []
+        : dueReviewTopics(reviewStatesFromSessions(store.sessions(profile.id), profile.band, Date.now(), pos.state.reviewStates ?? []), profile.band, Date.now(), 5),
     },
   });
 }
@@ -93,6 +97,7 @@ export async function POST(req: Request) {
     journey?: boolean;
     /** Необязательный отдельный заход-повторение темы из пройденного. */
     review?: boolean;
+  reviewTopicId?: string;
     cardId?: string;
   };
 
@@ -103,11 +108,11 @@ export async function POST(req: Request) {
   const context = { ...store, journal, ownerId: auth.parentId };
 
   if (body.action === 'start') {
-    if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean') || (body.review !== undefined && typeof body.review !== 'boolean')) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
+    if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean') || (body.review !== undefined && typeof body.review !== 'boolean') || (body.reviewTopicId !== undefined && (typeof body.reviewTopicId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.reviewTopicId)))) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
     return context.transaction(() => {
       const profile = body.profileId ? ownedProfile(auth.parentId, body.profileId) : undefined;
       if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey, review: body.review }));
+      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey, review: body.review, reviewTopicId: body.reviewTopicId }));
     });
   }
 

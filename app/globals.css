@@ -1908,3 +1908,12 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .notifications h2 { font-size: 20px; margin: 0 0 8px; }
 .notify-choice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .notify-choice .btn { flex: 1 1 140px; }
+
+/* Выбор темы для повтора: несколько подходящих, все равноправны. */
+.review-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.review-choices .btn { text-align: left; }
+
+/* Выключатель повторов в кабинете: решение взрослого, без оценки ребёнка. */
+.review-toggle { margin-top: 12px; border-top: 2px dashed var(--ink); padding-top: 10px; }
+.review-toggle label { font-weight: bold; margin-right: 8px; }
+.review-toggle input[type="checkbox"] { width: 22px; height: 22px; vertical-align: middle; }
