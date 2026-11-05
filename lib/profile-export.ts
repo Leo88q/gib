@@ -12,7 +12,8 @@ type ExportSource = {
 const strings = (values: unknown): string[] => Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [];
 const progress = (values: Record<string, number> | undefined): Record<string, number> => Object.fromEntries(Object.entries(values ?? {}).filter(([key, value]) => key.length <= 80 && typeof value === 'number' && Number.isFinite(value)));
 const task = ({ taskId, skill, level, correct, ms, assisted }: TaskAnswer) => ({ taskId, skill, level, correct, ms, assisted });
-const scenario = (s?: ScenarioAnswer) => s ? { scenarioId: s.scenarioId, competency: s.competency, choice: s.choice, quality: s.quality } : undefined;
+// Метка прежних версий не выгружается: ребёнок больше не оценивается.
+const scenario = (s?: ScenarioAnswer) => s ? { scenarioId: s.scenarioId, competency: s.competency, choice: s.choice } : undefined;
 
 /** Explicit fields only. New server-side fields must not silently enter exports. */
 export function makeProfileExport(source: ExportSource, exportedAt = new Date().toISOString()) {

@@ -194,7 +194,10 @@ export function completeDay(
     tasksDone: info.tasks,
     comboBest: info.comboBest,
     correctStreak: info.correctStreak,
-    goodChoice: info.scenarioCompleted ?? (info.quality !== undefined),
+    /* Участие в истории. Раньше это же поле выводилось из метки качества,
+       но меток больше нет: выбор ребёнка не оценивается, а миссия должна
+       оставаться выполнимой после того, как подпись убрали из контента. */
+    goodChoice: info.scenarioCompleted === true,
     perfectDay: perfect,
     bossPassed: info.isBoss,
     stars,

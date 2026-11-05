@@ -83,10 +83,12 @@ for (const sc of PROGRAM_SCENARIOS) {
       variantProblems += 1;
       problemDetails.push(`${sc.id}/${band}: вариантов ${v.options.length}, ожидалось 3`);
     }
-    const qualities = v.options.map((o) => o.quality).sort();
-    if ((WEEKS_FOUR_FIVE_STORY_OPTIONS[sc.id] || WEEKS_SIX_EIGHT_STORY_OPTIONS[sc.id] || WEEKS_NINE_TWELVE_STORY_OPTIONS[sc.id]) ? v.options.some(o => o.quality !== undefined) : qualities.join(',') !== 'bad,good,partial') {
+    // Метки оценки ответа убраны из контента полностью: история не оценивает
+    // социальный выбор ребёнка, а равную награду дают и за пропуск практики.
+    // Раньше тест требовал набор `bad,good,partial` — теперь запрещает его.
+    if (v.options.some(o => o.quality !== undefined)) {
       variantProblems += 1;
-      problemDetails.push(`${sc.id}/${band}: набор решений ${qualities.join(',')}`);
+      problemDetails.push(`${sc.id}/${band}: осталась устаревшая метка оценки ответа`);
     }
     for (const o of v.options) {
       if (!o.text || !o.note) {

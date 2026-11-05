@@ -125,7 +125,8 @@ check('повторно миссию не забрать', claimMission(player, 
 const done = completeDay(player, {
   tasks: 3,
   correct: 3,
-  quality: 'good',
+  // Метки больше нет: миссию засчитывает участие в истории, а не оценка выбора.
+  scenarioCompleted: true,
   seconds: 600,
   isBoss: false,
   dayIndex: 0,
@@ -147,7 +148,7 @@ const onceXp = player.xp, onceCoins = player.coins;
 const autoAgain = ensureMissions(player, 1);
 check('повторное открытие дня не начисляет миссии второй раз', autoAgain.count === 0 && player.xp === onceXp && player.coins === onceCoins);
 player.stats.bestCombo = 50;
-completeDay(player, { tasks: 3, correct: 0, quality: 'bad', seconds: 10, isBoss: false, dayIndex: 1, weekDone: 0, comboBest: 0, correctStreak: 0 });
+completeDay(player, { tasks: 3, correct: 0, seconds: 10, isBoss: false, dayIndex: 1, weekDone: 0, comboBest: 0, correctStreak: 0 });
 check('старый рекорд комбо не завершает миссию текущего дня', (missionViews(player).find(m => m.id === 'careful3')?.progress ?? 0) === 0 && (missionViews(player).find(m => m.id === 'combo5')?.progress ?? 0) === 0);
 
 
