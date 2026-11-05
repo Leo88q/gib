@@ -2,6 +2,7 @@ import { weekArt } from '@/lib/art-paths';
 import { readJsonObject } from '@/lib/http-body';
 import { requireParent, ownedProfile } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { measured } from '@/lib/observability/measure';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { createStoreJournal } from '@/lib/events/store-journal';
@@ -23,7 +24,7 @@ import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor } from '@/li
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+async function sessionInfo(req: Request) {
   const auth = requireParent(req);
   if (auth.error) return auth.error;
   if (!rateLimit(clientKey(req, 'session', auth.parentId), 240)) {
@@ -77,7 +78,7 @@ export async function GET(req: Request) {
   });
 }
 
-export async function POST(req: Request) {
+async function sessionCommand(req: Request) {
   const auth = requireParent(req);
   if (auth.error) return auth.error;
   if (!rateLimit(clientKey(req, 'session', auth.parentId), 240)) {
@@ -144,3 +145,11 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ error: 'unknown_action' }, { status: 400 });
 }
+
+/**
+ * Метрики и логи только на двух самых нагруженных обработчиках: у остальных
+ * маршрутов те же данные видны по rate limit и по 5xx. Расширять список стоит
+ * тогда, когда появится реальный вопрос, на который метрика отвечает.
+ */
+export const GET = measured('session.info', sessionInfo);
+export const POST = measured('session.command', sessionCommand);
