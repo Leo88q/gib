@@ -13,8 +13,9 @@
  */
 import fs from 'node:fs';
 import { store } from '../store.ts';
+import { limitStoreInfo } from '../ratelimit.ts';
 
-export type CheckId = 'store' | 'state' | 'storage' | 'billing' | 'notifications';
+export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'billing' | 'notifications';
 
 export type Check = {
   id: CheckId;
@@ -108,6 +109,24 @@ function checkStorage(): Check {
   }
 }
 
+/**
+ * Хранилище лимитов: общий счётчик или только в процессе.
+ *
+ * Это не влияет на готовность принимать запросы, но дежурный должен видеть,
+ * что при нескольких инстансах предел умножается на их число.
+ */
+function checkRateLimit(): Check {
+  try {
+    const info = limitStoreInfo();
+    const detail = info.distributed
+      ? `счётчики общие (${info.kind}), записей ${info.size}`
+      : `счётчики в процессе (${info.kind}): при нескольких инстансах предел умножается на их число${info.fallbackReason ? `; ${info.fallbackReason}` : ''}`;
+    return { id: 'ratelimit', level: 'degraded', ok: info.distributed, detail, durationMs: 0 };
+  } catch (error) {
+    return { id: 'ratelimit', level: 'degraded', ok: false, detail: `лимиты недоступны: ${(error as Error).message}`, durationMs: 0 };
+  }
+}
+
 /** Платёжный контур: без него сервис работает, но оплата выключена. */
 function checkBilling(): Check {
   const configured = Boolean(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY);
@@ -139,7 +158,7 @@ function checkNotifications(): Check {
  * возможностей дают `degraded`, но не выводят сервис из работы.
  */
 export function readiness(): Readiness {
-  const checks = [checkStore(), checkState(), checkStorage(), checkBilling(), checkNotifications()];
+  const checks = [checkStore(), checkState(), checkStorage(), checkRateLimit(), checkBilling(), checkNotifications()];
   const required = checks.filter(c => c.level === 'ready');
   const optional = checks.filter(c => c.level === 'degraded');
   const ready = required.every(c => c.ok);

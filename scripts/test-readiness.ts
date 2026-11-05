@@ -30,7 +30,11 @@ async function main() {
   assert.equal(report.ready, true, 'принимать запросы можно');
   assert.equal(report.ok, true, 'обязательные проверки пройдены');
   const ids = report.checks.map(c => c.id).sort();
-  assert.deepEqual(ids, ['billing', 'notifications', 'state', 'storage', 'store'], 'все проверки на месте');
+  assert.deepEqual(ids, ['billing', 'notifications', 'ratelimit', 'state', 'storage', 'store'], 'все проверки на месте');
+  // Проверка лимитов называет хранилище и честно говорит, общее оно или в процессе.
+  const limits = report.checks.find(c => c.id === 'ratelimit')!;
+  assert.equal(limits.level, 'degraded', 'лимиты не решают приём запросов');
+  assert.ok(/общ|процесс/.test(limits.detail), `в пояснении назван режим: ${limits.detail}`);
   const required = report.checks.filter(c => c.level === 'ready');
   assert.equal(required.length, 3, 'обязательных проверок три');
   assert.ok(required.every(c => c.ok && typeof c.durationMs === 'number'), 'обязательные с замером времени');
