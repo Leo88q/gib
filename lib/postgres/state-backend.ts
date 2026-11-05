@@ -16,7 +16,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import type { Payment, PlayerState, Profile, ProgramState, Session, SkillState, Subscription } from '../types.ts';
 import type { StoredEvent } from '../events/journal.ts';
-import { pgBridge, type PgBridge, type PgRow } from './bridge.ts';
+import { PgBridge as PgBridgeClass, pgBridge, type PgBridge, type PgRow } from './bridge.ts';
 
 export type StateShape = {
   profiles: Profile[];
@@ -122,6 +122,18 @@ const TABLES: Record<CollectionKey, TableSpec> = {
 
 const STATE_KEYS = Object.keys(TABLES) as CollectionKey[];
 
+/**
+ * Имя схемы попадает в SQL, поэтому проверяем его здесь, а не у вызывающих:
+ * никакой интерполяции произвольной строки в запрос.
+ */
+export function assertSchemaName(schema: string): string {
+  if (!/^[a-z][a-z0-9_]{0,40}$/.test(schema)) throw new Error('invalid_schema_name');
+  return schema;
+}
+
+/** Все таблицы состояния — для копий и проверок. */
+export const STATE_TABLES: Readonly<string[]> = STATE_KEYS.map((name) => TABLES[name].table);
+
 function keyOf(spec: TableSpec, row: Record<string, unknown>): string {
   return JSON.stringify(spec.key(row));
 }
@@ -133,18 +145,20 @@ function keyOf(spec: TableSpec, row: Record<string, unknown>): string {
  * целиком выбрано осознанно: это повторяет `store.all()` и делает семантику
  * неотличимой от SQLite.
  */
-export function readState(bridge: PgBridge): StateShape {
+export function readState(bridge: PgBridge, schema = 'gib'): StateShape {
+  assertSchemaName(schema);
   const state = {} as StateShape;
   for (const name of STATE_KEYS) {
     const spec = TABLES[name];
-    const rows = bridge.query(`SELECT data FROM gib.${spec.table} ORDER BY ordinal`);
+    const rows = bridge.query(`SELECT data FROM ${schema}.${spec.table} ORDER BY ordinal`);
     (state as unknown as Record<string, unknown[]>)[name] = rows.map(row => row.data as Record<string, unknown>);
   }
   return state;
 }
 
 /** Записать разницу между прежним и новым состоянием. Только изменённое. */
-export function writeState(bridge: PgBridge, before: StateShape, after: StateShape): { written: number; deleted: number } {
+export function writeState(bridge: PgBridge, before: StateShape, after: StateShape, schema = 'gib'): { written: number; deleted: number } {
+  assertSchemaName(schema);
   let written = 0;
   let deleted = 0;
   for (const name of STATE_KEYS) {
@@ -171,13 +185,13 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
         values.push(JSON.stringify(row));
         const where = spec.keyColumns.map((c, i) => `${c} = $${values.length + i + 1}`).join(' AND ');
         values.push(...spec.keyColumns.map(c => cols[c]));
-        bridge.query(`UPDATE gib.${spec.table} SET ${sets.join(', ')} WHERE ${where}`, values);
+        bridge.query(`UPDATE ${schema}.${spec.table} SET ${sets.join(', ')} WHERE ${where}`, values);
       } else {
-        const ordinal = bridge.query(`SELECT COALESCE(MAX(ordinal), -1) + 1 AS next FROM gib.${spec.table}`)[0]?.next;
+        const ordinal = bridge.query(`SELECT COALESCE(MAX(ordinal), -1) + 1 AS next FROM ${schema}.${spec.table}`)[0]?.next;
         const allNames = [...names, 'ordinal', 'data'];
         const values = [...names.map(c => cols[c]), ordinal, JSON.stringify(row)];
         const placeholders = allNames.map((c, i) => (c === 'data' ? `$${i + 1}::jsonb` : `$${i + 1}`));
-        bridge.query(`INSERT INTO gib.${spec.table} (${allNames.join(', ')}) VALUES (${placeholders.join(', ')})`, values);
+        bridge.query(`INSERT INTO ${schema}.${spec.table} (${allNames.join(', ')}) VALUES (${placeholders.join(', ')})`, values);
       }
       written++;
     }
@@ -188,7 +202,7 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
       if (nextKeys.has(key)) continue;
       const cols = spec.columns(row);
       const where = spec.keyColumns.map((c, i) => `${c} = $${i + 1}`).join(' AND ');
-      bridge.query(`DELETE FROM gib.${spec.table} WHERE ${where}`, spec.keyColumns.map(c => cols[c]));
+      bridge.query(`DELETE FROM ${schema}.${spec.table} WHERE ${where}`, spec.keyColumns.map(c => cols[c]));
       deleted++;
     }
   }
@@ -261,14 +275,28 @@ export function ensureSchemaSync(bridge: PgBridge, schema: { v1: string; v2: str
   }
 }
 
-/** Готовое соединение по окружению. */
-export function openBridge(env: NodeJS.ProcessEnv = process.env): PgBridge {
-  const connectionString = env.GIB_POSTGRES_URL || env.DATABASE_URL;
-  return pgBridge({
-    connectionString,
+function bridgeOptions(env: NodeJS.ProcessEnv) {
+  return {
+    connectionString: env.GIB_POSTGRES_URL || env.DATABASE_URL,
     dataDir: env.GIB_PG_DIR,
     timeoutMs: Number(env.GIB_PG_TIMEOUT_MS) || 30_000,
-  });
+  };
+}
+
+/**
+ * Готовое соединение по окружению — общее на процесс.
+ *
+ * `pgBridge` переиспользует один мост, поэтому закрывать его может только
+ * завершение процесса. Для одноразовых задач (CLI, миграции) есть
+ * `openDetachedBridge`: он живёт отдельно и закрывается явно.
+ */
+export function openBridge(env: NodeJS.ProcessEnv = process.env): PgBridge {
+  return pgBridge(bridgeOptions(env));
+}
+
+/** Собственный мост для одноразовой задачи: не делится с приложением. */
+export function openDetachedBridge(env: NodeJS.ProcessEnv = process.env): PgBridge {
+  return new PgBridgeClass(bridgeOptions(env));
 }
 
 /** Проверка, что база отвечает: используется готовностью. */

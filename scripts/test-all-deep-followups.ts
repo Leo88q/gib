@@ -43,6 +43,29 @@ for (const id of allIds) {
     }
   }
 }
+/* ---- 1b. Возрастная длина: младшим — короче и без взрослых абстракций ---- */
+{
+  // Порог не про «простоту вообще», а про то, что читает шестилетка сам.
+  const MAX_LEN: Record<AgeBand, number> = { '5-7': 70, '8-10': 110, '11-13': 130 };
+  const ADULT_WORDS = /вывод|эпизод|пределы|ресурс|оправдан|версия|контекст/i;
+  for (const [band] of bands) {
+    for (const id of allIds) {
+      for (const followUp of ALL_DEEP_FOLLOWUPS[id][band]) {
+        for (const phrase of [followUp.prompt, ...followUp.endings]) {
+          assert.ok(phrase.length <= MAX_LEN[band], `${id}/${band}: слишком длинная фраза (${phrase.length}): «${phrase}»`);
+        }
+      }
+    }
+  }
+  for (const id of allIds) {
+    for (const followUp of ALL_DEEP_FOLLOWUPS[id]['5-7']) {
+      for (const phrase of [followUp.prompt, ...followUp.endings]) {
+        assert.ok(!ADULT_WORDS.test(phrase), `${id}/5-7: взрослое слово в «${phrase}»`);
+      }
+    }
+  }
+  console.log('  ok длина фраз по возрастам: 5-7 до 70 знаков без взрослых абстракций');
+}
 console.log('  ok 121 история × 3 возраста: второй шаг, две ветки, ни одной оценки выбора');
 
 /* ---- 2. Второй шаг читается деревом и не отличается от снимка ---- */

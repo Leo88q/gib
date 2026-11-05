@@ -70,7 +70,8 @@ assert.ok(!JSON.stringify(exported.sessions[1].inProgress).includes('"quality"')
 /* ---- 5. CLI: превью, копия, повтор, защита исходника ---- */
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'gib-scrub-test-'));
 const src=path.join(dir,'source.sqlite'), out=path.join(dir,'copy.sqlite');
-const child=(...args:string[])=>spawnSync(process.execPath,['--experimental-strip-types','scripts/clean-story-quality-sqlite.ts',...args],{encoding:'utf8',cwd:process.cwd()});
+// CLI теперь общий для всех хранилищ; здесь проверяем именно SQLite-путь.
+const child=(...args:string[])=>spawnSync('node_modules/.bin/tsx',['scripts/clean-story-quality.ts',...args],{encoding:'utf8',cwd:process.cwd()});
 let db:DatabaseSync | undefined;
 try {
  db=new DatabaseSync(src); db.exec('PRAGMA journal_mode=WAL; CREATE TABLE app_state (id INTEGER PRIMARY KEY, data TEXT NOT NULL)');
