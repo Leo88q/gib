@@ -808,7 +808,9 @@ export function buildReport(profile: Profile): WeeklyReport {
       stars: player.stars,
       badges: player.badges.length,
       days: player.stats.days,
-      perfectDays: player.stats.perfectDays,
+      // «Идеальные дни» в отчёт не входят: безошибочность больше не стимул,
+      // а показывать её взрослому как достижение — значит вернуть оценку
+      // через чёрный ход. Счётчик остаётся в хранилище и в выгрузке данных.
     },
   };
 }

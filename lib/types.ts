@@ -187,7 +187,6 @@ export type WeeklyReport = {
     stars: number;
     badges: number;
     days: number;
-    perfectDays: number;
   };
 };
 

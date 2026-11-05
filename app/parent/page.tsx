@@ -52,7 +52,6 @@ type Report = {
     stars: number;
     badges: number;
     days: number;
-    perfectDays: number;
   };
 };
 

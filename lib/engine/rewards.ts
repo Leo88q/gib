@@ -246,7 +246,6 @@ export function playerReportBlock(player: PlayerState, levelTitle: string): Week
     stars: player.stars,
     badges: player.badges.length,
     days: player.stats.days,
-    perfectDays: player.stats.perfectDays,
   };
 }
 
