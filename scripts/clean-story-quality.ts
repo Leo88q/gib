@@ -21,6 +21,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync, backup } from 'node:sqlite';
 import { cleanStoryQuality, type StoryQualityCleanupCounts } from '../lib/story-quality-cleanup.ts';
+
+/** Нули того же вида, что возвращает реальный проход: форма ответа одна. */
+const EMPTY_COUNTS: StoryQualityCleanupCounts = {
+  finishedLabelsRemoved: 0,
+  activeLabelsRemoved: 0,
+  activeLabelsDeferred: 0,
+  activeSnapshotsRemoved: 0,
+  activeSnapshotsDeferred: 0,
+  receiptLabelsRemoved: 0,
+  receiptLabelsDeferred: 0,
+  sessionsChanged: 0,
+};
 import { verifySqliteSnapshot } from '../lib/sqlite-snapshot.ts';
 import { openDetachedBridge, readState, writeState, STATE_TABLES } from '../lib/postgres/state-backend.ts';
 
@@ -170,6 +182,15 @@ export function cleanPostgres(
   // Отдельный мост: CLI не делит соединение с приложением и закрывает своё.
   const bridge = openDetachedBridge(env);
   try {
+    // Пустая база — не ошибка: миграцию могли запустить до первого старта.
+    // Отвечаем понятно, а не «relation gib.profiles does not exist» из SQL.
+    const ready = bridge.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = 'gib' AND table_name = 'sessions' LIMIT 1"
+    ) as unknown[];
+    if (!ready.length) {
+      if (!targetSchema) return { counts: EMPTY_COUNTS };
+      throw new Error('схема gib ещё не создана: запустите приложение хотя бы раз, затем повторите');
+    }
     const state = readState(bridge) as unknown;
     const { state: cleaned, counts } = cleanOrThrow(state);
     if (!targetSchema) return { counts };

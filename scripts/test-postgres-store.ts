@@ -63,8 +63,14 @@ async function main() {
   }
 
   // 3. Чужой режим не может открыть ту же базу как SQLite: файла нет вовсе.
+  // На живом сервере каталога данных нет по определению — проверяем только
+  // встроенный режим, где каталог и есть база.
   const { existsSync } = await import('node:fs');
-  assert.equal(existsSync(join(dir, 'pg')), true, 'данные PostgreSQL лежат в своём каталоге');
+  if (!process.env.GIB_POSTGRES_URL) {
+    assert.equal(existsSync(join(dir, 'pg')), true, 'данные PostgreSQL лежат в своём каталоге');
+  } else {
+    assert.equal(existsSync(join(dir, 'pg')), false, 'на живом сервере локального каталога нет');
+  }
 
   console.log(`\n  ok PostgreSQL как хранилище: ${okCount} проверок`);
 }

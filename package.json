@@ -221,7 +221,8 @@
     "test:postgres-prod": "tsx scripts/test-postgres-prod.ts",
     "test:safety-story-ui": "tsx scripts/test-safety-story-ui.tsx",
     "test:all-deep-followups": "tsx scripts/test-all-deep-followups.ts",
-    "test:clean-story-quality-cli": "tsx scripts/test-clean-story-quality-cli.ts"
+    "test:clean-story-quality-cli": "tsx scripts/test-clean-story-quality-cli.ts",
+    "test:postgres-live": "bash scripts/postgres-live-check.sh"
   },
   "dependencies": {
     "blockly": "^12.5.1",

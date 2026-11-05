@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const PORT = 3205;
+const PORT = Number(process.env.GIB_PROD_TEST_PORT) || 3205;
 const BASE = `http://127.0.0.1:${PORT}`;
 const BOT_TOKEN = '777000555:' + 'P'.repeat(35);
 const METRICS_TOKEN = 'pg-prod-metrics-1234567';
@@ -47,7 +47,11 @@ async function main() {
       ...process.env,
       NODE_ENV: 'production',
       GIB_STORE: 'postgres',
-      GIB_PG_DIR: join(dir, 'pg'),
+      // По умолчанию встроенная PGlite. С GIB_POSTGRES_URL тест идёт на живом
+      // сервере: тот же код, но настоящий протокол, TLS-решение и версия.
+      ...(process.env.GIB_POSTGRES_URL
+        ? { GIB_POSTGRES_URL: process.env.GIB_POSTGRES_URL, GIB_POSTGRES_INSECURE_TEST: process.env.GIB_POSTGRES_INSECURE_TEST ?? '' }
+        : { GIB_PG_DIR: join(dir, 'pg') }),
       GIB_SECURITY_TEST: '1',
       GIB_DEMO_MODE: '1',
       TELEGRAM_BOT_TOKEN: BOT_TOKEN,
