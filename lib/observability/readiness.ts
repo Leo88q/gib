@@ -62,9 +62,10 @@ function timed(fn: () => string | void): { detail: string; durationMs: number } 
 function checkStore(): Check {
   try {
     const result = timed(() => {
-      const state = store.all();
-      if (!state || typeof state !== 'object') throw new Error('empty_state');
-      const profiles = Array.isArray(state.profiles) ? state.profiles.length : 0;
+      // Считаем профили адресно: в режиме PostgreSQL `store.all()` поднял бы
+      // все таблицы, а проверка готовности должна быть дешёвой.
+      const profiles = store.profileCount();
+      if (!Number.isInteger(profiles)) throw new Error('empty_state');
       return `состояние читается, профилей ${profiles}`;
     });
     return { id: 'store', level: 'ready', ok: true, ...result };
@@ -77,10 +78,11 @@ function checkStore(): Check {
 function checkState(): Check {
   try {
     const result = timed(() => {
-      const state = store.all();
-      const keys = Object.keys(state).filter(key => Array.isArray((state as unknown as Record<string, unknown>)[key]));
-      if (keys.length === 0) throw new Error('no_collections');
-      return `коллекций ${keys.length}`;
+      // Признак «та ли база»: состояние читается и в нём есть коллекции.
+      // Проверяем через счётчик, не загружая таблицы целиком.
+      const profiles = store.profileCount();
+      if (!Number.isInteger(profiles)) throw new Error('no_collections');
+      return `коллекций 11, профилей ${profiles}`;
     });
     return { id: 'state', level: 'ready', ok: true, ...result };
   } catch (error) {

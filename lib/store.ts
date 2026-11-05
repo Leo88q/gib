@@ -6,6 +6,8 @@ import { emptyStats, todayKey } from './gamification.ts';
 import { validateStore } from './store-validation.ts';
 import type { StoredEvent } from './events/journal.ts';
 import { pruneExpired } from './events/journal.ts';
+import { ensureSchemaSync, openBridge, readState, runTransaction, type StateShape } from './postgres/state-backend.ts';
+import { SCHEMA_V1, SCHEMA_V2 } from './postgres/schema.ts';
 
 type DB = {
   profiles: Profile[];
@@ -30,9 +32,27 @@ const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.j
 let cache: DB | null = null;
 let transactionDepth = 0;
 const storeMode = process.env.GIB_STORE || 'json';
-// Fail closed: PostgreSQL session work is experimental and is not the app store yet.
-if (storeMode !== 'json' && storeMode !== 'sqlite') throw new Error('Unsupported GIB_STORE mode');
+if (storeMode !== 'json' && storeMode !== 'sqlite' && storeMode !== 'postgres') throw new Error('Unsupported GIB_STORE mode');
 const sqliteEnabled = storeMode === 'sqlite';
+/**
+ * PostgreSQL — полноценный режим хранилища, а не эксперимент.
+ *
+ * Соединение живёт в отдельном потоке (`lib/postgres/bridge.ts`), поэтому
+ * `store` остаётся синхронным. Транзакция берёт advisory-замок и пишет только
+ * изменившиеся строки: семантика та же, что у SQLite, включая «сначала
+ * прочитать, потом записать».
+ */
+const postgresEnabled = storeMode === 'postgres';
+let pgReady = false;
+
+function postgres() {
+  const bridge = openBridge();
+  if (!pgReady) {
+    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+    pgReady = true;
+  }
+  return bridge;
+}
 const sqliteFile = process.env.GIB_SQLITE_FILE || path.join(process.cwd(), 'data', 'gib.sqlite');
 const sqliteMustExist = process.env.GIB_SQLITE_MUST_EXIST === '1';
 let database: DatabaseSync | null = null;
@@ -96,6 +116,10 @@ function parseState(value: unknown): DB {
 
 function load(): DB {
   if (cache) return cache;
+  if (postgresEnabled) {
+    cache = parseState(readState(postgres()) as unknown);
+    return cache;
+  }
   if (sqliteEnabled) {
     const row = sqlite().prepare('SELECT data FROM app_state WHERE id = 1').get() as { data: string } | undefined;
     if (!row) throw new Error('SQLite state missing');
@@ -113,6 +137,7 @@ function load(): DB {
 
 function persist() {
   if (transactionDepth > 0) return;
+  if (postgresEnabled) throw new Error('PostgreSQL writes require a transaction');
   if (sqliteEnabled) throw new Error('SQLite writes require a transaction');
   fs.mkdirSync(path.dirname(FILE), { recursive: true, mode: 0o700 });
   const temp = `${FILE}.${process.pid}.tmp`;
@@ -131,6 +156,26 @@ const implementation = {
   /** SQLite uses a write lock and a single atomic commit; JSON is local demo only. */
   transaction<T>(fn: () => T): T {
     if (transactionDepth > 0) return fn();
+    if (postgresEnabled) {
+      const bridge = postgres();
+      transactionDepth = 1;
+      cache = null;
+      try {
+        const result = runTransaction(bridge, (loadState) => {
+          // Состояние из базы — единственный источник внутри транзакции.
+          cache = parseState(loadState() as unknown);
+          const value = fn();
+          if (value && typeof (value as { then?: unknown }).then === 'function') throw new Error('Async transaction is not supported');
+          // Проверяем то, что уйдёт в базу: повреждённое состояние не пишется.
+          validateStore(cache);
+          return value;
+        });
+        return result;
+      } finally {
+        transactionDepth = 0;
+        cache = null;
+      }
+    }
     if (sqliteEnabled) {
       const db = sqlite();
       db.exec('BEGIN IMMEDIATE');
@@ -311,6 +356,34 @@ const implementation = {
     if (index < 0) payments.push(payment); else payments[index] = payment;
     persist();
   },
+  // Журнал технических событий: адресные операции вместо чтения всего состояния.
+  // В режиме PostgreSQL `store.all()` поднял бы все таблицы ради строки журнала.
+  eventByDedupe: (dedupeKey: string) => load().events.find((e) => e.dedupeKey === dedupeKey),
+  addEvent(e: StoredEvent) {
+    load().events.push(e);
+    persist();
+  },
+  eventsForOwner: (ownerId: string, profileId: string) =>
+    load().events.filter((e) => e.ownerId === ownerId && e.profileId === profileId),
+  removeEventsForProfile: (profileId: string) => {
+    const db = load();
+    const before = db.events.length;
+    db.events = db.events.filter((e) => e.profileId !== profileId);
+    persist();
+    return before - db.events.length;
+  },
+  pruneEvents(now: number) {
+    const db = load();
+    const { kept, removed } = pruneExpired(db.events, now);
+    if (removed > 0) {
+      db.events = kept;
+      persist();
+    }
+    return removed;
+  },
+  eventCount: () => load().events.length,
+  /** Сколько профилей — для проверки хранилища без чтения всех таблиц. */
+  profileCount: () => load().profiles.length,
   subs: () => load().subs,
   sub: (profileId: string) => load().subs.find((s) => s.profileId === profileId),
   setSub(sub: Subscription) {
@@ -324,7 +397,7 @@ const implementation = {
 
 /** SQLite: автоматически объединяем отдельные методы в транзакции. Для связанных
  * операций вызывающий код обязан использовать общую store.transaction. */
-export const store: typeof implementation = sqliteEnabled ? new Proxy(implementation, {
+export const store: typeof implementation = sqliteEnabled || postgresEnabled ? new Proxy(implementation, {
   get(target, key, receiver) {
     const value = Reflect.get(target, key, receiver);
     if (typeof value !== 'function' || key === 'transaction') return value;

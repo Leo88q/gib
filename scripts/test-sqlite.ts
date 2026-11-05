@@ -101,7 +101,9 @@ try {
   check(blankDb.prepare("SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='app_state'").get()?.n === 0, 'пустая существующая база не заменяется новым состоянием'); blankDb.close();
   await child('scripts/test-store-must-exist-child.ts', [file, 'valid']);
   check(true, 'режим существующей базы открывает подготовленное состояние');
-  for (const mode of ['postgres', 'sqltie']) {
+  // `postgres` теперь полноценный режим, поэтому проверяем только опечатки.
+  // Молчаливый откат на JSON запрещён для любого неизвестного значения.
+  for (const mode of ['sqltie', 'pg', 'postgre']) {
     const unintendedFile = path.join(dir, `unexpected-${mode}.json`);
     const processForMode = spawn(process.execPath, ['--experimental-strip-types', 'scripts/test-store-mode-child.ts'], {
       env: { ...process.env, GIB_STORE: mode, GIB_DATA_FILE: unintendedFile }, stdio: 'ignore'

@@ -21,13 +21,31 @@ import { validateStore } from '../lib/store-validation';
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = 1_800_000_000_000;
 
+/**
+ * Поддельное хранилище с тем же адресным контрактом, что у настоящего:
+ * журнал больше не читает `all()`, а спрашивает конкретные записи. Тест должен
+ * проверять именно этот контракт — иначе он проверял бы прежний интерфейс.
+ */
 function fakeStore() {
   const state = { events: [] as any[] };
   let depth = 0;
   return {
     state,
     transaction<T>(fn: () => T): T { depth++; try { return fn(); } finally { depth--; } },
-    all: () => ({ events: state.events }),
+    eventByDedupe: (dedupeKey: string) => state.events.find(e => e.dedupeKey === dedupeKey),
+    addEvent(event: any) { state.events.push(event); },
+    eventsForOwner: (ownerId: string, profileId: string) => state.events.filter(e => e.ownerId === ownerId && e.profileId === profileId),
+    removeEventsForProfile(profileId: string) {
+      const before = state.events.length;
+      state.events = state.events.filter(e => e.profileId !== profileId);
+      return before - state.events.length;
+    },
+    pruneEvents(now: number) {
+      const before = state.events.length;
+      state.events = state.events.filter(e => now - e.at <= 90 * 86_400_000);
+      return before - state.events.length;
+    },
+    eventCount: () => state.events.length,
     get depth() { return depth; },
   };
 }

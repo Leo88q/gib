@@ -25,7 +25,7 @@ function response(parentId: string) {
   const profiles = store.profilesByParent(parentId);
   const confirmed = new Map<string, number>();
   for (const profile of profiles) {
-    const family = store.all().playerStates.find(p => p.profileId === profile.id)?.family;
+    const family = store.playerState(profile.id).family;
     confirmed.set(profile.id, family?.completed ?? 0);
   }
   const target = store.familyGoalTarget(parentId) ?? undefined;

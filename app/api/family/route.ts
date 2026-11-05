@@ -17,7 +17,7 @@ function goalFor(parentId: string) {
   const profiles = store.profilesByParent(parentId);
   const confirmed = new Map<string, number>();
   for (const profile of profiles) {
-    const state = store.all().playerStates.find(p => p.profileId === profile.id)?.family;
+    const state = store.playerState(profile.id).family;
     confirmed.set(profile.id, state?.completed ?? 0);
   }
   const goal = familyGoal(profiles, confirmed, store.familyGoalTarget(parentId) ?? undefined);
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, profileId);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-    const state = store.all().playerStates.find(p => p.profileId === profileId)?.family ?? emptyFamily();
+    const state = store.playerState(profileId).family ?? emptyFamily();
     return NextResponse.json({ ...publicFamily(state, profile.band), goal: goalFor(auth.parentId) });
   });
 }
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, b.profileId as string);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-    const family = store.all().playerStates.find(p => p.profileId === profile.id)?.family ?? emptyFamily();
+    const family = store.playerState(profile.id).family ?? emptyFamily();
     const result = advanceFamily(family, command, randomUUID());
     if ('error' in result) return NextResponse.json(result, { status: result.error === 'invalid_action' ? 400 : 409 });
     if (!result.replay) { const player = store.playerState(profile.id); player.family = result.state; store.setPlayerState(player); }

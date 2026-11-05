@@ -1,7 +1,17 @@
-/** Experimental schema v1. Identity and queryable values are relational; per-record details remain JSONB. */
-export const SCHEMA_VERSION = 1;
+/**
+ * Схема хранилища. Версия 2 добавляет состояние аккаунта и лимиты, которые
+ * раньше жили только рядом с коллекциями в JSON/SQLite.
+ *
+ * Что где хранится: идентичность и значения, по которым ищут, — в столбцах;
+ * остальное — в JSONB с проверкой, что столбцы и JSON не разошлись. Так запрос
+ * не зависит от формы записи, а рассинхрон ловится ограничением, а не отчётом.
+ */
+export const SCHEMA_VERSION = 2;
 export const LOCK_ID = 726391804;
 export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments', 'events'] as const;
+
+/** Таблицы состояния аккаунта: не данные ребёнка, но нужны для работы. */
+export const ACCOUNT_TABLES = ['parent_pins', 'family_settings', 'notification_settings', 'rate_limits'] as const;
 export const SCHEMA_V1 = `
 CREATE TABLE gib.profiles (
   id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), parent_id TEXT NOT NULL UNIQUE, age SMALLINT NOT NULL CHECK (age BETWEEN 5 AND 13),
@@ -49,4 +59,35 @@ CREATE TABLE gib.events (
     AND data->>'ownerId' IS NOT DISTINCT FROM owner_id AND data->>'at' IS NOT DISTINCT FROM at::text AND data->>'dedupeKey' IS NOT DISTINCT FROM dedupe_key)
 );
 CREATE INDEX events_profile_at ON gib.events(profile_id, at DESC);
+`;
+
+/**
+ * Схема v2: то, что раньше жило вне коллекций.
+ *
+ * - `parent_pins` — только scrypt-хеш и соль, без самого PIN;
+ * - `family_settings` — размер общей цели, одно число на владельца;
+ * - `notification_settings` — частоты сообщений взрослому;
+ * - `rate_limits` — окна лимитов запросов (общие для инстансов).
+ *
+ * Внешних ключей на `profiles` нет намеренно: PIN и настройки принадлежат
+ * **владельцу** (взрослому), а не профилю ребёнка, и должны переживать удаление
+ * одного ребёнка.
+ */
+export const SCHEMA_V2 = `
+CREATE TABLE gib.parent_pins (
+  parent_id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), data JSONB NOT NULL,
+  CHECK (jsonb_typeof(data) = 'object' AND data->>'parentId' IS NOT DISTINCT FROM parent_id)
+);
+CREATE TABLE gib.family_settings (
+  parent_id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), goal_target INTEGER NOT NULL CHECK (goal_target BETWEEN 4 AND 60), data JSONB NOT NULL,
+  CHECK (jsonb_typeof(data) = 'object' AND data->>'parentId' IS NOT DISTINCT FROM parent_id AND (data->>'goalTarget')::int IS NOT DISTINCT FROM goal_target)
+);
+CREATE TABLE gib.notification_settings (
+  parent_id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), data JSONB NOT NULL,
+  CHECK (jsonb_typeof(data) = 'object' AND data->>'parentId' IS NOT DISTINCT FROM parent_id)
+);
+CREATE TABLE gib.rate_limits (
+  bucket_key TEXT PRIMARY KEY, count INTEGER NOT NULL CHECK (count >= 0), reset_at BIGINT NOT NULL CHECK (reset_at >= 0)
+);
+CREATE INDEX rate_limits_reset ON gib.rate_limits(reset_at);
 `;
