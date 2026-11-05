@@ -21,6 +21,7 @@ import { remainingInk } from './remaining-ink-catalog';
 import { readInkScene, validateInkVariant } from './ink-snapshot';
 import { readDeepInk, validateDeepInkVariant } from './deep-ink';
 import { deepInkFor } from './deep-ink-catalog';
+import { lazyDeepInk } from './deep-ink-lazy';
 import { questForScenario, questForTask } from '../content/narrative';
 import { levelOf } from '../gamification';
 import { profileZone, calendarDay, weekStartDay, shiftDay, dayStart } from '../calendar';
@@ -183,7 +184,13 @@ function snapshotStory(sc: Scenario, inkBand?: AgeBand, deep = false): Scenario 
   const copy = structuredClone(sc);
   for (const variant of Object.values(copy.variants)) for (const option of variant.options) delete option.quality;
   if (inkBand) { const json=weekOneInk(copy.id,inkBand) ?? remainingInk(copy.id,inkBand); if(json) { copy.variants[inkBand].ink={version:1,json}; if(!validateInkVariant(copy.variants[inkBand])) throw Error('ink_catalog_mismatch'); } }
-  if (deep && inkBand) { const json = deepInkFor(copy.id, inkBand); if (json) { copy.variants[inkBand].deepInk = { version: 1, json }; if (!validateDeepInkVariant(copy.variants[inkBand])) throw Error('deep_ink_catalog_mismatch'); } }
+  if (deep && inkBand) {
+    // Готовое дерево (первые дни) имеет приоритет; остальные истории получают
+    // второй шаг из тех же текстов через ленивую сборку. Снимок сессии всё равно
+    // хранит готовое дерево, поэтому старые сессии не зависят от каталога.
+    const json = deepInkFor(copy.id, inkBand) ?? lazyDeepInk(copy, inkBand) ?? undefined;
+    if (json) { copy.variants[inkBand].deepInk = { version: 1, json }; if (!validateDeepInkVariant(copy.variants[inkBand])) throw Error('deep_ink_catalog_mismatch'); }
+  }
   return copy;
 }
 
