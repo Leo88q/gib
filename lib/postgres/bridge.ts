@@ -18,11 +18,36 @@
  * Что здесь важнее всего: ошибка базы данных не превращается в молчаливую
  * пустоту. Любой сбой моста бросает исключение, транзакция откатывается.
  */
+import { existsSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 
 /** Размер общей области ответа: строка состояния (16 байт) + JSON. */
 const CONTROL_BYTES = 16;
 const DEFAULT_BODY_BYTES = 16 * 1024 * 1024;
+
+/**
+ * Путь к файлу потока базы.
+ *
+ * `import.meta.url` внутри собранного Next-бандла указывает в `.next/server/…`,
+ * поэтому относительный путь от него ломается в production. Ищем файл от
+ * рабочего каталога — там же, где `scripts/`. Если файла нет, падаем сразу и с
+ * понятным текстом: молчаливое зависание на таймаутах хуже ошибки.
+ */
+function workerPath(env: NodeJS.ProcessEnv): string {
+  const candidates = [
+    env.GIB_PG_WORKER,
+    join(process.cwd(), 'scripts', 'pg-bridge-worker.mjs'),
+    resolve(process.cwd(), '..', 'scripts', 'pg-bridge-worker.mjs'),
+  ].filter((value): value is string => Boolean(value));
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new Error(
+    'Файл потока PostgreSQL не найден (scripts/pg-bridge-worker.mjs). ' +
+      'Он должен быть рядом с приложением; путь можно задать в GIB_PG_WORKER.',
+  );
+}
 
 export type PgRow = Record<string, unknown>;
 export type BridgeOptions = {
@@ -57,7 +82,7 @@ export class PgBridge {
     this.control = new Int32Array(sab, 0, 4);
     this.body = new Uint8Array(sab, CONTROL_BYTES);
     this.timeoutMs = options.timeoutMs ?? 30_000;
-    this.worker = new Worker(new URL('../../scripts/pg-bridge-worker.mjs', import.meta.url), {
+    this.worker = new Worker(workerPath(process.env), {
       workerData: {
         sab,
         connectionString: options.connectionString,

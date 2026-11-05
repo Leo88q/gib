@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import { store } from '../store.ts';
 import { limitStoreInfo } from '../ratelimit.ts';
 import { auditSecrets, clientLeaks, secretsReady, strictBlockers } from '../secrets.ts';
+import { openBridge, pingDatabase } from '../postgres/state-backend.ts';
 
 export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'secrets' | 'billing' | 'notifications';
 
@@ -91,11 +92,26 @@ function checkState(): Check {
 }
 
 /**
- * Файл хранилища: для SQLite это главная зависимость. Для JSON — тоже файл,
- * но другая переменная окружения.
+ * Хранилище: для SQLite и JSON это файл, для PostgreSQL — соединение с базой.
+ *
+ * Проверять в режиме PostgreSQL наличие `data/db.json` бессмысленно и вредно:
+ * отчёт говорил бы «файл недоступен» там, где всё работает, или наоборот
+ * показывал бы посторонний файл как источник данных.
  */
 function checkStorage(): Check {
   const sqlite = process.env.GIB_STORE === 'sqlite';
+  if (process.env.GIB_STORE === 'postgres') {
+    try {
+      const result = timed(() => {
+        const ping = pingDatabase(openBridge());
+        if (!ping.ok) throw new Error(ping.detail);
+        return `postgres: ${ping.detail}`;
+      });
+      return { id: 'storage', level: 'ready', ok: true, ...result };
+    } catch (error) {
+      return { id: 'storage', level: 'ready', ok: false, detail: `база недоступна: ${(error as Error).message}`, durationMs: 0 };
+    }
+  }
   const file = sqlite
     ? (process.env.GIB_SQLITE_FILE || 'data/gib.sqlite')
     : (process.env.GIB_DATA_FILE || 'data/db.json');

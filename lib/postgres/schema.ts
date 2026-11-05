@@ -74,6 +74,11 @@ CREATE INDEX events_profile_at ON gib.events(profile_id, at DESC);
  * одного ребёнка.
  */
 export const SCHEMA_V2 = `
+-- Схема v1 запрещала второму ребёнку того же взрослого (parent_id UNIQUE).
+-- Приложение поддерживает семью с несколькими детьми, поэтому ограничение
+-- снимается, а поиск по владельцу остаётся быстрым за счёт индекса.
+ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_parent_id_key;
+CREATE INDEX IF NOT EXISTS profiles_parent ON gib.profiles(parent_id);
 CREATE TABLE gib.parent_pins (
   parent_id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), data JSONB NOT NULL,
   CHECK (jsonb_typeof(data) = 'object' AND data->>'parentId' IS NOT DISTINCT FROM parent_id)

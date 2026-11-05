@@ -6,7 +6,7 @@ import { emptyStats, todayKey } from './gamification.ts';
 import { validateStore } from './store-validation.ts';
 import type { StoredEvent } from './events/journal.ts';
 import { pruneExpired } from './events/journal.ts';
-import { ensureSchemaSync, openBridge, readState, runTransaction, type StateShape } from './postgres/state-backend.ts';
+import { WRITE_LOCK, ensureSchemaSync, openBridge, readState, writeState, type StateShape } from './postgres/state-backend.ts';
 import { SCHEMA_V1, SCHEMA_V2 } from './postgres/schema.ts';
 
 type DB = {
@@ -160,17 +160,33 @@ const implementation = {
       const bridge = postgres();
       transactionDepth = 1;
       cache = null;
+      bridge.exec('BEGIN');
       try {
-        const result = runTransaction(bridge, (loadState) => {
-          // Состояние из базы — единственный источник внутри транзакции.
-          cache = parseState(loadState() as unknown);
-          const value = fn();
-          if (value && typeof (value as { then?: unknown }).then === 'function') throw new Error('Async transaction is not supported');
-          // Проверяем то, что уйдёт в базу: повреждённое состояние не пишется.
-          validateStore(cache);
-          return value;
-        });
-        return result;
+        // Замок писателей: два процесса не должны читать и затирать друг друга.
+        bridge.query('SELECT pg_advisory_xact_lock($1)', [WRITE_LOCK]);
+        const before = readState(bridge);
+        // `cache` — единственный источник истины внутри транзакции.
+        //
+        // Важно: `parseState` берёт массивы по ссылке, поэтому изменения через
+        // `store` попали бы и в `before`. Для сравнения нужна отдельная
+        // глубокая копия, иначе запись «не видит» изменений и в базу не уходит
+        // ничего — именно это и случилось при первой проверке.
+        const snapshot = structuredClone(before);
+        cache = parseState(before as unknown);
+        const value = fn();
+        if (value && typeof (value as { then?: unknown }).then === 'function') throw new Error('Async transaction is not supported');
+        // Проверяем то, что уйдёт в базу: повреждённое состояние не пишется.
+        validateStore(cache);
+        writeState(bridge, snapshot, cache as unknown as StateShape);
+        bridge.exec('COMMIT');
+        return value;
+      } catch (error) {
+        try {
+          bridge.exec('ROLLBACK');
+        } catch {
+          /* исходная ошибка важнее */
+        }
+        throw error;
       } finally {
         transactionDepth = 0;
         cache = null;

@@ -33,7 +33,7 @@ export type StateShape = {
 };
 
 /** Блокировка писателей: тот же приём, что в миграции. */
-const WRITE_LOCK = 726391805;
+export const WRITE_LOCK = 726391805;
 
 type CollectionKey = keyof StateShape;
 
@@ -160,9 +160,13 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
       const names = Object.keys(cols);
       if (old) {
         // Обновление: ordinal не трогаем, он держит порядок чтения.
-        const sets = names.filter(c => !spec.keyColumns.includes(c)).map((c, i) => `${c} = $${i + 1}`);
-        const values = names.filter(c => !spec.keyColumns.includes(c)).map(c => cols[c]);
-        if (!sets.length) continue;
+        //
+        // `data` пишется ВСЕГДА. Раньше обновление пропускалось, если у таблицы
+        // все колонки — первичный ключ (например `player_states`): тогда
+        // изменения не попадали в базу вовсе. Это ловит тест флоу.
+        const extra = names.filter(c => !spec.keyColumns.includes(c));
+        const values = extra.map(c => cols[c]);
+        const sets = extra.map((c, i) => `${c} = $${i + 1}`);
         sets.push('data = $' + (values.length + 1) + '::jsonb');
         values.push(JSON.stringify(row));
         const where = spec.keyColumns.map((c, i) => `${c} = $${values.length + i + 1}`).join(' AND ');
