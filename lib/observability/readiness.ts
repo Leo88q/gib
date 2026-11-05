@@ -14,8 +14,9 @@
 import fs from 'node:fs';
 import { store } from '../store.ts';
 import { limitStoreInfo } from '../ratelimit.ts';
+import { auditSecrets, clientLeaks, secretsReady, strictBlockers } from '../secrets.ts';
 
-export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'billing' | 'notifications';
+export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'secrets' | 'billing' | 'notifications';
 
 export type Check = {
   id: CheckId;
@@ -127,6 +128,31 @@ function checkRateLimit(): Check {
   }
 }
 
+/**
+ * Секреты: обязательные заданы, значения не заглушки, ничего не утекло в клиент.
+ *
+ * Уровень `degraded`, а не `ready`: без ключей оплаты и ботов игра работает.
+ * Отказ здесь означал бы 503 всем детям из-за отсутствия платёжного ключа.
+ * Отдельный строгий режим (`GIB_SECRETS_STRICT=1`) может сделать просроченные
+ * секреты блокером — это решение эксплуатации, а не поведение по умолчанию.
+ */
+function checkSecrets(): Check {
+  const started = process.hrtime.bigint();
+  try {
+    const audit = auditSecrets();
+    const leaks = clientLeaks();
+    const strict = strictBlockers(audit);
+    const problems = audit.blockers.length + leaks.length + strict.length;
+    const detail = problems === 0
+      ? `секретов проверено ${audit.items.length}, обязательные на месте${audit.warnings.length ? `; предупреждений ${audit.warnings.length}` : ''}`
+      : [audit.blockers.length ? `не заданы или слабые: ${audit.blockers.join('; ')}` : '', leaks.length ? `в клиент утекло: ${leaks.join(', ')}` : '', strict.length ? `просрочены: ${strict.join('; ')}` : ''].filter(Boolean).join('; ');
+    const ms = Number(process.hrtime.bigint() - started) / 1e6;
+    return { id: 'secrets', level: 'degraded', ok: problems === 0 && secretsReady(audit), detail, durationMs: Math.round(ms * 100) / 100 };
+  } catch (error) {
+    return { id: 'secrets', level: 'degraded', ok: false, detail: `проверка секретов не выполнена: ${(error as Error).message}`, durationMs: 0 };
+  }
+}
+
 /** Платёжный контур: без него сервис работает, но оплата выключена. */
 function checkBilling(): Check {
   const configured = Boolean(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY);
@@ -158,7 +184,7 @@ function checkNotifications(): Check {
  * возможностей дают `degraded`, но не выводят сервис из работы.
  */
 export function readiness(): Readiness {
-  const checks = [checkStore(), checkState(), checkStorage(), checkRateLimit(), checkBilling(), checkNotifications()];
+  const checks = [checkStore(), checkState(), checkStorage(), checkRateLimit(), checkSecrets(), checkBilling(), checkNotifications()];
   const required = checks.filter(c => c.level === 'ready');
   const optional = checks.filter(c => c.level === 'degraded');
   const ready = required.every(c => c.ok);

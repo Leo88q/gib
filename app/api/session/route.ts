@@ -152,4 +152,13 @@ async function sessionCommand(req: Request) {
  * тогда, когда появится реальный вопрос, на который метрика отвечает.
  */
 export const GET = measured('session.info', sessionInfo);
-export const POST = measured('session.command', sessionCommand);
+
+/**
+ * POST принимает контекст трассировки вторым аргументом: в Next обработчик
+ * маршрута получает его вместе с запросом. Так `traceId` попадает в лог
+ * ошибки, не читая ни тела, ни заголовков авторизации.
+ */
+export const POST = measured('session.command', sessionCommand, ctx => ({
+  traceId: ctx?.traceId,
+  route: 'session.command',
+}));

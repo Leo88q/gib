@@ -30,8 +30,13 @@ async function main() {
   assert.equal(report.ready, true, 'принимать запросы можно');
   assert.equal(report.ok, true, 'обязательные проверки пройдены');
   const ids = report.checks.map(c => c.id).sort();
-  assert.deepEqual(ids, ['billing', 'notifications', 'ratelimit', 'state', 'storage', 'store'], 'все проверки на месте');
+  assert.deepEqual(ids, ['billing', 'notifications', 'ratelimit', 'secrets', 'state', 'storage', 'store'], 'все проверки на месте');
   // Проверка лимитов называет хранилище и честно говорит, общее оно или в процессе.
+  // Секреты: в тестовом окружении ключей оплаты и ботов нет — это degraded,
+  // но причина названа, а значения секретов в отчёт не попадают.
+  const secrets = report.checks.find(c => c.id === 'secrets')!;
+  assert.equal(secrets.level, 'degraded', 'секреты не решают приём запросов');
+  assert.ok(!/[a-f0-9]{32,}/i.test(secrets.detail), 'в отчёте нет длинных значений, похожих на ключи');
   const limits = report.checks.find(c => c.id === 'ratelimit')!;
   assert.equal(limits.level, 'degraded', 'лимиты не решают приём запросов');
   assert.ok(/общ|процесс/.test(limits.detail), `в пояснении назван режим: ${limits.detail}`);
@@ -82,9 +87,16 @@ async function main() {
   assert.equal(shouldBlockPath('/api/health/extra', 'production'), true, 'похожий путь не считается служебным');
   console.log('  ok служебные маршруты открыты, пользовательский API закрыт');
 
-  // 7. Отчёт готовности не содержит данных ребёнка.
+  // 7. Отчёт готовности не содержит данных ребёнка и значений секретов.
+  //
+  // Имена переменных (`TELEGRAM_BOT_TOKEN`) в отчёте есть намеренно: дежурному
+  // нужно знать, какого ключа нет. Значения не попадают никогда, поэтому
+  // проверяем именно значения — длинные строки, похожие на ключи и подписи.
   const text = JSON.stringify(report);
-  assert.ok(!/Мира|joy|initData|token/i.test(text), 'в отчёте нет данных ребёнка и секретов');
+  assert.ok(!/Мира|joy|initData/i.test(text), 'в отчёте нет данных ребёнка и подписей платформ');
+  assert.ok(!/[a-f0-9]{32,}/i.test(text), 'в отчёте нет длинных hex-значений, похожих на ключи');
+  assert.ok(!/\d{8,10}:[A-Za-z0-9_-]{25,}/.test(text), 'в отчёте нет токена вида Telegram');
+  assert.ok(!/Bearer\s+\S+/.test(text), 'в отчёте нет заголовка авторизации');
   console.log('  ok отчёт готовности без персональных данных');
 
   fs.rmSync(dir, { recursive: true, force: true });

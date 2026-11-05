@@ -27,6 +27,9 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const LEVEL_ORDER: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
 function threshold(): number {
+  // Уровень читается на каждом событии, а не один раз при импорте: иначе
+  // включить подробный журнал на работающем сервисе нельзя, а тест не может
+  // проверить оба порога в одном процессе.
   const configured = (process.env.GIB_LOG_LEVEL ?? '').toLowerCase() as LogLevel;
   if (configured in LEVEL_ORDER) return LEVEL_ORDER[configured];
   return process.env.NODE_ENV === 'test' ? LEVEL_ORDER.warn : LEVEL_ORDER.info;
@@ -87,6 +90,7 @@ export function log(level: LogLevel, event: string, fields: LogFields = {}): voi
   else process.stdout.write(text + '\n');
 }
 
+export const logDebug = (event: string, fields?: LogFields) => log('debug', event, fields);
 export const logInfo = (event: string, fields?: LogFields) => log('info', event, fields);
 export const logWarn = (event: string, fields?: LogFields) => log('warn', event, fields);
 export const logError = (event: string, fields?: LogFields) => log('error', event, fields);
