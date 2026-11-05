@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 import TaskView, { type TaskInstance } from '../components/TaskView';
 import SwitchRounds from '../components/SwitchRounds';
 import TaskViewSupport from '../components/SupportPractice';
+import SupportKit from '../components/SupportKit';
 import { makeSupportPractice } from '../lib/content/support-practice';
 import { TASK_BY_ID } from '../lib/content/cognitive';
 import type { AgeBand } from '../lib/types';
@@ -105,6 +106,26 @@ async function main() {
   await act(async () => { first.focus(); first.click(); });
   assert.equal(dom.window.document.activeElement, first, 'фокус остаётся на выбранном варианте');
   assert.equal(first.getAttribute('aria-checked'), 'true', 'состояние выбора объявлено');
+
+  /* ------------- 4. опасные ситуации: имена, живая область, фокус ------------- */
+  await act(async () => { root.render(<SupportKit band="8-10" competency="" />); });
+  const openKit = all<HTMLButtonElement>('button').find(b => b.textContent?.includes('Набор поддержки'));
+  assert.ok(openKit, 'набор поддержки открывается');
+  assert.equal(openKit!.getAttribute('aria-expanded'), 'false', 'состояние набора объявлено');
+  await act(async () => { openKit!.click(); });
+  const safety = all<HTMLButtonElement>('button').find(b => b.textContent?.includes('Опасные ситуации'));
+  assert.ok(safety, 'раздел опасных ситуаций доступен');
+  await act(async () => { safety!.click(); });
+  assertNamedButtons('safety-list');
+  const firstStory = all<HTMLButtonElement>('.safety-story-list button')[0];
+  assert.ok(firstStory, 'история выбирается кнопкой');
+  assert.ok((firstStory!.textContent ?? '').trim().length > 10, 'у карточки истории есть слова, а не значок');
+  await act(async () => { firstStory!.click(); });
+  assertNamedButtons('safety-story');
+  const speech = container.querySelector('.story-speech[aria-live="polite"]');
+  assert.ok(speech, 'текст сцены объявляется живой областью');
+  const restart = all<HTMLButtonElement>('button').find(b => b.textContent?.includes('Начать заново'));
+  assert.ok(restart, 'начать историю заново можно кнопкой');
 
   await act(async () => { root.render(<></>); });
   console.log('  ok доступность: имена кнопок и групп, не только цветом, живые области, фокус после выбора');

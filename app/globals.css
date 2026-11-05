@@ -1772,6 +1772,12 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .big-targets > .cell, .big-targets > .card-shape, .big-targets > .signal-cell { min-height: 64px; }
 .memory-badge { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; min-width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; color: #1b1b2f; font-size: 16px; font-weight: 900; line-height: 1; z-index: 1; }
 
+/* Опасные ситуации: список историй отдельно от игрушек набора поддержки. */
+.safety-picker .safety-story-list { display: flex; flex-direction: column; gap: 10px; }
+.safety-picker .safety-story-list .option { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 52px; }
+.safety-picker .safety-story-list .option strong { font-size: 1.05rem; }
+.safety-story .story-restart { margin-top: 10px; }
+
 /* Варианты ответа: видимая метка выбора, цветовая заплатка для Stroop. */
 .options .option { display: flex; align-items: center; gap: 10px; min-height: 52px; }
 .option-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; font-weight: 900; }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { SAFETY_STORY } from '@/lib/content/safety-story';
+import { SAFETY_STORIES } from '@/lib/content/safety-story';
+import { SAFETY_CLOSING, chooseSafetyOption, safetyStoriesFor, startSafetyStory, type SafetyStep } from '@/lib/safety-story';
 import ReadAloud from './ReadAloud';
 import BubbleGame from './BubbleGame';
 import BlockPuzzle from './BlockPuzzle';
@@ -18,7 +19,7 @@ const activities: { id: Activity; label: string; icon: string }[] = [
   { id: 'hug', label: 'Поддержка', icon: '🧡' },
   { id: 'move', label: 'Разминка', icon: '🌿' },
   { id: 'water', label: 'Вода', icon: '💧' },
-  { id: 'safety', label: 'Секрет в игре', icon: '🛡️' },
+  { id: 'safety', label: 'Опасные ситуации', icon: '🛡️' },
   { id: 'feelings', label: 'Рисунок Лиса', icon: '🖼️' },
   { id: 'checkin', label: 'Как я сейчас?', icon: '💬' },
   { id: 'boundaries', label: 'Башня', icon: '🧱' },
@@ -39,7 +40,10 @@ export default function SupportKit({ competency, band }: { competency: string; b
   const [painted, setPainted] = useState<Record<number, string>>({});
   const [step, setStep] = useState(0);
   const [storyNode, setStoryNode] = useState('start');
-  const select = (id: Activity) => { setActivity(id); setBreaths(0); setPainted({}); setStep(0); setStoryNode('start'); };
+  // Отдельно от игрушек: разговор об опасной ситуации требует своего экрана
+  // с выбором истории, а не списка кнопок вперемешку с пузырьками.
+  const [safetyStep, setSafetyStep] = useState<SafetyStep | null>(null);
+  const select = (id: Activity) => { setActivity(id); setBreaths(0); setPainted({}); setStep(0); setStoryNode('start'); setSafetyStep(null); };
   return (
     <section className="support-kit" aria-label="Набор поддержки">
       <button className="support-toggle" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -59,14 +63,36 @@ export default function SupportKit({ competency, band }: { competency: string; b
           <div className="options">{MINI_STORIES[activity].nodes[storyNode].choices.map(choice => <button className="option" type="button" key={choice.label} onClick={() => setStoryNode(choice.next)}>{choice.label}</button>)}</div>
           {storyNode !== 'start' && <button className="story-restart" type="button" onClick={() => setStoryNode('start')}>Начать историю заново</button>}
         </div>}
-        {activity === 'safety' && <div className="support-game story-game">
-          <h3>Секрет в игре</h3>
-          <div className="story-speech" aria-live="polite"><span aria-hidden="true">🦊</span><p>{SAFETY_STORY[storyNode].text}</p></div>
-          <ReadAloud text={SAFETY_STORY[storyNode].text} />
-          {SAFETY_STORY[storyNode].ending && <p>Это история для тренировки — здесь не нужно указывать свои данные.</p>}
-          <div className="options">{SAFETY_STORY[storyNode].choices.map(choice => <button className="option" type="button" key={choice.label} onClick={() => setStoryNode(choice.next)}>{choice.label}</button>)}</div>
-          {storyNode !== 'start' && <button className="story-restart" type="button" onClick={() => setStoryNode('start')}>Начать историю заново</button>}
-        </div>}
+        {activity === 'safety' && (safetyStep
+          ? <div className="support-game story-game safety-story">
+              <h3>{SAFETY_STORIES.find(s => s.id === safetyStep.storyId)?.title ?? 'Опасная ситуация'}</h3>
+              <div className="story-speech" aria-live="polite"><span aria-hidden="true">🦊</span><p>{safetyStep.text}</p></div>
+              <ReadAloud text={safetyStep.text} />
+              {safetyStep.ending
+                ? <>
+                    <p>{SAFETY_CLOSING}</p>
+                    <button className="story-restart" type="button" onClick={() => setSafetyStep(null)}>Выбрать другую ситуацию</button>
+                  </>
+                : <div className="options">{safetyStep.choices.map((choice, index) => <button className="option" type="button" key={choice.label} onClick={() => {
+                    const story = SAFETY_STORIES.find(s => s.id === safetyStep.storyId);
+                    if (story) setSafetyStep(chooseSafetyOption(story, safetyStep.nodeId, index));
+                  }}>{choice.label}</button>)}</div>}
+              {!safetyStep.ending && <button className="story-restart" type="button" onClick={() => {
+                const story = SAFETY_STORIES.find(s => s.id === safetyStep.storyId);
+                if (story) setSafetyStep(startSafetyStory(story));
+              }}>Начать заново</button>}
+            </div>
+          : <div className="support-game safety-picker">
+              <h3>Опасные ситуации</h3>
+              <p>Это выдуманные истории для тренировки. Здесь нет оценок, а выбор никуда не сохраняется. Можно остановиться в любой момент.</p>
+              <p className="muted small">Выбери разговор, который сейчас интересен:</p>
+              <div className="safety-story-list">
+                {safetyStoriesFor(band, SAFETY_STORIES).map(story => <button className="option" type="button" key={story.id} onClick={() => setSafetyStep(startSafetyStory(story))}>
+                  <strong>{story.title}</strong>
+                  <span className="muted small">{story.summary}</span>
+                </button>)}
+              </div>
+            </div>)}
         {activity === 'checkin' && <FeelingsCheckIn band={band} />}
         {activity === 'bubbles' && <BubbleGame target={band === '5-7' ? 6 : band === '8-10' ? 8 : 10} />}
         {activity === 'blocks' && <BlockPuzzle />}
