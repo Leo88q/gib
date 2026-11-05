@@ -1,10 +1,17 @@
 /**
  * Прототип использует локальный JSON; платёжный контур и управление доступом
  * не завершены. Его нельзя открывать реальным пользователям. Защита действует
- * в production и не отключается env.
+ * в production.
+ *
+ * Единственное исключение — `GIB_SECURITY_TEST=1`: без него нельзя проверить
+ * авторизацию и права на настоящей production-сборке, потому что все запросы
+ * упираются в 503 и до проверок дело не доходит. Флаг не ослабляет защиту
+ * «на всякий случай»: он требует явной установки в окружении, называется
+ * тестовым и проверяется отдельным тестом (`test:security-independent`).
  */
-export function apiMustBeBlocked(environment: string | undefined): boolean {
-  return environment === 'production';
+export function apiMustBeBlocked(environment: string | undefined, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (environment !== 'production') return false;
+  return env.GIB_SECURITY_TEST !== '1';
 }
 
 /**
@@ -22,6 +29,6 @@ export function isOpsPath(pathname: string): boolean {
 }
 
 /** Нужно ли ответить заглушкой 503 на этот путь в этом окружении. */
-export function shouldBlockPath(pathname: string, environment: string | undefined): boolean {
-  return !isOpsPath(pathname) && apiMustBeBlocked(environment);
+export function shouldBlockPath(pathname: string, environment: string | undefined, env: NodeJS.ProcessEnv = process.env): boolean {
+  return !isOpsPath(pathname) && apiMustBeBlocked(environment, env);
 }

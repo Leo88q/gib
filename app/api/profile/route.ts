@@ -12,6 +12,18 @@ import type { Profile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Данные ребёнка для клиента: только то, что нужно интерфейсу.
+ *
+ * `parentId` (идентификатор взрослого в Telegram/MAX) наружу не отдаётся: он не
+ * нужен ни одному экрану, зато связывает профиль ребёнка с аккаунтом взрослого.
+ * Раньше `profile` возвращался целиком, и в ответе был `parentId` — это ловил
+ * независимый security-тест.
+ */
+function publicProfile(profile: Profile) {
+  return { id: profile.id, name: profile.name, age: profile.age, band: profile.band, timeZone: profile.timeZone, createdAt: profile.createdAt };
+}
+
 export async function GET(req: Request) {
   const auth = requireParent(req);
   if (auth.error) return auth.error;
@@ -25,7 +37,7 @@ export async function GET(req: Request) {
   const selectedId = new URL(req.url).searchParams.get('profileId');
   const selected = (selectedId ? profiles.find(p => p.id === selectedId) : undefined) ?? profiles[0];
   return NextResponse.json({
-    profile: selected ?? null,
+    profile: selected ? publicProfile(selected) : null,
     profiles: profiles.map(p => ({ id: p.id, name: p.name, age: p.age, band: p.band })),
   });
 }
@@ -59,12 +71,12 @@ export async function POST(req: Request) {
     // только по явному запросу, чтобы сбой сети не плодил профили.
     if (existing && body.addChild !== true) {
       ensureSkills(existing);
-      return NextResponse.json({ profile: existing, created: false });
+      return NextResponse.json({ profile: publicProfile(existing), created: false });
     }
     const profile: Profile = { id: 'p_' + randomUUID(), parentId, name, age, band: bandOf(age), timeZone, createdAt: Date.now() };
     store.addProfile(profile);
     ensureSkills(profile);
-    return NextResponse.json({ profile, created: true });
+    return NextResponse.json({ profile: publicProfile(profile), created: true });
   });
 }
 
@@ -81,7 +93,7 @@ export async function PATCH(req: Request) {
     const profile = ownedProfile(auth.parentId, profileId);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
     profile.timeZone = timeZone;
-    return NextResponse.json({ profile });
+    return NextResponse.json({ profile: publicProfile(profile) });
   });
 }
 

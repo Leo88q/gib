@@ -213,7 +213,10 @@
     "test:ops-config": "tsx scripts/test-ops-config.ts",
     "test:ops-live": "tsx scripts/test-ops-config.ts --live",
     "secrets:check": "tsx scripts/secrets-check.ts",
-    "test:secrets": "tsx scripts/test-secrets.ts"
+    "test:secrets": "tsx scripts/test-secrets.ts",
+    "test:security-independent": "tsx scripts/test-security-independent.ts",
+    "test:load": "tsx scripts/test-load.ts",
+    "test:prod": "npm run test:ops-live && npm run test:security-independent && npm run test:load"
   },
   "dependencies": {
     "blockly": "^12.5.1",
