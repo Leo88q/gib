@@ -1,0 +1,118 @@
+# Правила алертов gib.
+#
+# Файл написан руками, но проверяется как машинный артефакт: тест
+# `test:ops-config` разбирает его настоящим YAML-парсером и падает, если
+# правило ссылается на метрику, которой нет в `lib/observability/catalog.ts`,
+# или если у правила нет важности, пояснения и выдержки. Правило на
+# несуществующую метрику молчит всегда — и тишину легко принять за покой.
+#
+# Принципы:
+#  - тревога только на то, что видно в `/api/metrics` или `/api/ready`;
+#  - ни одного идентификатора ребёнка в метках — значит, и в алертах;
+#  - «нет данных» — отдельное состояние, а не тишина.
+
+groups:
+  - name: gib-availability
+    rules:
+      - alert: GibDown
+        expr: up{job="gib"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервис gib не отвечает на сбор метрик"
+          description: "Скрейп не проходит минуту. Проверить /api/health: если он жив, дело в токене или сети, если нет — процесс упал."
+
+      - alert: GibReadinessFailed
+        expr: increase(gib_readiness_checks_failed_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Готовность gib перешла в not_ready"
+          description: "Обязательная проверка не проходит: состояние не читается или файл базы недоступен. Балансировщик должен убрать инстанс. Смотреть /api/ready."
+
+      - alert: GibDegradedTooLong
+        expr: gib_readiness_degraded_checks > 0
+        for: 24h
+        labels:
+          severity: warning
+        annotations:
+          summary: "gib сутки в degraded"
+          description: "Работает без оплаты или без бота. Для прототипа это нормально; если так не задумано — проверить ключи."
+
+      - alert: GibMetricsMissing
+        expr: absent(gib_uptime_seconds{job="gib"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Нет данных от gib"
+          description: "Метрик нет вовсе — это не ноль и не спокойствие. Проверить токен GIB_METRICS_TOKEN и доступность /api/metrics."
+
+      - alert: GibMetricsDropping
+        expr: increase(gib_metrics_dropped_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Метрики gib выбрасываются"
+          description: "Упёрлись в предел кардинальности (500 имён). Появилось новое имя метрики из данных — это утечка кардинальности, а не нагрузка."
+
+  - name: gib-ratelimit
+    rules:
+      - alert: GibRateLimitStoreErrors
+        expr: increase(gib_ratelimit_store_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Хранилище лимитов gib даёт сбои"
+          description: "Запросы пропускаются без ограничения: защита от перебора ослаблена. Проверить файл базы и GIB_RATE_LIMIT_STORE."
+
+      - alert: GibRateLimitStoreFallback
+        expr: increase(gib_ratelimit_store_fallback_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "gib откатился к лимитам в памяти"
+          description: "Заявленный режим не поднялся. При нескольких инстансах реальный предел умножается на их число."
+
+      - alert: GibRateLimitBlockedSurge
+        expr: sum(rate(gib_ratelimit_blocked_session_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много отказов лимита на сессию"
+          description: "Больше одного отказа в секунду устойчиво. Либо перебор, либо лимит режет нормальную нагрузку — смотреть логи, не тело запросов."
+
+  - name: gib-http
+    rules:
+      - alert: GibSessionErrors
+        expr: increase(gib_http_session_command_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ошибки записи сессии в gib"
+          description: "Пять и больше ошибок за пять минут. В логе request_failed — маршрут и текст ошибки без тела запроса."
+
+      - alert: GibSessionSlow
+        expr: histogram_quantile(0.95, sum by (le) (rate(gib_http_session_command_duration_bucket[5m]))) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Сессия gib отвечает медленно"
+          description: "95-й процентиль выше двух секунд десять минут. Метрика говорит «медленно», лог — «почему»."
+
+      - alert: GibNoTraffic
+        expr: sum(rate(gib_http_session_info_total[30m])) == 0
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Полчаса без запросов к gib"
+          description: "Либо ночь, либо сломан вход. Если ожидался трафик — проверить бота и балансировщик."

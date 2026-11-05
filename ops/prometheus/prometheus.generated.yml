@@ -1,0 +1,27 @@
+# Сбор метрик gib: конфиг Prometheus.
+#
+# Сгенерировано `npm run ops:gen` из lib/observability/catalog.ts.
+# Руками не править. Подстановки GIB_SCRAPE_TARGET, GIB_METRICS_TOKEN, GIB_ENV
+# заменяет Prometheus при запуске (--enable-feature=expand-external-labels или
+# envsubst перед стартом). Токен в репозиторий не попадает.
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    service: gib
+    environment: "${GIB_ENV}"
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: gib
+    metrics_path: /api/metrics
+    scheme: http
+    authorization:
+      type: Bearer
+      credentials: "${GIB_METRICS_TOKEN}"
+    static_configs:
+      - targets: ["${GIB_SCRAPE_TARGET}"]
