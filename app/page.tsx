@@ -499,7 +499,7 @@ export default function Home() {
   const hud: HudData = useMemo(
     () => ({
       level: player?.level ?? 1,
-      levelTitle: player?.levelTitle ?? 'Новичок',
+      levelTitle: player?.levelTitle ?? 'Первые шаги',
       xp: player?.xp ?? 0,
       xpPercent: player?.xpPercent ?? 0,
       coins: player?.coins ?? 0,
