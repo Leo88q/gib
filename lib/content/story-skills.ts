@@ -29,9 +29,9 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   /* ================= Самопознание ================= */
   // История про поддержку молчащего друга: тренируется чтение сигналов,
   // хотя размечена как «замечаем чувства».
-  w1d1: { skills: ['read_signals', 'not_assume'] },
+  w1d1: { skills: ['read_signals', 'not_assume', 'comfort_other'] },
   w1d2: { skills: ['notice_feelings', 'know_preferences'] },
-  w1d3: { skills: ['notice_body_signals', 'take_break'] },
+  w1d3: { skills: ['notice_feelings', 'notice_body_signals', 'take_break'] },
   w1d5: { skills: ['know_preferences', 'personal_boundaries'] },
   // Дни 8 — стратегии памяти (списки, подсказки, сверка), а не самопознание.
   w8d1: { skills: ['plan_steps', 'gather_info'] },
@@ -40,9 +40,9 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w8d4: { skills: ['show_idea', 'return_to_task'] },
   w8d5: { skills: ['return_to_task', 'gather_info'] },
   w1d1_music: { skills: ['read_signals', 'not_assume', 'ask_how_are_you'] },
-  w1d1_picture: { skills: ['offer_help', 'respect_emotions'] },
+  w1d1_picture: { skills: ['offer_help', 'respect_emotions', 'comfort_other'] },
   w1d2_postcard: { skills: ['personal_boundaries', 'know_preferences'] },
-  w1d3_garden: { skills: ['take_break', 'notice_body_signals'] },
+  w1d3_garden: { skills: ['notice_feelings', 'take_break', 'notice_body_signals'] },
   w1d5_puppet: { skills: ['personal_boundaries', 'say_no'] },
   w8d1_supplies: { skills: ['plan_steps', 'gather_info'] },
   w8d2_path: { skills: ['many_ideas', 'show_idea'] },
@@ -148,7 +148,7 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w11d5_shapes: { skills: ['many_ideas'] },
 
   /* ================= Мышление роста ================= */
-  w1d4: { skills: ['try_another_way', 'learn_from_mistake'] },
+  w1d4: { skills: ['notice_mistakes', 'try_another_way', 'learn_from_mistake'] },
   w6d1: { skills: ['learn_from_mistake', 'notice_mistakes'] },
   w6d2: { skills: ['celebrate_progress', 'keep_going'] },
   w6d3: { skills: ['try_another_way', 'keep_going', 'manage_frustration'] },
@@ -156,8 +156,8 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w6d5: { skills: ['try_another_way'] },
   w12d3: { skills: ['try_another_way', 'know_preferences'] },
   w12d5: { skills: ['celebrate_progress'] },
-  w1d4_bridge: { skills: ['try_another_way', 'keep_going'] },
-  w6d1_map: { skills: ['learn_from_mistake', 'improve_idea'] },
+  w1d4_bridge: { skills: ['notice_mistakes', 'try_another_way', 'keep_going'] },
+  w6d1_map: { skills: ['notice_mistakes', 'learn_from_mistake', 'improve_idea'] },
   w6d2_tempo: { skills: ['celebrate_progress'] },
   w6d3_pause: { skills: ['ask_for_guidance', 'try_another_way'] },
   w6d4_example: { skills: ['ask_for_guidance'] },
@@ -174,6 +174,13 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   sk_comfort_other: { skills: ['comfort_other'] },
   sk_not_judge: { skills: ['not_judge'] },
   sk_combine_ideas: { skills: ['combine_ideas'] },
+  // Вторые сцены тех же шести навыков: другая ситуация, то же умение.
+  sk2_name_feelings: { skills: ['name_feelings'] },
+  sk2_recognize_strengths: { skills: ['recognize_strengths'] },
+  sk2_wait_turn: { skills: ['wait_turn'] },
+  sk2_hold_impulse: { skills: ['hold_impulse'] },
+  sk2_not_judge: { skills: ['not_judge'] },
+  sk2_combine_ideas: { skills: ['combine_ideas'] },
 };
 
 /** Все навыки, которые встречаются хотя бы в одной истории. */

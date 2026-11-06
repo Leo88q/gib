@@ -92,6 +92,14 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_3_strengths', dayIndex: 2, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_recognize_strengths', repeatable: true },
   { id: 'day_8_hold_impulse', dayIndex: 7, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_hold_impulse', repeatable: true },
   { id: 'day_13_comfort_other', dayIndex: 12, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_comfort_other', repeatable: true },
+  // Вторые сцены навыков, у которых была одна история: те же умения в другой
+  // ситуации. Ставятся на дни своей компетенции рядом с основным выбором.
+  { id: 'day_5_name_feelings', dayIndex: 4, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_name_feelings', repeatable: true },
+  { id: 'day_8_strengths_2', dayIndex: 8, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_recognize_strengths', repeatable: true },
+  { id: 'day_6_wait_turn', dayIndex: 6, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_wait_turn', repeatable: true },
+  { id: 'day_9_hold_impulse_2', dayIndex: 9, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_hold_impulse', repeatable: true },
+  { id: 'day_11_not_judge_2', dayIndex: 11, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_not_judge', repeatable: true },
+  { id: 'day_52_combine_ideas_2', dayIndex: 52, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_combine_ideas', repeatable: true },
   { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
   { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];

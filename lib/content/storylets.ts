@@ -15,6 +15,7 @@ import { DAYS_SEVENTEEN_NINETEEN_STORYLETS } from './storylets-days-seventeen-ni
 import { DAYS_TWENTY_TWENTYTWO_STORYLETS } from './storylets-days-twenty-twentytwo.ts';
 import { DAYS_TWENTYTHREE_TWENTYFIVE_STORYLETS } from './storylets-days-twentythree-twentyfive.ts';
 import { SKILL_GAP_STORIES } from './skill-gap-stories.ts';
+import { SKILL_SECOND_STORIES } from './skill-second-stories.ts';
 
 /** Original extra stories for days 1–60. Expert and device review is still required. */
 export const STORYLET_SCENARIOS: Scenario[] = [
@@ -85,5 +86,7 @@ export const STORYLET_SCENARIOS: Scenario[] = [
   ...WEEK_TWELVE_STORYLETS,
   // Истории под навыки, у которых не было ни одной сцены (см. lib/content/skill-gap-stories.ts).
   ...SKILL_GAP_STORIES,
+  // Вторые сцены для навыков, у которых была одна история.
+  ...SKILL_SECOND_STORIES,
 ];
 export const STORYLETS_BY_ID = Object.fromEntries(STORYLET_SCENARIOS.map(story => [story.id, story]));
