@@ -18,7 +18,7 @@
  * тест это принимает.
  */
 import assert from 'node:assert/strict';
-import { PROGRAM_SCENARIOS } from '../lib/content/program/index.ts';
+import { PROGRAM, PROGRAM_SCENARIOS, scenarioOfProgramDay } from '../lib/content/program/index.ts';
 import { STORYLETS_BY_ID } from '../lib/content/storylets.ts';
 import { STORY_SKILLS } from '../lib/content/story-skills.ts';
 import { SKILL_BY_ID } from '../lib/content/skills-catalog.ts';
@@ -80,6 +80,29 @@ if (multiCompetency.length) {
   }
   assert.deepEqual(bad, [], 'у карточки дня нет компетенции');
   console.log(`  ok у всех ${PROGRAM_DAYS.length} дней есть выбор истории, у ${DAY_STORY_CARDS.length} карточек заявлена компетенция`);
+}
+
+/* ---- Неделя и её дни: метка недели не обещает того, чего в днях нет ---- */
+{
+  // Компетенция недели — это то, что видит родитель на карточке недели.
+  // Пять дней могут задевать соседние компетенции, но заявленная должна быть
+  // в них самой частой: иначе ярлык обещает тему, которой в историях нет.
+  // Так нашлась неделя 8: «Память» стояла как «Самопознание», а все пять её
+  // дней были про решения — ни одного про свои чувства.
+  const wrong: string[] = [];
+  for (const week of PROGRAM) {
+    const counts = new Map<CompetencyId, number>();
+    for (const day of PROGRAM_DAYS.filter(d => d.week.week === week.week)) {
+      const competency = scenarioOfProgramDay(day.index).competency;
+      counts.set(competency, (counts.get(competency) ?? 0) + 1);
+    }
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (!top || top[0] !== week.competency) {
+      wrong.push(`неделя ${week.week}: заявлено «${week.competency}», в днях чаще «${top?.[0] ?? '—'}»`);
+    }
+  }
+  assert.deepEqual(wrong, [], `компетенция недели расходится с её днями: ${wrong.join('; ')}`);
+  console.log(`  ok ${PROGRAM.length} недель: заявленная компетенция совпадает с самой частой в днях`);
 }
 
 console.log('\nРазметка компетенций: история и её навыки говорят одно и то же.');
