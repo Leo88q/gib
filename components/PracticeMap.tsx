@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { PracticeTopic } from '@/lib/engine/practice-map';
+import type { CompetencyProgress } from '@/lib/engine/skill-map';
 import type { ActivityDay } from '@/lib/engine/activity-history';
 import { competencyArt, DEFAULT_ART } from '@/lib/art-paths';
 import { apiFetch } from '@/lib/telegramClient';
@@ -8,6 +9,10 @@ import { apiFetch } from '@/lib/telegramClient';
 /** Only displays aggregate game participation, never scores or answers. */
 export default function PracticeMap({ profileId }: { profileId: string }) {
   const [topics, setTopics] = useState<PracticeTopic[] | null>(null);
+  const [skills, setSkills] = useState<CompetencyProgress[] | null>(null);
+  const [mood, setMood] = useState<{ mood: string; text: string } | null>(null);
+  // Открыта может быть одна тема за раз: 48 названий сразу — это стена текста.
+  const [open, setOpen] = useState<string | null>(null);
   const [activity, setActivity] = useState<{ days: ActivityDay[]; activeDays: number; totalDays: number; text: string } | null>(null);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -20,7 +25,11 @@ export default function PracticeMap({ profileId }: { profileId: string }) {
         if (!res.ok) throw Error('map_failed');
         const data = await res.json();
         if (!Array.isArray(data.topics)) throw Error('map_failed');
-        if (!controller.signal.aborted) { setTopics(data.topics); setActivity(data.activity ?? null); }
+        if (!controller.signal.aborted) {
+          setTopics(data.topics); setActivity(data.activity ?? null);
+          setSkills(Array.isArray(data.skills) ? data.skills : null);
+          setMood(data.mood ?? null);
+        }
       } catch { if (!controller.signal.aborted) setError(true); }
     })();
     return () => controller.abort();
@@ -52,6 +61,40 @@ export default function PracticeMap({ profileId }: { profileId: string }) {
           ))}
         </ol>
         <p className="muted small">Пустой день — это просто день без занятия. Ничего за это не отнимается.</p>
+      </div>
+    )}
+    {skills && (
+      <div className="skills-level">
+        <h3>Умения из историй</h3>
+        <p>{mood?.text ?? 'Здесь появляются умения из пройденных историй.'}</p>
+        <p className="muted small">Умение появляется, когда встретилось в истории. Это не оценка и не рейтинг: пропусков здесь нет, просто не всё ещё пройдено.</p>
+        <div className="skills-groups">
+          {skills.map(group => (
+            <article className={`skills-group${group.met > 0 ? ' has' : ''}`} key={group.id}>
+              <button
+                type="button"
+                className="skills-group-head"
+                aria-expanded={open === group.id}
+                onClick={() => setOpen(open === group.id ? null : group.id)}
+              >
+                <img src={competencyArt(group.id)} alt="" onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }} />
+                <span className="skills-group-title">{group.label}</span>
+                <span className="skills-group-count">{group.met} из {group.total}</span>
+              </button>
+              {open === group.id && (
+                <ul className="skills-list">
+                  {group.skills.map(skill => (
+                    <li key={skill.id} className={skill.met ? 'met' : ''}>
+                      <span aria-hidden="true">{skill.met ? '✓' : '○'}</span>
+                      <span>{skill.label}</span>
+                      {skill.met && <small className="muted"> встречалось{skill.stories > 1 ? ` в ${skill.stories} историях` : ''}</small>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          ))}
+        </div>
       </div>
     )}
     <p className="muted">Карта не показывает ответы, чувства, оценки или рекомендации.</p>

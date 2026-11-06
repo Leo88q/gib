@@ -79,8 +79,13 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   // Истории под навыки, у которых не было ни одной сцены. Ставятся на дни
   // своей компетенции, чтобы ребёнок действительно до них дошёл: история без
   // карточки в дне остаётся на складе.
-  { id: 'day_3_name_feelings', dayIndex: 2, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_name_feelings', repeatable: true },
-  { id: 'day_5_strengths', dayIndex: 4, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_recognize_strengths', repeatable: true },
+  // Эти две сцены стоят на первом дне намеренно. Если положить их третьими в
+  // день, где уже есть основная история и дополнительная, ребёнок за один
+  // проход программы до них не дойдёт: в выдаче дня максимум три карточки, а
+  // значит доступны только две верхние. Здесь они лежат рядом с двумя другими
+  // самопознавательными сценами, и все три достижимы.
+  { id: 'day_2_name_feelings', dayIndex: 1, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_name_feelings', repeatable: true },
+  { id: 'day_3_strengths', dayIndex: 2, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_recognize_strengths', repeatable: true },
   { id: 'day_8_hold_impulse', dayIndex: 7, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_hold_impulse', repeatable: true },
   { id: 'day_13_comfort_other', dayIndex: 12, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_comfort_other', repeatable: true },
   { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },

@@ -22,6 +22,8 @@ import { SKILLS_CATALOG, SKILLS_PER_COMPETENCY, SKILL_BY_ID, skillsForCompetency
 import { STORY_SKILLS, coveredSkillIds, mismatchedStories } from '../lib/content/story-skills.ts';
 import { PROGRAM_SCENARIOS } from '../lib/content/program/index.ts';
 import { STORYLETS_BY_ID } from '../lib/content/storylets.ts';
+import { PROGRAM_DAYS } from '../lib/content/program/index.ts';
+import { DAY_STORY_CARDS } from '../lib/day/story-deck.ts';
 
 const BANDS = ['5-7', '8-10', '11-13'] as const;
 
@@ -108,6 +110,25 @@ console.log('  ok ссылки на навыки существуют, у ист
     `навыки без единой истории: ${uncovered.join(', ')}. ` +
     'Нужен контент или честное снижение числа навыков, но не тихая дыра.');
   console.log(`  ok все 48 навыков тренируются хотя бы одной историей`);
+}
+
+/* ---- 6b. Все навыки достижимы за один проход программы ---- */
+{
+  // Покрытие контентом — ещё не доступность. В выдаче дня максимум три
+  // карточки: основная история и две дополнительные. Если сцена с навыком
+  // лежит четвёртой, ребёнок за один проход её не увидит, и навык останется
+  // «покрытым» только на бумаге. Проверяем именно доступное подмножество.
+  const reachable = new Set<string>();
+  for (const day of PROGRAM_DAYS) {
+    const extra = DAY_STORY_CARDS.filter(card => card.dayIndex === day.index).slice(0, 2);
+    for (const scenarioId of [day.day.scenarioId, ...extra.map(card => card.scenarioId)]) {
+      for (const skillId of STORY_SKILLS[scenarioId]?.skills ?? []) reachable.add(skillId);
+    }
+  }
+  const unreachable = SKILLS_CATALOG.filter(skill => !reachable.has(skill.id)).map(skill => skill.id);
+  assert.deepEqual(unreachable, [],
+    `навыки недостижимы за один проход (сцена есть, но ребёнок до неё не дойдёт): ${unreachable.join(', ')}`);
+  console.log(`  ok все 48 навыков достижимы за один проход (${reachable.size}/48)`);
 }
 
 /* ---- 7. Расхождения разметки видны, а не спрятаны ---- */
