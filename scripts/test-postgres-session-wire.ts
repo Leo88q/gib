@@ -8,6 +8,7 @@ import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 import { isDeepStrictEqual } from 'node:util';
 import { ensureSchema, importLegacy, type SqlClient } from '../lib/postgres/migrate';
 import { startOwnedSession, answerOwnedSession } from '../lib/postgres/session-repository';
+import { shutdownPgliteSocketServer } from './pglite-socket-shutdown.ts';
 async function main() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-pg-wire-'));
   const db = new PGlite(); let server = new PGLiteSocketServer({ db, path: path.join(dir, '.s.PGSQL.5432') });
@@ -33,6 +34,6 @@ async function main() {
     check(isDeepStrictEqual(JSON.parse(JSON.stringify(retry)), JSON.parse(JSON.stringify(result))), 'новое подключение: повтор возвращает ту же квитанцию');
     const unauthorized = await answerOwnedSession(client, 'stranger', start.sessionId, payload, 500, 0);
     check('error' in unauthorized && unauthorized.error === 'session_not_found', 'pg-клиент: чужая сессия недоступна');
-  } finally { await close(); await server.stop(); await db.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+  } finally { await close(); await shutdownPgliteSocketServer(server, db); fs.rmSync(dir, { recursive: true, force: true }); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
