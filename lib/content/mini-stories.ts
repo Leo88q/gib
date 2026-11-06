@@ -1,4 +1,9 @@
-import type { StoryNode } from './safety-story.ts';
+/** Сцена мини-истории: текст, варианты и переходы. */
+export type StoryNode = {
+  text: string;
+  choices: { label: string; next: string }[];
+  ending?: boolean;
+};
 
 export type MiniStory = { title: string; nodes: Record<string, StoryNode> };
 export const MINI_STORIES: Record<string, MiniStory> = {

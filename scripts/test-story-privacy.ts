@@ -51,6 +51,6 @@ for (const [band, age] of [['5-7',6],['8-10',9],['11-13',12]] as [AgeBand, numbe
  validateStore({profiles:[profile],sessions:mem.state.sessions,playerStates:mem.state.playerStates});
  const resumed=startSession(profile,false,makeSessionMemory(structuredClone(mem.state)).store,{storyChoice:true});assert.equal(resumed.resumed,true);
  const exported=makeProfileExport({profile,skills:[],sessions:mem.state.sessions,programStates:[],playerStates:[],subs:[],payments:[]});
- assert.equal(exported.sessions[0].inProgress?.scenario?.quality,'bad');
+ assert.ok(!JSON.stringify(exported.sessions[0].inProgress).includes('"quality"'),'метка из хранилища не выгружается');
 }
 console.log('  ok новые ответы и снимки без оценочных меток, повторы, награды, legacy и прозрачный экспорт');

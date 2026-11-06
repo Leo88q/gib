@@ -2,9 +2,17 @@
 import Link from 'next/link';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
+import FamilyGoal from '@/components/FamilyGoal';
+import DataControls from '@/components/DataControls';
+import NotificationSettings from '@/components/NotificationSettings';
+import FeelingsConsent from '@/components/FeelingsConsent';
+import ParentGate from '@/components/ParentGate';
+import ParentPinSettings from '@/components/ParentPinSettings';
 
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
+import { removeProfileExerciseDrafts } from '@/lib/exercise-draft';
+import { removeProfileJourneyResumes } from '@/components/useJourneyResume';
 import { PENDING_ANSWER_KEY, parsePendingAnswer } from '@/lib/pending-answer';
 
 import { competencyArt, skillArt, DEFAULT_ART } from '@/lib/art-paths';
@@ -44,8 +52,17 @@ type Report = {
     stars: number;
     badges: number;
     days: number;
-    perfectDays: number;
   };
+};
+
+/** Отчёт по журналу технических событий: только завершённые занятия, с источниками. */
+type EventsReport = {
+  from: number;
+  to: number;
+  student: { sessions: number; minutes: number; tasks: number; excludedTasks: number; stories: number; practices: number; skippedPractices: number; stars: number };
+  skills: { skill: string; accuracy: number | null; tasks: number; excluded: number }[];
+  sources: { event: string; version: 1; records: number }[];
+  limits: string[];
 };
 
 type ProgramDay = {
@@ -88,16 +105,25 @@ const COMPETENCY_LABEL: Record<string, string> = {
   growth_mindset: 'Мышление роста',
 };
 
-export default function ParentPage() {
+/** Кабинет обёрнут воротами PIN: если взрослый задал код, вход требует его. */
+export default function ParentPageWrapper() {
+  return <ParentGate><ParentPage /></ParentGate>;
+}
+
+function ParentPage() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ name: string; age: number; band: string; timeZone?: string } | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [eventsReport, setEventsReport] = useState<EventsReport | null>(null);
   const [sub, setSub] = useState<Sub>(null);
   const [plans, setPlans] = useState<Record<string, { title: string; price: number; perks: string[] }>>({});
   const [program, setProgram] = useState<{
     progress: { completedDays: number; totalDays: number; finished: boolean; currentWeek: number };
     weeks: ProgramWeek[];
+    reviewOff?: boolean;
   } | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
   const [billingError, setBillingError] = useState('');
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingAvailable, setBillingAvailable] = useState(false);
@@ -107,6 +133,7 @@ export default function ParentPage() {
   const [selectedZone, setSelectedZone] = useState('Europe/Moscow');
   const [zoneMessage, setZoneMessage] = useState('');
   const [loadingState, setLoadingState] = useState<'loading' | 'ready' | 'no-profile' | 'error'>('loading');
+  const [children, setChildren] = useState<{ id: string; name: string; age: number }[]>([]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -123,6 +150,10 @@ export default function ParentPage() {
           return response.json();
         };
         const safeId = encodeURIComponent(id);
+        void apiFetch('/api/profile')
+          .then(r => (r.ok ? r.json() : null))
+          .then(d => { if (d && Array.isArray(d.profiles) && !controller.signal.aborted) setChildren(d.profiles); })
+          .catch(() => { /* список детей не обязателен для отчёта */ });
         const [rep, sb, pr] = await Promise.all([
           fetchJson(`/api/report?profileId=${safeId}`),
           fetchJson(`/api/subscribe?profileId=${safeId}`),
@@ -131,6 +162,7 @@ export default function ParentPage() {
         if (controller.signal.aborted) return;
         if (!rep.profile || !rep.report) throw new Error('invalid_report');
         setProfile(rep.profile); setSelectedZone(profileZone(rep.profile.timeZone)); setReport(rep.report);
+        setEventsReport(rep.events ?? null);
         setSub(sb.subscription ?? null); setPlans(sb.plans ?? {});
         setBillingAvailable(Boolean(sb.available));
         if (pr.weeks) { setProgram(pr); setOpenWeek(pr.progress.currentWeek ?? 1); }
@@ -149,10 +181,34 @@ export default function ParentPage() {
       const updated = await res.json();
       const rep = await apiFetch(`/api/report?profileId=${encodeURIComponent(profileId)}`);
       if (!rep.ok) throw new Error('report_failed');
-      setProfile(updated.profile); setReport((await rep.json()).report);
+      const updatedReport = await rep.json();
+      setProfile(updated.profile); setReport(updatedReport.report); setEventsReport(updatedReport.events ?? null);
       setZoneMessage('Часовой пояс сохранён. Недельный отчёт обновлён.');
     } catch { setZoneMessage('Не удалось обновить данные. Проверьте соединение и попробуйте снова.'); }
     finally { setDataBusy(false); }
+  };
+
+  // Выключатель повторов: решение взрослого, не оценка ребёнка. Прогресс не меняется.
+  const toggleReview = async (reviewOff: boolean) => {
+    if (!profileId || reviewBusy || !program) return;
+    // Переключатель контролируемый: сначала показываем новый выбор, чтобы
+    // браузер не откатывал его назад, пока идёт запрос. При ошибке возвращаем как было.
+    const previous = program.reviewOff === true;
+    setReviewBusy(true); setReviewMessage('');
+    setProgram(current => current ? { ...current, reviewOff } : current);
+    try {
+      const res = await apiFetch('/api/program', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, reviewOff }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error('save_failed');
+      setProgram(current => current ? { ...current, reviewOff: data.reviewOff } : current);
+      setReviewMessage(data.notice);
+    } catch {
+      setProgram(current => current ? { ...current, reviewOff: previous } : current);
+      setReviewMessage('Не удалось сохранить настройку повторов. Попробуйте снова.');
+    } finally { setReviewBusy(false); }
   };
 
   const exportProfile = async () => {
@@ -183,7 +239,7 @@ export default function ParentPage() {
         return;
       }
       try { localStorage.removeItem('gib:profileId'); } catch { /* storage is optional */ }
-      try { if (parsePendingAnswer(sessionStorage.getItem(PENDING_ANSWER_KEY), profileId)) sessionStorage.removeItem(PENDING_ANSWER_KEY); removeProfileSwitchDrafts(sessionStorage, profileId); removeProfileSelectionDrafts(sessionStorage, profileId); } catch { /* storage may be disabled */ }
+      try { if (parsePendingAnswer(sessionStorage.getItem(PENDING_ANSWER_KEY), profileId)) sessionStorage.removeItem(PENDING_ANSWER_KEY); removeProfileSwitchDrafts(sessionStorage, profileId); removeProfileSelectionDrafts(sessionStorage, profileId); removeProfileExerciseDrafts(sessionStorage, profileId); removeProfileJourneyResumes(sessionStorage, profileId); } catch { /* storage may be disabled */ }
       window.location.assign('/');
     } catch { setDataError('Не удалось удалить профиль. Проверьте соединение и попробуйте снова.'); }
     finally { setDataBusy(false); }
@@ -233,6 +289,26 @@ export default function ParentPage() {
         </div>
       </div>
 
+      {children.length > 1 && (
+        <div className="card">
+          <h2>Дети в семье</h2>
+          <p className="muted small">Отчёт, карта и семейные идеи открываются для выбранного ребёнка. Общая цель семьи считает всех вместе.</p>
+          <div className="child-switch" role="group" aria-label="Выбрать ребёнка">
+            {children.map(child => (
+              <button
+                key={child.id}
+                type="button"
+                className={`chip child-chip${child.id === profileId ? ' on' : ''}`}
+                aria-pressed={child.id === profileId}
+                onClick={() => window.location.assign(`/parent?profileId=${encodeURIComponent(child.id)}`)}
+              >
+                {child.name}, {child.age}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ---------------- прогресс программы ---------------- */}
       {program && (
         <div className="card">
@@ -257,11 +333,30 @@ export default function ParentPage() {
             Каждый день программы открывается после предыдущего. Пропущенный день можно
             повторить — кнопка «Повторить предыдущий день» в тренажёре.
           </p>
+          <div className="review-toggle">
+            <label htmlFor="review-switch">Предлагать повторение тем</label>
+            <input
+              id="review-switch"
+              type="checkbox"
+              checked={!program.reviewOff}
+              disabled={reviewBusy}
+              onChange={e => void toggleReview(!e.target.checked)}
+            />
+            <p className="muted small">
+              Повтор предлагается по расписанию и никогда не блокирует новый день.
+              Если выключить, предложения пропадут, а прогресс и сроки останутся.
+              Это решение взрослого, а не оценка ребёнка.
+            </p>
+            {reviewMessage && <p role="status" className="muted small">{reviewMessage}</p>}
+          </div>
         </div>
       )}
 
       <PracticeMap profileId={profileId} />
+      <FamilyGoal profileId={profileId} />
       <FamilyIdeas profileId={profileId} parentView />
+      <FeelingsConsent profileId={profileId} />
+      <ParentPinSettings />
 
       {/* ---------------- недели программы ---------------- */}
       {program && (
@@ -352,15 +447,53 @@ export default function ParentPage() {
               <span>Значков</span>
               <b>{report.player.badges}</b>
             </div>
-            <div className="stat">
-              <span>Идеальных дней</span>
-              <b>{report.player.perfectDays}</b>
-            </div>
+            {/* «Идеальных дней» убрано: безошибочность больше не стимул и не
+                оплачивается, а показывать её взрослому как достижение значило бы
+                вернуть оценку через отчёт. Исторический счётчик остаётся в
+                хранилище и в выгрузке данных, но не в отчёте. */}
           </div>
           <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
             Внутри тренажёра ребёнок копит опыт, монетки и значки, а гардероб и питомца
             открывает за игровую валюту — реальных платежей детям нет.
           </p>
+        </div>
+      )}
+
+      {/* -------- отчёт по журналу событий: только завершённые занятия -------- */}
+      {eventsReport && (
+        <div className="card">
+          <h2>Из журнала занятий</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Считается только по завершённым занятиям за последние 7 дней. Незаконченная тренировка сюда не попадает.
+          </p>
+          <div className="stat"><span>Завершённых занятий</span><b>{eventsReport.student.sessions}</b></div>
+          <div className="stat"><span>Минут от начала до конца</span><b>{eventsReport.student.minutes}</b></div>
+          <div className="stat"><span>Ответов на задания</span><b>{eventsReport.student.tasks}</b></div>
+          <div className="stat"><span>Историй разобрано</span><b>{eventsReport.student.stories}</b></div>
+          <div className="stat"><span>Игр с идеями поддержки (пропущено: {eventsReport.student.skippedPractices})</span><b>{eventsReport.student.practices}</b></div>
+          <div className="stat"><span>Заданий с подсказкой или повтором (не влияют на точность)</span><b>{eventsReport.student.excludedTasks}</b></div>
+          {eventsReport.student.sessions === 0 && (
+            <p className="muted" style={{ marginBottom: 0 }}>Завершённых занятий на этой неделе пока нет — отчёт пуст, и это нормально.</p>
+          )}
+          {eventsReport.student.sessions > 0 && (
+            <details style={{ marginTop: 10 }}>
+              <summary>Откуда эти числа</summary>
+              <ul className="muted">
+                {eventsReport.sources.map(source => (
+                  <li key={source.event}>{source.event} (v{source.version}): {source.records} записей</li>
+                ))}
+                {eventsReport.skills.filter(skill => skill.tasks > 0).map(skill => (
+                  <li key={skill.skill}>
+                    {skill.skill}: {Math.round((skill.accuracy ?? 0) * 100)}% верных из {skill.tasks} заданий
+                    {skill.excluded ? `, ${skill.excluded} с подсказкой не учитывались` : ''}
+                  </li>
+                ))}
+              </ul>
+              <ul className="muted">
+                {eventsReport.limits.map(limit => <li key={limit}>{limit}</li>)}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
@@ -477,12 +610,11 @@ export default function ParentPage() {
         <button type="button" className="btn secondary" disabled={dataBusy || selectedZone === profileZone(profile?.timeZone)} onClick={saveZone}>Сохранить часовой пояс</button>
         <p className="muted">Недельный отчёт пересчитается по выбранному часовому поясу.</p>
         {zoneMessage && <p role="status">{zoneMessage}</p>}
-        <p>Можно скачать профиль и игровой прогресс в JSON. В файле есть личные данные — сохраните его в безопасном месте.</p>
-        <button type="button" className="btn secondary" disabled={dataBusy} onClick={exportProfile}>Скачать мои данные</button>
-        <p>Удаление уберёт профиль, прогресс, игровые сессии и данные подписки из текущего хранилища. В ранее созданных резервных копиях данные могут сохраниться. Действие нельзя отменить.</p>
         {dataError && <p role="alert">{dataError}</p>}
-        <button type="button" className="btn secondary" disabled={dataBusy} onClick={deleteProfile}>Удалить профиль и прогресс</button>
       </div>
+
+      <NotificationSettings profileId={profileId} />
+      <DataControls profileId={profileId} busy={dataBusy} onExport={exportProfile} onDelete={deleteProfile} />
 
       <p className="muted">Открытые компоненты: <a href="/licenses/xstate-mit.txt">XState — MIT</a>, <a href="/licenses/simple-qbn-mit.txt">SimpleQBN — MIT</a> (зависимости: <a href="/licenses/mingo-mit.txt">Mingo — MIT</a>, <a href="/licenses/uuid-mit.txt">uuid — MIT</a>), <a href="/licenses/ts-fsrs-mit.txt">ts-fsrs — MIT</a>, <a href="/licenses/pocketbase-js-mit.txt">PocketBase SDK — MIT</a>, <a href="/licenses/phaser.txt">Phaser — MIT</a>, <a href="/licenses/inkjs.txt">inkjs — MIT</a>, <a href="/licenses/blockly.txt">Blockly — Apache-2.0</a>, <a href="/licenses/opendyslexic-ofl.txt">OpenDyslexic — SIL OFL 1.1</a>; значки <a href="https://openmoji.org/">OpenMoji</a> — <a href="/licenses/openmoji-cc-by-sa-4.0.txt">CC BY-SA 4.0</a>, без изменений; Tilli Godot: <a href="/licenses/tilli-godot-license.txt">LICENSE</a> и <a href="/licenses/tilli-godot-license-md.txt">LICENSE.md</a>.</p>
 

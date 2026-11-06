@@ -12,12 +12,16 @@ import { hasSupportPractice, makeSupportPractice } from '../content/support-prac
 import { STORYLETS_BY_ID } from '../content/storylets';
 import { selectStoryCards, DAY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
 import { nextDayStage } from '../day/day-machine';
+import { eventJournal, dedupeKeyFor, type EventJournal } from '../events/journal';
+import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor, type ReviewTopic } from '../review/topics';
+import { applyReview } from '../review/intervals';
 import { nextJourneyStage } from '../day/journey-machine';
 import { weekOneInk } from './week-one-ink-catalog';
 import { remainingInk } from './remaining-ink-catalog';
 import { readInkScene, validateInkVariant } from './ink-snapshot';
 import { readDeepInk, validateDeepInkVariant } from './deep-ink';
 import { deepInkFor } from './deep-ink-catalog';
+import { lazyDeepInk } from './deep-ink-lazy';
 import { questForScenario, questForTask } from '../content/narrative';
 import { levelOf } from '../gamification';
 import { profileZone, calendarDay, weekStartDay, shiftDay, dayStart } from '../calendar';
@@ -87,6 +91,8 @@ export type Runtime = {
   storyVersions?: Record<string, Scenario>;
   supportVersions?: Record<string, TaskInstance>;
   supportPracticeCompleted?: boolean;
+  /** Отдельный заход-повторение темы: один сценарий, без прогресса программы. */
+  review?: { topicId: string };
   /** Versioned XState story/practice segment; absent on earlier sessions. */
   storyFlow?: { version: 1; stage: 'choose_story' | 'story' | 'practice' | 'reflection' } | { version: 2; stage: 'choose_story' | 'story' | 'practice' | 'activities' };
   /* --- игровые счётчики текущего захода --- */
@@ -102,7 +108,22 @@ export type Runtime = {
 };
 
 
-export type SessionStore = Pick<typeof store, 'transaction' | 'skills' | 'addSkill' | 'updateSkill' | 'programState' | 'setProgramState' | 'playerState' | 'setPlayerState' | 'sessions' | 'addSession' | 'getSession' | 'updateSession' | 'profile'>;
+export type SessionStore = Pick<typeof store, 'transaction' | 'skills' | 'addSkill' | 'updateSkill' | 'programState' | 'setProgramState' | 'playerState' | 'setPlayerState' | 'sessions' | 'addSession' | 'getSession' | 'updateSession' | 'profile'> & {
+  /** Журнал технических событий. Необязателен: старые вызовы и тесты работают без него. */
+  journal?: EventJournal;
+  /** Владелец профиля для изоляции журнала; по умолчанию — владелец из хранилища. */
+  ownerId?: string;
+};
+
+/**
+ * Записывает событие в журнал той же операции. Сбой журнала не должен
+ * ломать игру ребёнка: журнал вторичен по отношению к прогрессу.
+ */
+function recordEvent(context: SessionStore, profileId: string, sessionId: string, step: number, kind: string, event: Parameters<EventJournal['append']>[3]) {
+  const journal = context.journal ?? eventJournal;
+  const owner = context.ownerId ?? context.profile(profileId)?.parentId ?? 'owner';
+  try { journal.append(owner, profileId, dedupeKeyFor(sessionId, step, kind), event); } catch { /* журнал необязателен */ }
+}
 
 export function ensureSkills(profile: Profile, context: SessionStore = store): (SkillState & { profileId: string })[] {
   const existing = context.skills(profile.id);
@@ -163,7 +184,13 @@ function snapshotStory(sc: Scenario, inkBand?: AgeBand, deep = false): Scenario 
   const copy = structuredClone(sc);
   for (const variant of Object.values(copy.variants)) for (const option of variant.options) delete option.quality;
   if (inkBand) { const json=weekOneInk(copy.id,inkBand) ?? remainingInk(copy.id,inkBand); if(json) { copy.variants[inkBand].ink={version:1,json}; if(!validateInkVariant(copy.variants[inkBand])) throw Error('ink_catalog_mismatch'); } }
-  if (deep && inkBand) { const json = deepInkFor(copy.id, inkBand); if (json) { copy.variants[inkBand].deepInk = { version: 1, json }; if (!validateDeepInkVariant(copy.variants[inkBand])) throw Error('deep_ink_catalog_mismatch'); } }
+  if (deep && inkBand) {
+    // Готовое дерево (первые дни) имеет приоритет; остальные истории получают
+    // второй шаг из тех же текстов через ленивую сборку. Снимок сессии всё равно
+    // хранит готовое дерево, поэтому старые сессии не зависят от каталога.
+    const json = deepInkFor(copy.id, inkBand) ?? lazyDeepInk(copy, inkBand) ?? undefined;
+    if (json) { copy.variants[inkBand].deepInk = { version: 1, json }; if (!validateDeepInkVariant(copy.variants[inkBand])) throw Error('deep_ink_catalog_mismatch'); }
+  }
   return copy;
 }
 
@@ -217,13 +244,73 @@ export function publicItem(item: RuntimeItem, band: AgeBand) {
   };
 }
 
+/**
+ * Отдельный заход-повторение: одна история, которую ребёнок уже проходил.
+ *
+ * Решения, зафиксированные здесь:
+ * - повтор — своя сессия с одним этапом, он не встраивается в план дня и не
+ *   меняет прогресс программы (`advanceProgram: false`);
+ * - награда обычная, как за историю: отдельного «бонуса за повтор» нет, чтобы
+ *   не подталкивать к зубрёжке; уйти можно в любой момент;
+ * - при завершении тема получает новый срок.
+ */
+function startReviewSession(
+  profile: Profile,
+  topic: ReviewTopic,
+  reviewStates: ReturnType<typeof reviewStatesFromSessions>,
+  context: SessionStore,
+): { sessionId: string; item: unknown; steps: number; step: number; resumed: boolean; combo: number; review: { topicId: string; title: string } } | null {
+  const scenario = ALL_SCENARIOS[topic.scenarioId];
+  if (!scenario) return null;
+  const item: PlanItem = { type: 'scenario', scenarioId: topic.scenarioId };
+  const built = buildItem(profile, item, context, snapshotStory(scenario, profile.band, false));
+  const id = 's_' + randomUUID();
+  const rt: Runtime = {
+    sessionId: id, profileId: profile.id, plan: [item], items: [built], index: 0, taskAnswers: [],
+    dayIndex: context.programState(profile.id).lastDayIndex, advanceProgram: false,
+    startedAt: Date.now(), stepStartedAt: Date.now(), combo: 0, comboBest: 0, correctStreak: 0,
+    xpEarned: 0, coinsEarned: 0, newBadges: [], levelUp: null, goodChoice: false, isBossDay: false,
+    review: { topicId: topic.topicId },
+  };
+  context.addSession({ id, profileId: profile.id, startedAt: rt.startedAt, seconds: 0, tasks: [], plan: [`scenario:${topic.scenarioId}`], runtime: rt });
+  context.setProgramState({ ...context.programState(profile.id), reviewStates, reviewDay: reviewDayKeyFor(profile) });
+  recordEvent(context, profile.id, id, 0, 'start', { v: 1, type: 'session_started', dayIndex: rt.dayIndex, repeat: true, journey: false });
+  return { sessionId: id, item: publicItem(built, profile.band), steps: 1, step: 0, resumed: false, combo: 0, review: { topicId: topic.topicId, title: topic.title } };
+}
+
+/** Завершает повтор: срок сдвигается вперёд. Отказ ничего не отнимает — тема просто закрывается. */
+function finishReview(context: SessionStore, profileId: string, topicId: string, outcome: 'reviewed' | 'refused') {
+  const state = context.programState(profileId);
+  const states = state.reviewStates ?? [];
+  const found = states.find(s => s.topicId === topicId);
+  if (!found) return;
+  const next = applyReview(found, outcome, Date.now());
+  if (!next.ok) return;
+  context.setProgramState({ ...state, reviewStates: states.map(s => s.topicId === topicId ? next.state : s) });
+}
+
 export function startSession(
   profile: Profile,
   repeat = false,
   context: SessionStore = store,
-  options: { storyChoice?: boolean; journey?: boolean } = {}
-): { sessionId: string; item: unknown; steps: number; step: number; resumed: boolean; combo: number; storyOffer?: StoryChoice[]; storySelected?: string | null; autoClaimed?: { count: number; xp: number; coins: number } } {
+  options: { storyChoice?: boolean; journey?: boolean; review?: boolean; reviewTopicId?: string } = {}
+): { sessionId: string; item: unknown; steps: number; step: number; resumed: boolean; combo: number; storyOffer?: StoryChoice[]; storySelected?: string | null; autoClaimed?: { count: number; xp: number; coins: number }; review?: { topicId: string; title: string } } {
   return context.transaction(() => {
+  /* --- повторение темы: необязательный отдельный заход, не блокирует новый день --- */
+  const stateNow = context.programState(profile.id);
+  const reviewStates = reviewStatesFromSessions(context.sessions(profile.id), profile.band, Date.now(), stateNow.reviewStates ?? []);
+  if (!repeat && options.review === true && stateNow.reviewOff !== true && stateNow.reviewDay !== reviewDayKeyFor(profile)) {
+    // Если тем несколько, ребёнок может выбрать любую из подходящих по сроку.
+    // Выбор — предпочтение, а не оценка: все варианты одинаково «созрели».
+    const candidates = dueReviewTopics(reviewStates, profile.band, Date.now(), 5);
+    const picked = options.reviewTopicId ? candidates.find(t => t.topicId === options.reviewTopicId) : undefined;
+    const due = picked ?? candidates[0];
+    if (due) {
+      const started = startReviewSession(profile, due, reviewStates, context);
+      if (started) return started;
+    }
+  }
+
   const active = [...context.sessions(profile.id)].reverse().find(s => !s.finishedAt && s.runtime && s.runtime.index < s.runtime.items.length);
   if (active?.runtime) {
     const rt = active.runtime;
@@ -291,6 +378,7 @@ export function startSession(
     runtime: rt,
   };
   context.addSession(durable);
+  recordEvent(context, profile.id, id, 0, 'start', { v: 1, type: 'session_started', dayIndex, repeat, journey: Boolean(rt.storyFlow?.version === 2) });
 
   return { sessionId: id, item: publicItem(items[0], profile.band), steps: items.length, step: 0, resumed: false, combo: 0, autoClaimed, ...(rt.storyOffer ? { storyOffer: rt.storyOffer, storySelected: null } : {}) };
   });
@@ -325,6 +413,7 @@ export function selectSessionStory(sessionId: string, cardId: string, context: S
     delete rt.storyVersions; delete rt.supportVersions;
     const plan = session.plan.slice(); plan[index] = `scenario:${card.scenarioId}`;
     context.updateSession(sessionId, { runtime: rt, plan, storySelection: { cardId } });
+    recordEvent(context, session.profileId, sessionId, 0, 'story', { v: 1, type: 'story_selected', cardId, offerSize: rt.storyOffer?.length ?? 1 });
     return { ok: true, cardId };
   });
 }
@@ -409,7 +498,9 @@ export function answerStep(
   const item = rt.items[rt.index];
   const profile = context.profile(rt.profileId);
   if (!profile) return { error: 'profile_not_found' };
-  if (!item || !validAnswer(item, payload, bandOf(profile.age))) return { error: 'invalid_answer' };
+  // «Отказаться от выбора» можно и в повторе: это законный ответ без варианта.
+  const refusal = rt.review !== undefined && item.type === 'scenario' && payload.index === undefined && payload.cells === undefined && payload.digits === undefined && payload.targets === undefined && payload.skip === undefined;
+  if (!item || (!refusal && !validAnswer(item, payload, bandOf(profile.age)))) return { error: 'invalid_answer' };
   ms = Number.isFinite(ms) ? Math.max(0, Math.min(ms, 600_000)) : 0;
   // Only actual story/practice events are tracked. Check-in, pause and reflection
   // remain local and no use or choice is inferred from opening the mission.
@@ -439,6 +530,7 @@ export function answerStep(
     const earned = earnSupportPractice(player);
     rt.xpEarned += earned.xp; rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'practice_answered', skipped: payload.skip === true });
   } else if (item.type === 'task') {
     correct = checkTaskAnswer(item.instance, payload);
     const assisted = payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index));
@@ -478,6 +570,7 @@ export function answerStep(
     rt.xpEarned += earned.xp;
     rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'task_answered', taskKind: String(item.instance.kind), taskSkill: item.instance.skill, correct, assisted: payload.assisted === true || Boolean(rt.practiceSteps?.includes(rt.index)), ms });
     refreshMissions(player, {
       dayIndex: rt.dayIndex,
       tasksDone: rt.taskAnswers.length,
@@ -491,11 +584,15 @@ export function answerStep(
   } else {
     const sc = item.content ?? ALL_SCENARIOS[item.scenarioId];
     const variant = sc.variants[bandOf(profile.age)];
-    const originalIndex = item.order[payload.index ?? -1] ?? -1;
-    const chosen = variant.options[originalIndex];
+    // Отказ от выбора (только в повторе): без варианта, без оценки и без награды.
+    const declined = payload.index === undefined && payload.cells === undefined;
+    const originalIndex = declined ? -1 : (item.order[payload.index ?? -1] ?? -1);
+    const chosen = declined ? undefined : variant.options[originalIndex];
     // A story choice is not a test of the child's character.
     correct = false;
-    feedback = variant.deepInk && payload.cells ? readDeepInk(variant.deepInk, [originalIndex, payload.cells[0]]).text : variant.ink ? readInkScene(variant.ink, originalIndex).text : chosen?.note ?? '';
+    feedback = declined
+      ? 'Хорошо. Историю можно оставить и вернуться к ней позже.'
+      : variant.deepInk && payload.cells ? readDeepInk(variant.deepInk, [originalIndex, payload.cells[0]]).text : variant.ink ? readInkScene(variant.ink, originalIndex).text : chosen?.note ?? '';
     goodNote = undefined;
     rt.scenarioAnswer = {
       scenarioId: sc.id,
@@ -504,7 +601,8 @@ export function answerStep(
     };
     // The mission tracks participation; story choices do not change task combo.
     rt.goodChoice = true;
-    const earned = earnScenario(player);
+    recordEvent(context, rt.profileId, sessionId, rt.index, 'answer', { v: 1, type: 'story_answered', choiceIndex: Math.max(0, rt.scenarioAnswer.choice), itemCount: rt.items.length });
+    const earned = declined ? { xp: 0, coins: 0, levelUp: null as null } : earnScenario(player);
     rt.xpEarned += earned.xp;
     rt.coinsEarned += earned.coins;
     if (earned.levelUp) rt.levelUp = earned.levelUp;
@@ -535,16 +633,24 @@ export function answerStep(
         ...(rt.supportPracticeCompleted ? { supportPracticeCompleted: true } : {}),
       });
     }
-    if (rt.advanceProgram && context.programState(rt.profileId).completedDays === rt.dayIndex) {
-      const st = context.programState(rt.profileId);
-      context.setProgramState({
-        ...st,
-        completedDays: Math.min(st.completedDays + 1, TOTAL_DAYS),
-        lastDayIndex: rt.dayIndex,
-      });
-    }
+    // Расписание повторения обновляется в момент завершения: тема только что пройдена.
+    const stateAfter = context.programState(rt.profileId);
+    const scheduled = reviewStatesFromSessions(context.sessions(rt.profileId), profile.band, Date.now(), stateAfter.reviewStates ?? []);
+    const advance = rt.advanceProgram && stateAfter.completedDays === rt.dayIndex;
+    context.setProgramState({
+      ...stateAfter,
+      ...(advance ? { completedDays: Math.min(stateAfter.completedDays + 1, TOTAL_DAYS), lastDayIndex: rt.dayIndex } : {}),
+      reviewStates: scheduled,
+    });
     const weekDone = Math.floor(context.programState(rt.profileId).completedDays / 5);
-    const done = completeDay(player, {
+    /*
+     * Повтор — не день программы: он не даёт «награду за день», не двигает
+     * статистику дней и не меняет звёзды. Остаётся только то, что ребёнок
+     * реально сделал (награда за историю начислена выше и уже в rt.xpEarned).
+     */
+    const done = rt.review
+      ? { stars: 0, xp: 0, coins: 0, newBadges: [] as string[], levelUp: null }
+      : completeDay(player, {
       tasks: rt.taskAnswers.length,
       correct: rt.taskAnswers.filter((t) => t.correct).length,
       scenarioCompleted: Boolean(rt.scenarioAnswer),
@@ -584,7 +690,10 @@ export function answerStep(
         comboBest: rt.comboBest,
       },
     };
+    // Повтор: сдвигаем срок темы. Отказ от выбора не наказывает — тема просто закрывается.
+    if (rt.review) finishReview(context, rt.profileId, rt.review.topicId, payload.index === undefined ? 'refused' : 'reviewed');
     context.updateSession(sessionId, { runtime: undefined, lastReceipt: { step: expectedStep, fingerprint, result } });
+    recordEvent(context, rt.profileId, sessionId, expectedStep, 'complete', { v: 1, type: 'session_completed', steps: rt.taskAnswers.length, correct: rt.taskAnswers.filter(t => t.correct).length, stars: done.stars, seconds });
     return result;
   }
 
@@ -699,7 +808,9 @@ export function buildReport(profile: Profile): WeeklyReport {
       stars: player.stars,
       badges: player.badges.length,
       days: player.stats.days,
-      perfectDays: player.stats.perfectDays,
+      // «Идеальные дни» в отчёт не входят: безошибочность больше не стимул,
+      // а показывать её взрослому как достижение — значит вернуть оценку
+      // через чёрный ход. Счётчик остаётся в хранилище и в выгрузке данных.
     },
   };
 }

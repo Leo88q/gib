@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/telegramClient';
 
 type Idea = { id: string; title: string; prompt: string };
-type View = { version: number; completed: number; target: number; ideas: Idea[]; current: (Idea & { instanceId: string; status: 'chosen' | 'reported' | 'confirmed' }) | null };
+type Goal = { confirmed: number; target: number; members: number; reached: boolean; notice: string };
+type View = { version: number; completed: number; target: number; ideas: Idea[]; current: (Idea & { instanceId: string; status: 'chosen' | 'reported' | 'confirmed' }) | null; goal?: Goal };
 type Command = { action: 'choose' | 'report' | 'confirm' | 'cancel' | 'close'; expectedVersion: number; operationId: string; ideaId?: string };
 function operationId(): string {
   const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
@@ -54,6 +55,7 @@ export default function FamilyIdeas({ profileId, parentView = false }: { profile
     {!view && !error && <p role="status">Загружаем идеи…</p>}
     {view && <>
       <p>🌼 Общий сад: {Math.min(view.completed, view.target)} из {view.target} отметок. Можно продолжать и после этого.</p>
+      {view.goal && <p className="family-goal">🌳 Общая цель семьи: {view.goal.notice}{view.goal.members > 1 ? ' Отметки всех детей семьи складываются.' : ''}</p>}
       <p className="muted">Это совместные отметки, а не проверка того, что произошло. Детский экран и кабинет используют один аккаунт; система не проверяет, кто нажал кнопку.</p>
       <fieldset disabled={busy || Boolean(error)} className="family-controls" aria-busy={busy}>
       {!view.current && (parentView ? <p>Ребёнок может выбрать идею в разделе «Семья». Предлагать и участвовать необязательно.</p> : <div className="family-list">{view.ideas.map(idea => <article key={idea.id} className="family-card"><h3>{idea.title}</h3><p>{idea.prompt}</p><button type="button" className="btn" onClick={() => void send('choose', idea.id)}>Выбрать идею</button></article>)}</div>)}

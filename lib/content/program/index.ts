@@ -45,7 +45,10 @@ const RAW_SCENARIOS: Scenario[] = [
 
 
 const bands = ['5-7', '8-10', '11-13'] as const;
-/** Keep the old quality field for persisted session compatibility, never as feedback. */
+/**
+ * Дни 16–60 дописываются здесь. Метки оценки не добавляются: старые снимки
+ * читаются как есть, но новый контент их не получает.
+ */
 export const PROGRAM_SCENARIOS: Scenario[] = RAW_SCENARIOS.map(original => {
   const day = REMAINING_DAYS[original.id];
   if (!day) return original;
@@ -53,7 +56,8 @@ export const PROGRAM_SCENARIOS: Scenario[] = RAW_SCENARIOS.map(original => {
   const variants = Object.fromEntries(bands.map((band, i) => [band, {
     title: day.title,
     text: `${day.situation[i]} Что можно выбрать?`,
-    options: (adapted?.[band] ?? day.actions).map((text, index) => ({ text, ...(!adapted ? { quality: (['good', 'partial', 'bad'] as const)[index] } : {}), note: 'Это один из возможных вариантов. Выбор можно обсудить, а можно не обсуждать.' })),
+    // Порядок вариантов не означает оценки: метки сняты из всего контента.
+    options: (adapted?.[band] ?? day.actions).map((text) => ({ text, note: 'Это один из возможных вариантов. Выбор можно обсудить, а можно не обсуждать.' })),
   }])) as Scenario['variants'];
   return { ...original, variants,
     practiceWhy: 'Игровое задание и история — разные части занятия; история не измеряет навык.',

@@ -15,6 +15,24 @@ export function backupKeyFromEnvironment(value: string | undefined): Buffer {
   return Buffer.from(value, 'hex');
 }
 
+/**
+ * Ключи для чтения при ротации: текущий и, если задан, предыдущий.
+ *
+ * Ротация ключа шифрования без чтения старым ключом означала бы, что старые
+ * копии после смены недоступны. Поэтому чтение пробует оба ключа, а шифрование
+ * всегда новым. Предыдущий ключ задаётся `GIB_BACKUP_KEY_PREVIOUS_HEX` и
+ * убирается только после перешифрования архива.
+ */
+export function backupKeysFromEnvironment(
+  current: string | undefined,
+  previous: string | undefined = undefined,
+): { current: Buffer; previous?: Buffer } {
+  const primary = backupKeyFromEnvironment(current);
+  if (!previous) return { current: primary };
+  if (previous === current) throw new Error('GIB_BACKUP_KEY_PREVIOUS_HEX must differ from GIB_BACKUP_KEY_HEX');
+  return { current: primary, previous: backupKeyFromEnvironment(previous) };
+}
+
 export async function encryptFile(source: string, target: string, key: Buffer): Promise<void> {
   const size = fs.statSync(source).size;
   if (size <= 0 || size > MAX_PLAINTEXT) throw new Error('Invalid snapshot size');
@@ -40,6 +58,42 @@ export async function decryptFile(source: string, target: string, key: Buffer): 
     decipher.setAuthTag(tag);
     // Keep the descriptor open and use it for the payload too, preventing path replacement races.
     const input = fs.createReadStream(source, { fd, autoClose: false, start: HEADER_BYTES, end: size - TAG_BYTES - 1 });
-    await pipeline(input, decipher, fs.createWriteStream(target, { flags: 'wx', mode: 0o600 }));
+    try {
+      await pipeline(input, decipher, fs.createWriteStream(target, { flags: 'wx', mode: 0o600 }));
+    } catch (error) {
+      // GCM проверяет тег в конце, поэтому при неверном ключе файл уже создан и
+      // содержит мусор. Оставлять его нельзя: «файл есть» дежурный прочитает
+      // как «копия восстановлена». Удаляем только свой, созданный с флагом wx.
+      try { fs.rmSync(target, { force: true }); } catch { /* файла могло не быть */ }
+      throw error;
+    }
   } finally { fs.closeSync(fd); }
+}
+
+/**
+ * Расшифровка с ротацией: пробует текущий ключ, затем предыдущий.
+ *
+ * Если оба не подошли — файл не наш или ключ потерян; это отдельное сообщение,
+ * а не «invalid tag», чтобы дежурный не искал ошибку в файле.
+ */
+export async function decryptFileWithRotation(
+  source: string,
+  target: string,
+  keys: { current: Buffer; previous?: Buffer },
+): Promise<'current' | 'previous'> {
+  try {
+    await decryptFile(source, target, keys.current);
+    return 'current';
+  } catch (error) {
+    if (!keys.previous) throw error;
+    // Неудачная попытка могла оставить частично записанный файл: он создан с
+    // флагом wx, поэтому второй попытке нужен чистый путь.
+    try {
+      fs.rmSync(target, { force: true });
+    } catch {
+      /* файла могло не быть */
+    }
+    await decryptFile(source, target, keys.previous);
+    return 'previous';
+  }
 }

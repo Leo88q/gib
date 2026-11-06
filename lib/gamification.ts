@@ -39,6 +39,16 @@ export function xpToNext(xp: number): { current: number; need: number; percent: 
 
 /* ------------------------------- награды ------------------------------- */
 
+/**
+ * Награды за участие, а не за качество.
+ *
+ * Раньше был бонус за «идеальный день» (40 XP + 12 монет) и прибавка за каждый
+ * шаг серии верных ответов. Вместе с миссиями «Серия ×5» и «Без промахов» это
+ * дважды поощряло безошибочность и подталкивало ребёнка не рисковать.
+ * Для 5–13 лет такой стимул работает против смысла упражнений, поэтому бонусы
+ * за точность убраны: верный и неверный ответ по-прежнему дают разное, но
+ * «идеальности» больше никто не требует.
+ */
 export const XP = {
   taskCorrect: 12,
   taskWrong: 4,
@@ -46,9 +56,7 @@ export const XP = {
   scenarioPartial: 12,
   scenarioBad: 6,
   dayComplete: 30,
-  perfectDay: 40,
   bossComplete: 50,
-  comboStep: 2, // за каждый шаг комбо сверх 1
   mission: 35,
 };
 
@@ -58,14 +66,18 @@ export const COINS = {
   scenarioGood: 8,
   scenarioPartial: 4,
   scenarioBad: 2,
-  perfectDay: 12,
   mission: 15,
   badge: 20,
 };
 
 /* -------------------------------- звёзды ------------------------------- */
 
-/** 1 — день пройден, 2 — хороший день, 3 — идеальный день. */
+/**
+ * 1 — день пройден, 2 — хороший день, 3 — без ошибок.
+ *
+ * Звёзды остаются видимой отметкой сделанного, но за них больше не дают
+ * отдельных XP и монет: иначе «идеальность» снова становится заработком.
+ */
 export function starsForDay(tasks: number, correct: number, _quality?: 'good' | 'partial' | 'bad') {
   if (tasks > 0 && correct === tasks) return 3;
   if (correct >= Math.max(2, tasks - 1)) return 2;
@@ -126,28 +138,24 @@ export const BADGES: BadgeDef[] = [
     check: (c) => c.stats.days >= 21,
   },
   {
-    id: 'perfect_day',
-    title: 'Идеальный день',
-    desc: 'Все когнитивные задания дня без ошибок',
-    glyph: '💎',
-    tier: 'silver',
-    check: (c) => c.perfectDays >= 1,
-  },
-  {
-    id: 'perfect_5',
-    title: 'Безупречная неделя',
-    desc: '5 идеальных дней',
-    glyph: '🧠',
-    tier: 'gold',
-    check: (c) => c.perfectDays >= 5,
-  },
-  {
-    id: 'combo_master',
-    title: 'Серия',
-    desc: '5 верных ответов подряд',
-    glyph: '⚡',
+    // Значки за «идеальные дни» и серию верных ответов убраны: они превращали
+    // отсутствие ошибок в цель. Уже выданные значки у профилей остаются в их
+    // коллекции — задним числом ничего не отнимаем, но новых таких не выдаём.
+    // Legacy: perfect_day, perfect_5, combo_master.
+    id: 'five_days',
+    title: 'Пять занятий',
+    desc: 'Завершить 5 занятий',
+    glyph: '🌱',
     tier: 'bronze',
-    check: (c) => c.stats.bestCombo >= 5,
+    check: (c) => c.stats.days >= 5,
+  },
+  {
+    id: 'ten_days',
+    title: 'Десять занятий',
+    desc: 'Завершить 10 занятий',
+    glyph: '🌿',
+    tier: 'silver',
+    check: (c) => c.stats.days >= 10,
   },
   {
     id: 'good_choice',
@@ -241,20 +249,22 @@ export type MissionDef = {
 
 export const MISSIONS: MissionDef[] = [
   {
-    id: 'combo5',
-    title: 'Серия ×5',
-    desc: '5 верных ответов подряд',
-    glyph: '⚡',
+    // Было «Серия ×5» за 5 верных подряд: поощряло не ошибаться и бросать при сбое.
+    id: 'practice5',
+    title: 'Пять заданий',
+    desc: 'Пройти пять заданий в своём темпе',
+    glyph: '🌟',
     target: 5,
-    progress: (c) => c.comboBest,
+    progress: (c) => c.tasksDone,
   },
   {
-    id: 'careful3',
-    title: 'Без промахов',
-    desc: '3 задания подряд без единой ошибки',
-    glyph: '🎯',
+    // Было «Без промахов» за 3 верных подряд: то же давление точности.
+    id: 'tries3',
+    title: 'Не сдаваться',
+    desc: 'Попробовать три задания, даже если что-то не получилось',
+    glyph: '💪',
     target: 3,
-    progress: (c) => c.correctStreak,
+    progress: (c) => c.tasksDone,
   },
   {
     id: 'helper',
@@ -281,12 +291,14 @@ export const MISSIONS: MissionDef[] = [
     progress: (c) => c.stars,
   },
   {
-    id: 'perfect',
-    title: 'Идеальный день',
-    desc: 'Все задания без ошибок и лучший выбор',
-    glyph: '💎',
+    // Было «Идеальный день» за безошибочность. Теперь награда за завершённый день:
+    // факт участия виден, а «идеальности» никто не требует.
+    id: 'dayDone',
+    title: 'День завершён',
+    desc: 'Дойти до конца дня в своём темпе',
+    glyph: '🎒',
     target: 1,
-    progress: (c) => (c.perfectDay ? 1 : 0),
+    progress: (c) => (c.tasksDone >= 3 ? 1 : 0),
   },
   {
     id: 'boss',
@@ -301,7 +313,8 @@ export const MISSIONS: MissionDef[] = [
 /** Три миссии на день — детерминированно по номеру дня программы. */
 export function missionsForDay(dayIndex: number): MissionDef[] {
   const day = dayIndex % 5; // 0..4 — день внутри недели
-  const base = ['combo5', 'careful3', 'helper', 'warmup', 'stars2'];
+  // Миссии за участие. «Серия ×5» и «Без промахов» заменены: см. комментарий в MISSIONS.
+  const base = ['practice5', 'tries3', 'helper', 'warmup', 'stars2'];
   const picked: MissionDef[] = [];
   const offset = (dayIndex * 2) % base.length;
   for (let i = 0; i < base.length && picked.length < 3; i++) {
@@ -313,8 +326,8 @@ export function missionsForDay(dayIndex: number): MissionDef[] {
     picked.push(MISSIONS.find((m) => m.id === 'boss')!);
   }
   if (dayIndex % 7 === 6) {
-    if (!picked.some((p) => p.id === 'perfect')) {
-      picked[picked.length - 1] = MISSIONS.find((m) => m.id === 'perfect')!;
+    if (!picked.some((p) => p.id === 'dayDone')) {
+      picked[picked.length - 1] = MISSIONS.find((m) => m.id === 'dayDone')!;
     }
   }
   return picked;

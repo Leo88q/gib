@@ -1,0 +1,210 @@
+{
+  "title": "gib — служба",
+  "uid": "gib-service",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Жив ли сервис",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"gib\"}",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Готовность: degraded",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "gib_readiness_degraded_checks",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Запросы сессии",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(gib_http_session_info_total[5m]))",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Ошибки сессии",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(gib_http_session_command_errors_total[5m]))",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Длительность сессии p95",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(gib_http_session_command_duration_bucket[5m])))",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Отказы лимитов",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (scope) (rate({__name__=~\"gib_ratelimit_blocked_.*_total\"}[5m]))",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Сбои хранилища лимитов",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(gib_ratelimit_store_errors_total[5m])",
+          "legendFormat": "__auto"
+        }
+      ]
+    },
+    {
+      "title": "Выброшенные метрики",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "increase(gib_metrics_dropped_total[15m])",
+          "legendFormat": "__auto"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "title": "Регламент",
+      "url": "https://github.com/Leo88q/gib/blob/main/docs/operations.md",
+      "type": "link"
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  }
+}

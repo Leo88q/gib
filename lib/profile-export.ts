@@ -12,7 +12,8 @@ type ExportSource = {
 const strings = (values: unknown): string[] => Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [];
 const progress = (values: Record<string, number> | undefined): Record<string, number> => Object.fromEntries(Object.entries(values ?? {}).filter(([key, value]) => key.length <= 80 && typeof value === 'number' && Number.isFinite(value)));
 const task = ({ taskId, skill, level, correct, ms, assisted }: TaskAnswer) => ({ taskId, skill, level, correct, ms, assisted });
-const scenario = (s?: ScenarioAnswer) => s ? { scenarioId: s.scenarioId, competency: s.competency, choice: s.choice, quality: s.quality } : undefined;
+// Метка прежних версий не выгружается: ребёнок больше не оценивается.
+const scenario = (s?: ScenarioAnswer) => s ? { scenarioId: s.scenarioId, competency: s.competency, choice: s.choice } : undefined;
 
 /** Explicit fields only. New server-side fields must not silently enter exports. */
 export function makeProfileExport(source: ExportSource, exportedAt = new Date().toISOString()) {
@@ -37,6 +38,11 @@ export function makeProfileExport(source: ExportSource, exportedAt = new Date().
       missions: s.missions && { day: s.missions.day, ids: strings(s.missions.ids), progress: progress(s.missions.progress), claimed: strings(s.missions.claimed) },
       family: s.family && { version: s.family.version, completed: s.family.completed, current: s.family.current && { id: s.family.current.id, ideaId: s.family.current.ideaId, catalogVersion: s.family.current.catalogVersion, status: s.family.current.status } },
       stats: s.stats && { days: s.stats.days, tasks: s.stats.tasks, correctTasks: s.stats.correctTasks, scenarios: s.stats.scenarios, goodScenarios: s.stats.goodScenarios, bestCombo: s.stats.bestCombo, perfectDays: s.stats.perfectDays, minutes: s.stats.minutes },
+      // Отметки чувств — данные ребёнка, поэтому они обязаны быть в выгрузке его данных.
+      feelings: s.feelings && {
+        consent: { saveEnabled: s.feelings.prefs.saveEnabled, consentAt: s.feelings.prefs.consentAt },
+        checkins: s.feelings.items.map(item => ({ day: item.day, at: item.at, feelings: [...item.feelings] })),
+      },
       startedAt: s.startedAt,
     })),
     subscription: source.subs.filter(s => s.profileId === id).map(({ profileId, plan, status, startedAt, until }) => ({ profileId, plan, status, startedAt, until })),

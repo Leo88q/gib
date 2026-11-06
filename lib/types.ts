@@ -70,6 +70,8 @@ export type Session = {
   /** Persisted receipt for the optional story choice, including after completion. */
   storySelection?: { cardId: string };
   supportPracticeCompleted?: boolean;
+  /** Заход-повтор темы: не двигает программу и не даёт «награду за день». */
+  review?: { topicId: string; title?: string };
 };
 
 export type Subscription = {
@@ -87,6 +89,18 @@ export type ProgramState = {
   /** Какой день программы был последним (для повторения) */
   lastDayIndex: number;
   startedAt: number;
+  /**
+   * Расписание повторения тем: только сроки и счётчики, без содержимого ответов.
+   * Выводится из завершённых занятий (lib/review/topics.ts).
+   */
+  reviewStates?: import('./review/intervals.ts').ReviewState[];
+  /**
+   * Календарный день (`YYYY-MM-DD`), в который уже был повтор.
+   * Не больше одного повтора в день: повтор не должен вытеснять новый день.
+   */
+  reviewDay?: string;
+  /** Взрослый может выключить предложения повтора: это его решение, не оценка ребёнка. */
+  reviewOff?: boolean;
 };
 
 /* ------------------------- игровое состояние ребёнка ------------------------- */
@@ -130,6 +144,14 @@ export type PlayerState = {
   equipped: Equipped;
   missions: MissionState;
   family?: import('./engine/family').FamilyState;
+  /**
+   * Добровольные отметки чувств. Отсутствуют, пока взрослый не дал согласие.
+   * Не участвуют в наградах, миссиях и отчёте по активности.
+   */
+  feelings?: {
+    prefs: import('./feelings/state').FeelingsPreferences;
+    items: import('./feelings/state').FeelingCheckIn[];
+  };
   stats: PlayerStats;
   startedAt: number;
 };
@@ -165,7 +187,6 @@ export type WeeklyReport = {
     stars: number;
     badges: number;
     days: number;
-    perfectDays: number;
   };
 };
 

@@ -20,9 +20,11 @@ import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
 import { sfx } from '@/lib/sound';
 import { accessoryVariantOf, bodyVariantOf, petVariantOf } from '@/lib/gamification';
+import { petMood, petMoodText } from '@/lib/pet-mood';
 import { TIME_ZONES, DEFAULT_TIME_ZONE } from '@/lib/calendar';
 import { switchDraftKey } from '@/lib/switch-draft';
 import { selectionDraftKey } from '@/lib/selection-draft';
+import { exerciseDraftKey, removeProfileExerciseDrafts } from '@/lib/exercise-draft';
 import { PENDING_ANSWER_KEY, parsePendingAnswer, clearMatchingPendingAnswer, type PendingAnswer } from '@/lib/pending-answer';
 import { hideBackButton, apiFetch, setupTelegram, showBackButton, haptic } from '@/lib/telegramClient';
 
@@ -43,6 +45,12 @@ type ProgramInfo = {
   completedDays: number;
   totalDays: number;
   finished: boolean;
+  /** Тема, которую сервер предлагает повторить (или null). */
+  review?: { topicId: string; title: string } | null;
+  /** Все темы, срок которых пришёл: ребёнок может выбрать любую. */
+  reviewOptions?: { topicId: string; title: string }[];
+  /** Когда завершилось последнее занятие — для настроения питомца. */
+  lastFinishedAt?: number | null;
 };
 
 type PlayerInfo = {
@@ -92,6 +100,8 @@ export default function Home() {
   const [stage, setStage] = useState<'boot' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
   const [tab, setTab] = useState<'home' | 'map' | 'family' | 'badges' | 'shop'>('home');
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [children, setChildren] = useState<{ id: string; name: string; age: number; band: string }[]>([]);
+  const [addingChild, setAddingChild] = useState(false);
   const [plan, setPlan] = useState<PlanRow[]>([]);
   const [program, setProgram] = useState<ProgramInfo | null>(null);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
@@ -117,6 +127,8 @@ export default function Home() {
   const [answerSending, setAnswerSending] = useState(false);
   const [starting, setStarting] = useState(false);
   const [repeatDay, setRepeatDay] = useState(false);
+  /** Заголовок темы, которую сейчас повторяем (только внутри захода). */
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
   const [resumedPractice, setResumedPractice] = useState(false);
   const pendingAnswer = useRef<PendingAnswer<Item> | null>(null);
   // Keep the last acknowledged answer until its feedback (or final summary) is dismissed.
@@ -182,7 +194,10 @@ export default function Home() {
     (async () => {
       let data;
       try {
-        const res = await apiFetch('/api/profile');
+        // Выбранный ребёнок хранится в браузере; сервер проверяет владение сам.
+        let wanted = '';
+        try { wanted = localStorage.getItem('gib:profileId') ?? ''; } catch { /* storage is optional */ }
+        const res = await apiFetch(`/api/profile${wanted ? `?profileId=${encodeURIComponent(wanted)}` : ''}`);
         if (!res.ok) throw new Error('profile');
         data = await res.json();
       } catch {
@@ -190,6 +205,7 @@ export default function Home() {
         return;
       }
       if (cancelled) return;
+      if (Array.isArray(data.profiles)) setChildren(data.profiles);
       if (data.profile) {
         setProfile(data.profile);
         try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
@@ -210,16 +226,60 @@ export default function Home() {
     const res = await apiFetch('/api/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, age, timeZone }),
+      body: JSON.stringify({ name, age, timeZone, ...(addingChild ? { addChild: true } : {}) }),
     });
     if (!res.ok) throw new Error('profile_failed');
     const data = await res.json();
     if (!data.profile?.id) throw new Error('profile_failed');
     setProfile(data.profile);
+    setChildren(prev => {
+      const others = prev.filter(c => c.id !== data.profile.id);
+      return [...others, { id: data.profile.id, name: data.profile.name, age: data.profile.age, band: data.profile.band }];
+    });
+    setAddingChild(false);
     try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
     setStage('home');
     void loadPlan(data.profile.id);
     void loadPlayer(data.profile.id);
+  };
+
+  /**
+   * Переключение между детьми одной семьи.
+   * Выбор живёт только в этом браузере: сервер не смешивает данные профилей,
+   * а семейная цель считает их общий вклад.
+   */
+  const switchChild = (id: string) => {
+    const next = children.find(c => c.id === id);
+    if (!next || next.id === profile?.id) return;
+    setRequestError('');
+    setProgram(null); setPlayer(null);
+    try { localStorage.setItem('gib:profileId', next.id); } catch { /* optional convenience only */ }
+    // Данные профиля приходят с сервера: локальных копий прогресса нет.
+    window.location.assign(`/?profileId=${encodeURIComponent(next.id)}`);
+  };
+
+  /** Повтор темы: отдельный заход, только когда сервер говорит, что тема пришла в срок. */
+  const startReview = async (topicId?: string) => {
+    if (!profile || busy.current) return;
+    busy.current = true; setStarting(true); setRequestError('');
+    try {
+      const res = await apiFetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', profileId: profile.id, review: true, reviewTopicId: topicId, storyChoice: true, journey: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.sessionId) throw new Error('start_failed');
+      if (!data.review) { setRequestError('Повтор пока недоступен — можно начать миссию дня.'); return; }
+      setRepeatDay(false);
+      setFeedback(null); setNextItem(null);
+      setSessionId(data.sessionId); setStoryOffer([]); setPendingStory(null);
+      setResumedPractice(false);
+      setItem(data.item); setSteps(data.steps ?? 1); setStep(data.step ?? 0); setCombo(0);
+      setReviewNotice(data.review.title);
+      setStage('training');
+    } catch { setRequestError('Не удалось открыть повтор. Проверьте соединение.'); }
+    finally { busy.current = false; setStarting(false); }
   };
 
   const start = async (repeat = false) => {
@@ -241,6 +301,7 @@ export default function Home() {
     sfx.tap();
     setCombo(0);
     setStep(0);
+    setReviewNotice(null);
     if (busy.current) return;
     busy.current = true;
     setStarting(true);
@@ -271,6 +332,34 @@ export default function Home() {
     finally { busy.current = false; setStarting(false); }
   };
 
+  /**
+   * Восстановление после устаревшего шага: сервер возвращает актуальную сессию,
+   * клиент переезжает на её шаг. Награды при этом не начисляются повторно —
+   * сервер уже учёл прежний ответ.
+   */
+  const resyncSession = async (profileId: string) => {
+    try {
+      const res = await apiFetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start', profileId, storyChoice: true, journey: true }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.sessionId) return;
+      setSessionId(data.sessionId);
+      const offered = Array.isArray(data.storyOffer) && !data.storySelected ? data.storyOffer as StoryCardView[] : [];
+      setStoryOffer(offered); setPendingStory(null);
+      setFeedback(null); setNextItem(null);
+      setResumedPractice(Boolean(data.resumed && data.item?.type === 'task' && !offered.length));
+      setItem(data.item);
+      setSteps(data.steps ?? 4);
+      setStep(data.step ?? 0);
+      setCombo(data.combo ?? 0);
+      setStage('training');
+    } catch { setRequestError('Не удалось открыть миссию заново. Вернитесь домой и попробуйте ещё раз.'); }
+  };
+
   const chooseStory = async (cardId: string) => {
     if (!sessionId || storySending || (pendingStory && pendingStory !== cardId)) return;
     setPendingStory(cardId); setStorySending(true); setRequestError('');
@@ -278,7 +367,7 @@ export default function Home() {
       const res = await apiFetch('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'select_story', sessionId, cardId }) });
       const result = await res.json();
       if (!res.ok || result.cardId !== cardId) throw new Error('selection_failed');
-      if (result.finished) { setStoryOffer([]); setPendingStory(null); setStage('home'); if (profile) { void loadPlan(profile.id); void loadPlayer(profile.id); } return; }
+      if (result.finished) { setStoryOffer([]); setPendingStory(null); setReviewNotice(null); setStage('home'); if (profile) { void loadPlan(profile.id); void loadPlayer(profile.id); } return; }
       if (result.item) { setItem(result.item); if (Number.isInteger(result.step)) setStep(result.step); if (Number.isInteger(result.steps)) setSteps(result.steps); }
       setStoryOffer([]); setPendingStory(null);
     } catch { setRequestError('Не удалось подтвердить выбор. Повтори отправку или открой миссию заново.'); }
@@ -305,7 +394,7 @@ export default function Home() {
     pendingAnswer.current = null;
     acknowledgedAnswer.current = pending;
     // Retain the answer for replay after a reload until the child dismisses the result.
-    try { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); } catch { /* storage may be disabled */ }
+    try { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'single')); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'digits')); } catch { /* storage may be disabled */ }
     const reward = data.reward ?? {};
     if (pending.item.type === 'scenario' || (pending.item.type === 'task' && pending.item.instance.kind === 'social-practice')) {
       // A story choice is not an incorrect cognitive answer.
@@ -351,7 +440,16 @@ export default function Home() {
       void loadPlayer(profile!.id);
     }
     } catch (error) {
-      setRequestError(error instanceof Error && error.message === 'step_conflict' ? 'Этот шаг уже изменился. Выйдите домой и откройте миссию снова.' : 'Не удалось получить результат. Повторите отправку: награда не начислится дважды.');
+      if (error instanceof Error && error.message === 'step_conflict') {
+        // Устаревшая вкладка или второй экран: сервер уже ушёл вперёд. Не заставляем
+        // ребёнка выходить домой — заново открываем ту же сессию и встаём на её шаг.
+        pendingAnswer.current = null;
+        try { sessionStorage.removeItem(PENDING_ANSWER_KEY); } catch { /* storage may be disabled */ }
+        setRequestError('Этот шаг уже изменился — открываем миссию заново.');
+        await resyncSession(pending.profileId);
+      } else {
+        setRequestError('Не удалось получить результат. Повторите отправку: награда не начислится дважды.');
+      }
       throw error;
     } finally { busy.current = false; setAnswerSending(false); }
   };
@@ -420,13 +518,31 @@ export default function Home() {
       </div>
     );
 
-  if (stage === 'onboarding') return <Onboarding onDone={createProfile} />;
+  if (stage === 'onboarding') return <Onboarding onDone={createProfile} onCancel={children.length > 0 ? () => setAddingChild(false) : undefined} />;
 
   if (stage === 'home')
     return (
       <div className="wrap">
         <Hud data={hud} />
         {requestError && <p className="request-error" role="alert">{requestError}</p>}
+
+        {/* Несколько детей в одной семье: переключатель виден только когда их больше одного. */}
+        {children.length > 1 && (
+          <div className="child-switch" role="group" aria-label="Выбрать ребёнка">
+            <span className="muted small">Занимается:</span>
+            {children.map(child => (
+              <button
+                key={child.id}
+                type="button"
+                className={`chip child-chip${child.id === profile?.id ? ' on' : ''}`}
+                aria-pressed={child.id === profile?.id}
+                onClick={() => switchChild(child.id)}
+              >
+                {child.name}, {child.age}
+              </button>
+            ))}
+          </div>
+        )}
 
         <Room
           avatar={{
@@ -442,7 +558,11 @@ export default function Home() {
             plant: player?.equipped.room === 'room_plant',
           }}
           bubble={greeting(program, player)}
+          petMood={moodFor(program)}
         />
+        {player?.equipped.pet && (
+          <p className="pet-mood-note muted small">{petMoodText(moodFor(program))}</p>
+        )}
 
         <nav className="tabs">
           <button className={tab === 'home' ? 'on' : ''} onClick={() => setTab('home')}>
@@ -457,6 +577,13 @@ export default function Home() {
             👕 Гардероб
           </button>
           <Link href={`/parent?profileId=${profile?.id}`}>👨‍👩‍👧 Родителю</Link>
+          <button
+            type="button"
+            className="chip add-child"
+            onClick={() => { setAddingChild(true); setStage('onboarding'); }}
+          >
+            ➕ Ещё ребёнок
+          </button>
         </nav>
 
         {tab === 'home' && (
@@ -507,6 +634,20 @@ export default function Home() {
                   ↺ Повторить прошлый день
                 </button>
               )}
+              {(program?.reviewOptions?.length ?? 0) > 1 ? (
+                <div className="review-choices">
+                  <p className="muted small">Можно вернуться к одной из тем — по желанию, это не задание.</p>
+                  {program!.reviewOptions!.map(topic => (
+                    <button key={topic.topicId} type="button" className="btn ghost" onClick={() => { void startReview(topic.topicId); }}>
+                      🔁 «{topic.title}»
+                    </button>
+                  ))}
+                </div>
+              ) : (program?.review ?? null) && (
+                <button type="button" className="btn ghost" onClick={() => { void startReview(); }}>
+                  🔁 Вернуться к теме «{program!.review!.title}» — по желанию
+                </button>
+              )}
             </div>
 
             <Missions missions={missions} onClaim={claimMission} />
@@ -538,14 +679,14 @@ export default function Home() {
       </div>
     );
 
-  if (stage === 'welcome' && profile) return <DayWelcome band={profile.band} starting={starting} error={requestError} onStart={() => { void start(repeatDay); }} onBack={() => { setRequestError(''); setStage('home'); }} />;
-  if (stage === 'reflection') return <DayReflection onDone={() => setStage('home')} />;
+  if (stage === 'welcome' && profile) return <DayWelcome band={profile.band} starting={starting} error={requestError} profileId={profile.id} day={program?.completedDays ?? 0} onStart={() => { void start(repeatDay); }} onBack={() => { setRequestError(''); setStage('home'); }} />;
+  if (stage === 'reflection') return <DayReflection profileId={profile?.id} day={program?.completedDays ?? 0} onDone={() => setStage('home')} />;
 
   if (stage === 'training' && storyOffer.length > 0)
     return <div className="wrap game">
       <Hud data={hud} compact />
       <div className="panel story-deck" aria-busy={storySending}>
-        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
+        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" width={64} height={64} /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
         <div className="story-deck-cards">
           {storyOffer.map((card, index) => <button type="button" className="story-deck-card" key={card.id} disabled={storySending || Boolean(pendingStory && pendingStory !== card.id)} onClick={() => void chooseStory(card.id)}>
             <span className="story-deck-number">{index + 1}</span><strong>{card.title}</strong><span>{pendingStory === card.id ? 'Повторить выбор →' : 'Открыть →'}</span>
@@ -560,9 +701,15 @@ export default function Home() {
     return (
       <div className="wrap game">
         <Hud data={hud} compact />
-        {requestError && <div className="request-error" role="alert">{requestError} {pendingAnswer.current && <button type="button" onClick={() => { const pending = pendingAnswer.current; if (pending) void answer(pending.payload, pending.ms, pending).catch(() => {}); }}>Повторить отправку</button>} <button type="button" onClick={() => { const pending = pendingAnswer.current; pendingAnswer.current = null; try { sessionStorage.removeItem(PENDING_ANSWER_KEY); if (pending) { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); } } catch {} setRequestError(''); setStage('home'); }}>{pendingAnswer.current ? 'Не восстанавливать и домой' : 'Домой'}</button></div>}
+        {requestError && <div className="request-error" role="alert">{requestError} {pendingAnswer.current && <button type="button" onClick={() => { const pending = pendingAnswer.current; if (pending) void answer(pending.payload, pending.ms, pending).catch(() => {}); }}>Повторить отправку</button>} <button type="button" onClick={() => { const pending = pendingAnswer.current; pendingAnswer.current = null; try { sessionStorage.removeItem(PENDING_ANSWER_KEY); if (pending) { sessionStorage.removeItem(switchDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(selectionDraftKey(pending.profileId, pending.sessionId, pending.step)); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'single')); sessionStorage.removeItem(exerciseDraftKey(pending.profileId, pending.sessionId, pending.step, 'digits')); } } catch {} setRequestError(''); setStage('home'); }}>{pendingAnswer.current ? 'Не восстанавливать и домой' : 'Домой'}</button></div>}
 
         {missionNotice && <p role="status" className="chip">{missionNotice}</p>}
+        {/* Повтор: нейтральная подпись, без давления и без обещаний бонусов. */}
+        {reviewNotice && (
+          <p className="chip wrap-text">
+            🔁 Повтор темы «{reviewNotice}». Можно пройти до конца или уйти домой — прогресс не потеряется.
+          </p>
+        )}
         <div className="step-bar" role="progressbar" aria-label="Прогресс миссии" aria-valuemin={0} aria-valuemax={steps} aria-valuenow={step} aria-valuetext={`Шаг ${step + 1} из ${steps}`}>
           {Array.from({ length: steps }, (_, i) => (
             <span key={i} className={`step${i < step ? ' done' : ''}${i === step ? ' now' : ''}`} />
@@ -570,20 +717,32 @@ export default function Home() {
         </div>
 
         {item?.type === 'task' && item.boss && (
-          <div className="boss-banner">🛡️ ИСПЫТАНИЕ РАЙОНА — на скорость!</div>
+          <div className="boss-banner">🛡️ Финальное задание недели</div>
         )}
 
-        <div className="quest">
-          <img src="/art/mascot-think.png" alt="" />
-          <div className="quest-text">
-            {item?.type === 'task' && item.quest}
-            {item?.type === 'scenario' && item.quest}
-          </div>
+        <div className="exercise-toolbar">
+          <button type="button" className="exercise-pause" onClick={() => { setRequestError(''); setStage('home'); }}>
+            ⏸ Пауза и домой
+          </button>
+          <details className="exercise-pause-help">
+            <summary>Что будет с прогрессом?</summary>
+            <p className="muted small">Прогресс и незавершённые отметки сохранятся. При возврате текущее задание засчитается как практика: награда за миссию не изменится.</p>
+          </details>
         </div>
+
+        {!(item?.type === 'task' && item.instance.kind !== 'social-practice') && (
+          <div className="quest">
+            <img src="/art/mascot-think.png" alt="" width={64} height={64} />
+            <div className="quest-text">
+              {item?.type === 'task' && item.quest}
+              {item?.type === 'scenario' && item.quest}
+            </div>
+          </div>
+        )}
 
         <div className="panel">
           <fieldset className="task-fieldset" disabled={answerSending || Boolean(feedback) || Boolean(requestError && pendingAnswer.current)} aria-busy={answerSending}>
-          {item?.type === 'task' && item.instance.kind !== 'social-practice' && <TaskView key={`${sessionId}-${step}`} instance={item.instance} resumedPractice={resumedPractice} draftKey={profile && sessionId ? switchDraftKey(profile.id, sessionId, step) : undefined} selectionKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(payload, ms) => { void answer(payload, ms).catch(() => {}); }} />}
+          {item?.type === 'task' && item.instance.kind !== 'social-practice' && <TaskView key={`${sessionId}-${step}`} instance={item.instance} band={profile?.band ?? '8-10'} profileId={profile?.id} sessionId={sessionId ?? undefined} step={step} resumedPractice={resumedPractice} draftKey={profile && sessionId ? switchDraftKey(profile.id, sessionId, step) : undefined} selectionKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(payload, ms) => { void answer(payload, ms).catch(() => {}); }} />}
           {item?.type === 'task' && item.instance.kind === 'social-practice' && item.instance.rounds && <SupportPractice key={`${sessionId}-${step}`} rounds={item.instance.rounds} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(cells, ms) => { void answer({ cells }, ms).catch(() => {}); }} onSkip={(ms) => { void answer({ skip: true }, ms).catch(() => {}); }} />}
           {item?.type === 'scenario' && (
             <ScenarioView key={`${sessionId}-${step}`} band={profile?.band ?? '8-10'} scenario={item} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(a) => answer(a, 0)} />
@@ -650,6 +809,19 @@ export default function Home() {
   );
 }
 
+/**
+ * Настроение питомца: только художественная реакция на недавнюю игру.
+ * Перерыв не делает питомца грустным и ничего не отнимает.
+ */
+function moodFor(program: ProgramInfo | null): ReturnType<typeof petMood> {
+  const completedDays = program?.completedDays ?? 0;
+  const last = program?.lastFinishedAt ?? null;
+  // Считаем целые календарные дни по местному времени ребёнка — грубо, но честно:
+  // полдня перерыва не должны менять настроение.
+  const daysSinceLast = last ? Math.floor((Date.now() - last) / 86_400_000) : null;
+  return petMood({ completedDays, daysSinceLast });
+}
+
 function greeting(program: ProgramInfo | null, player: PlayerInfo | null): string {
   if (!program) return 'Лис готов!';
   if (program.finished) return 'Программа пройдена! Лис гордится тобой. Играем ещё?';
@@ -659,7 +831,7 @@ function greeting(program: ProgramInfo | null, player: PlayerInfo | null): strin
   return `День ${program.day} недели ${program.week}: ${program.dayTheme}. Поехали!`;
 }
 
-function Onboarding({ onDone }: { onDone: (name: string, age: number, timeZone: string) => Promise<void> }) {
+function Onboarding({ onDone, onCancel }: { onDone: (name: string, age: number, timeZone: string) => Promise<void>; onCancel?: () => void }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState(8);
   const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
@@ -714,8 +886,9 @@ function Onboarding({ onDone }: { onDone: (name: string, age: number, timeZone: 
         <p className="muted">От него зависят календарные расчёты и границы недель в отчёте. Для существующих профилей используется Москва.</p>
         {error && <p role="alert">{error}</p>}
         <button type="button" className="btn big" disabled={saving} onClick={submit}>
-          🚀 В город!
+          {onCancel ? '🚀 Добавить ребёнка' : '🚀 В город!'}
         </button>
+        {onCancel && <button type="button" className="btn ghost" disabled={saving} onClick={onCancel}>Отмена</button>}
         <p className="muted legal">
           Программа: 12 недель, 5 тренировок в неделю. В демо сохраняются ник, возраст, часовой пояс, идентификатор родителя и игровой прогресс. Профиль создаёт законный представитель. Не вводите реальные данные в демо.
         </p>

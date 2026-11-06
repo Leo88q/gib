@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { validateStore, STORE_COLLECTIONS } from '../store-validation.ts';
-import { LOCK_ID, SCHEMA_V1, SCHEMA_VERSION, TABLES } from './schema.ts';
+import { LOCK_ID, SCHEMA_V1, SCHEMA_V2, SCHEMA_VERSION, TABLES } from './schema.ts';
 
 export interface SqlClient { query(sql: string, parameters?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> }
 export type LegacyState = Record<typeof STORE_COLLECTIONS[number], Record<string, unknown>[]>;
@@ -46,11 +46,17 @@ export async function ensureSchema(client: SqlClient): Promise<void> {
     await client.query('CREATE TABLE IF NOT EXISTS gib.schema_version (id SMALLINT PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, imported_at TIMESTAMPTZ)');
     const current = await client.query('SELECT version FROM gib.schema_version WHERE id=1');
     if (current.rows.length) {
-      if (Number(current.rows[0].version) !== SCHEMA_VERSION) throw new Error('Unsupported PostgreSQL schema version');
+      const version = Number(current.rows[0].version);
+      // Обновление 1 → 2 идемпотентно и не трогает данные: только новые таблицы.
+      if (version === SCHEMA_VERSION) return;
+      if (version !== 1) throw new Error('Unsupported PostgreSQL schema version');
+      for (const statement of SCHEMA_V2.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
+      await client.query('UPDATE gib.schema_version SET version = $1 WHERE id = 1', [SCHEMA_VERSION]);
       return;
     }
     // No IF NOT EXISTS: a partially pre-existing schema must fail closed, not be adopted.
     for (const statement of SCHEMA_V1.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
+    for (const statement of SCHEMA_V2.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
     await client.query('INSERT INTO gib.schema_version (id, version) VALUES (1, $1)', [SCHEMA_VERSION]);
   });
 }
@@ -75,10 +81,11 @@ export async function importLegacy(client: SqlClient, input: unknown): Promise<R
     for (const [i,s] of state.programStates.entries()) await client.query('INSERT INTO gib.program_states(profile_id,ordinal,data) VALUES($1,$2,$3::jsonb)', [s.profileId, i, JSON.stringify(s)]);
     for (const [i,s] of state.playerStates.entries()) await client.query('INSERT INTO gib.player_states(profile_id,ordinal,data) VALUES($1,$2,$3::jsonb)', [s.profileId, i, JSON.stringify(s)]);
     for (const [i,p] of state.payments.entries()) await client.query('INSERT INTO gib.payments(id,ordinal,profile_id,provider_id,status,data) VALUES($1,$2,$3,$4,$5,$6::jsonb)', [p.id, i, p.profileId, p.providerId ?? null, p.status, JSON.stringify(p)]);
+    for (const [i,e] of state.events.entries()) await client.query('INSERT INTO gib.events(id,ordinal,profile_id,owner_id,at,dedupe_key,data) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)', [e.id, i, e.profileId, e.ownerId, e.at, e.dedupeKey, JSON.stringify(e)]);
     // Verify every record and original array order before the transaction is committed.
     const mapping: Record<typeof STORE_COLLECTIONS[number], typeof TABLES[number]> = {
       profiles: 'profiles', skills: 'skills', sessions: 'sessions', subs: 'subscriptions',
-      programStates: 'program_states', playerStates: 'player_states', payments: 'payments',
+      programStates: 'program_states', playerStates: 'player_states', payments: 'payments', events: 'events',
     };
     for (const key of STORE_COLLECTIONS) {
       const actual = await client.query(`SELECT data FROM gib.${mapping[key]} ORDER BY ordinal`);

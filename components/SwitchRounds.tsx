@@ -3,12 +3,17 @@ import { useEffect, useRef, useState } from 'react';
 import { ShapeCardView, type ShapeCard } from './Shape';
 import { cardName } from '@/lib/content/visual-labels';
 import { parseSwitchDraft, type SwitchDraft } from '@/lib/switch-draft';
+import { taskPresentation } from '@/lib/exercise/mechanics';
+import type { AgeBand } from '@/lib/types';
 import ReadAloud from './ReadAloud';
+import ExerciseFrame from './ExerciseFrame';
 
 type Rule = 'shape' | 'color';
 const ruleText = (rule: Rule) => rule === 'shape' ? 'Найди лишнюю по форме' : 'Найди лишнюю по цвету';
-export default function SwitchRounds({ cards, rules, draftKey, onSubmit }: { cards: ShapeCard[]; rules: Rule[]; draftKey?: string; onSubmit: (cells: number[]) => void }) {
+
+export default function SwitchRounds({ cards, rules, draftKey, band = '8-10', onSubmit }: { cards: ShapeCard[]; rules: Rule[]; draftKey?: string; band?: AgeBand; onSubmit: (cells: number[]) => void }) {
   const signature = JSON.stringify([cards, rules]);
+  const presentation = taskPresentation('switch-rounds', band);
   const [draft, setDraft] = useState<SwitchDraft | null>(null);
   const [restored, setRestored] = useState(false);
   const current = useRef<SwitchDraft | null>(null);
@@ -35,12 +40,20 @@ export default function SwitchRounds({ cards, rules, draftKey, onSubmit }: { car
   };
   const goTo = (nextRound: number) => update({ ...current.current!, round: nextRound });
   return <div>
-    {restored && <p className="muted" role="status">Твои выборы восстановлены в этой вкладке.</p>}
-    <p className="switch-rule" role="status">Раунд {round + 1} из {rules.length}: {label}</p>
-    <ReadAloud text={`Раунд ${round + 1}. ${label}.`} />
-    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }} role="group" aria-label={`Карточки: ${label}`}>
-      {cards.map((card, i) => <ShapeCardView key={i} card={card} selected={selected === i} onClick={() => choose(i)} />)}
-    </div>
+    {restored && <p className="exercise-restored" role="status">Твои выборы восстановлены в этой вкладке.</p>}
+    <ExerciseFrame
+      kind="switch-rounds"
+      band={band}
+      instruction={presentation.instruction}
+      spoken={label}
+      progress={{ done: answers.filter(value => value !== null).length, total: rules.length, label: 'Раунды' }}
+    >
+      <p className="switch-rule" role="status">Раунд {round + 1} из {rules.length}: {label}</p>
+      <ReadAloud text={`Раунд ${round + 1}. ${label}.`} />
+      <div className="grid switch-cards" role="group" aria-label={`Карточки: ${label}`}>
+        {cards.map((card, i) => <ShapeCardView key={i} card={card} selected={selected === i} onClick={() => choose(i)} />)}
+      </div>
+    </ExerciseFrame>
     <p className="muted" aria-live="polite">{selected == null ? 'Выбери фигурку. Можно изменить выбор.' : `Выбрано: ${cardName(cards[selected].shape, cards[selected].color)}.`}</p>
     <div className="switch-nav">
       {round > 0 && <button type="button" className="btn ghost" onClick={() => goTo(round - 1)}>← Предыдущее правило</button>}

@@ -193,8 +193,23 @@ a {
   white-space: nowrap;
 }
 
+/*
+ * Длинная подпись в чипе не должна растягивать экран телефона: у чипов-абзацев
+ * (подписка, повтор темы) текст переносится, а сам чип занимает доступную ширину.
+ * Короткие чипы-метки остаются в одну строку.
+ */
+.chip.wrap-text {
+  display: flex;
+  white-space: normal;
+  max-width: 100%;
+  border-radius: 16px;
+  line-height: 1.35;
+  text-align: left;
+}
+
 .chip.combo {
-  background: var(--orange);
+  /* Оранжевый с белым давал 2.6:1; затемнённый оттенок держит ≥5.5:1 и остаётся тёплым. */
+  background: #b8340a;
   color: #fff;
 }
 .chip.coins {
@@ -709,6 +724,7 @@ a {
 
 .quest img {
   width: 64px;
+  height: 64px;
   flex: 0 0 64px;
   animation: bob 2.8s ease-in-out infinite;
 }
@@ -1126,7 +1142,7 @@ input[type='text']:focus {
 }
 
 .age-btn.active {
-  background: var(--orange);
+  background: #b8340a;
   color: #fff;
 }
 
@@ -1156,14 +1172,16 @@ input[type='text']:focus {
   font-weight: 700;
 }
 
+/* Знак «+»/«−» уже показан текстом; тёмные оттенки дают 7:1 вместо 3.4:1. */
 .delta.up {
-  color: var(--ok);
+  color: #12633f;
   font-weight: 800;
 }
 .delta.down {
-  color: var(--bad);
+  color: #a3243a;
   font-weight: 800;
 }
+
 .delta.flat {
   color: var(--muted);
   font-weight: 700;
@@ -1713,3 +1731,195 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .story-second-page { margin-top: 16px; padding: 16px; border: 3px solid #38283b; border-radius: 18px; background: #fff7e4; }
 .story-second-text { font-size: 1.1rem; line-height: 1.5; font-weight: 700; }
 .story-second-page > .btn { margin: 8px 8px 0 0; }
+
+/* ==========================================================================
+   Окно упражнения и игровые механические цели.
+   Визуальная рамка не меняет ответ, награду и серверную проверку.
+   Все интерактивные цели не меньше 44×44 px и работают касанием и клавиатурой.
+   ========================================================================== */
+.exercise-window {
+  margin: 14px 0 16px;
+  padding: 14px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: linear-gradient(#fffdf6, #fff3d6);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+.exercise-window-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.exercise-window-title { margin: 0; font-size: 1.05rem; letter-spacing: .02em; }
+.exercise-window-glyph { color: var(--orange); font-size: 1.1rem; }
+.exercise-instruction { margin: 0 0 10px; font-weight: 700; color: var(--ink-soft); }
+.exercise-window .read-aloud { margin: 4px 0 10px; }
+.exercise-stage { margin-top: 6px; }
+.exercise-progress { height: 12px; border: 2px solid var(--ink); border-radius: 99px; background: #fff; overflow: hidden; }
+.exercise-progress > span { display: block; height: 100%; background: var(--mint); transition: width .2s ease; }
+.exercise-progress-text { margin: 6px 0 0; font-size: .92rem; font-weight: 700; }
+.exercise-status { margin: 8px 0 0; font-weight: 700; }
+.exercise-restored { margin: 10px 0; padding: 8px 10px; border: 2px dashed var(--ink); border-radius: 12px; background: #e9fbf3; font-weight: 700; }
+.exercise-undo { margin-top: 12px; }
+.exercise-actions { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
+@media (min-width: 520px) { .exercise-actions { flex-direction: row; } .exercise-actions > * { flex: 1; } }
+
+/* Пол и рамка «театра» для заданий на память: цели крупные, вспышки заметны без анимации. */
+.memory-stage { padding: 8px; border: 3px dashed var(--ink-soft); border-radius: 18px; background: #fffdf7; }
+.cell.theater { position: relative; min-height: 52px; border-radius: 18px; background: #fff; }
+.cell.theater::after {
+  content: ''; position: absolute; inset: 7px; border: 2px dashed rgba(27, 27, 47, .18); border-radius: 13px; pointer-events: none;
+}
+.cell.theater.lit { background: var(--yellow); }
+.cell-glow { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: #7a5100; }
+.big-targets > .cell, .big-targets > .card-shape, .big-targets > .signal-cell { min-height: 64px; }
+.memory-badge { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; min-width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; color: #1b1b2f; font-size: 16px; font-weight: 900; line-height: 1; z-index: 1; }
+
+/* Опасные ситуации: список историй отдельно от игрушек набора поддержки. */
+.safety-picker .safety-story-list { display: flex; flex-direction: column; gap: 10px; }
+.safety-picker .safety-story-list .option { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 52px; }
+.safety-picker .safety-story-list .option strong { font-size: 1.05rem; }
+.safety-story .story-restart { margin-top: 10px; }
+
+/* Варианты ответа: видимая метка выбора, цветовая заплатка для Stroop. */
+.options .option { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.option-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; font-weight: 900; }
+.option[aria-checked="true"] .option-mark { background: var(--mint); }
+.option-swatch { flex: none; width: 26px; height: 26px; margin-left: auto; border: 2px solid var(--ink); border-radius: 50%; }
+
+.rule-banner { margin: 0 0 12px; padding: 10px 12px; border: 3px solid var(--ink); border-radius: 14px; background: #ffdf8d; }
+.card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.switch-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.order-drag { margin-left: auto; font-size: 1.2rem; color: var(--ink-soft); }
+
+/* Сигналы go/no-go: лампа и подпись, отметка видна без цвета. */
+.signals { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 380px; margin: 0 auto; }
+.signal-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; font-size: clamp(11px, 3vw, 15px); color: #1b1b2f; }
+.signal-lamp { width: 26px; height: 26px; border: 3px solid #1b1b2f; border-radius: 50%; background: rgba(255, 255, 255, .75); }
+.signal-label { font-weight: 800; overflow-wrap: anywhere; text-align: center; }
+.signal-check { position: absolute; right: 4px; top: 2px; font-size: 1.2rem; }
+.signal-cell.picked { box-shadow: inset 0 0 0 4px #1b1b2f; }
+
+/* Ввод цифр: слоты одинаковой ширины, крупная клавиатура. */
+.digit-display { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+.digit-display:focus-visible { outline: 4px solid #1264c4; outline-offset: 4px; }
+.digit-slot { display: grid; place-items: center; min-width: 46px; height: 58px; padding: 0 6px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-size: 30px; font-weight: 900; }
+.digit-slot.empty { color: #b9b4c9; }
+.digit-display.typing .digit-slot { background: #fff7dd; }
+
+/* Уменьшение движения: убираем подпрыгивания, но не саму игру. */
+@media (prefers-reduced-motion: reduce) {
+  .cell, .option, .card-shape, .btn, .order-card { transition: none !important; }
+  .cell:active, .option:active, .btn:active, .key:active { transform: none; }
+}
+html[data-reduce-motion="true"] .cell:active,
+html[data-reduce-motion="true"] .option:active,
+html[data-reduce-motion="true"] .btn:active,
+html[data-reduce-motion="true"] .key:active { transform: none; }
+html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
+
+/* Пауза без потери прогресса: серверная сессия остаётся активной, черновики — во вкладке. */
+.exercise-toolbar { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+.exercise-pause { align-self: flex-start; min-height: 44px; padding: 8px 14px; border: 2px solid var(--ink); border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.exercise-pause:hover { background: #fff7dd; }
+.exercise-pause:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
+.exercise-toolbar .small { font-size: .9rem; margin: 4px 0 0; }
+/* Пояснение к паузе свёрнуто: на маленьком экране важнее сама игра. */
+.exercise-pause-help summary { cursor: pointer; font-weight: 700; font-size: .9rem; color: var(--ink-soft); min-height: 32px; display: flex; align-items: center; }
+.exercise-pause-help summary:focus-visible { outline: 3px solid #1264c4; outline-offset: 2px; }
+
+/* Переключатель детей в семье: те же чипы, но с явным выбранным состоянием. */
+.child-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+.child-switch .child-chip {
+  cursor: pointer;
+  min-height: 44px;
+  background: #fff;
+  color: var(--ink, #1f2933);
+  border: 2px solid #cfd8e3;
+}
+.child-switch .child-chip.on {
+  border-color: #1f6f43;
+  box-shadow: inset 0 0 0 2px #1f6f43;
+}
+.family-goal {
+  background: #eef7ee;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+/* Подпись настроения питомца: спокойная, без наград и требований. */
+.pet-mood-note {
+  margin: 2px 0 8px;
+  text-align: center;
+}
+
+/* Дни занятий: нейтральная полоса. Пустой день не выделяется как «плохой». */
+.activity-strip { margin-top: 14px; }
+.activity-days {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 3px;
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.activity-day {
+  aspect-ratio: 1;
+  min-height: 16px;
+  border-radius: 5px;
+  background: #eef1f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.activity-day.on { background: #bfe7cf; border: 1px solid #1f6f43; }
+.activity-day.review { background: #dbeafe; border: 1px solid #1d4ed8; }
+
+/* Код взрослого: ворота кабинета и настройка PIN. */
+.parent-gate { max-width: 420px; margin: 24px auto; }
+.parent-gate h1 { font-size: 22px; margin: 0 0 8px; }
+.parent-gate label { display: block; margin: 14px 0 6px; font-weight: bold; }
+.parent-gate input,
+.parent-pin input { width: 100%; font-size: 22px; letter-spacing: 8px; text-align: center; padding: 12px; }
+.parent-gate .btn { width: 100%; margin-top: 12px; }
+.parent-pin-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.parent-pin-actions .btn { flex: 1 1 160px; }
+@media (prefers-reduced-motion: reduce) { .parent-gate, .parent-pin { animation: none; } }
+
+/* Общая цель семьи: одно число на семью, без имён и сравнения. */
+.family-goal-panel h2 { font-size: 20px; margin: 0 0 8px; }
+.family-goal-bar { height: 16px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); overflow: hidden; margin: 10px 0; }
+.family-goal-bar span { display: block; height: 100%; background: #bfe7cf; transition: width .3s ease; }
+.family-goal-panel select { width: 100%; max-width: 220px; font: inherit; padding: 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); }
+.family-goal-panel label { display: block; margin: 12px 0 6px; font-weight: bold; }
+@media (prefers-reduced-motion: reduce) { .family-goal-bar span { transition: none; } }
+
+/* Данные и согласия: категории и количество, без содержимого. */
+.data-controls h2 { font-size: 20px; margin: 0 0 8px; }
+.data-controls h3 { font-size: 16px; margin: 16px 0 6px; }
+.data-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
+.data-counts > div { border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
+.data-counts dt { font-size: 13px; }
+.data-counts dd { margin: 2px 0 0; font-size: 20px; font-weight: bold; }
+.data-decisions { padding-left: 18px; }
+.data-decisions li { margin-bottom: 8px; }
+.data-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.data-actions .btn { flex: 1 1 180px; }
+
+/* Уведомления взрослому: по умолчанию выключены, частота видна. */
+.notifications h2 { font-size: 20px; margin: 0 0 8px; }
+.notify-choice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.notify-choice .btn { flex: 1 1 140px; }
+
+/* Выбор темы для повтора: несколько подходящих, все равноправны. */
+.review-choices { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.review-choices .btn { text-align: left; }
+
+/* Выключатель повторов в кабинете: решение взрослого, без оценки ребёнка. */
+.review-toggle { margin-top: 12px; border-top: 2px dashed var(--ink); padding-top: 10px; }
+.review-toggle label { font-weight: bold; margin-right: 8px; }
+.review-toggle input[type="checkbox"] { width: 22px; height: 22px; vertical-align: middle; }

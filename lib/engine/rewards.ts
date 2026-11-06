@@ -121,14 +121,11 @@ export type EarnResult = {
 };
 
 /** Награда за когнитивное задание. */
-export function earnTask(player: PlayerState, correct: boolean, combo: number): EarnResult {
-  let xp = correct ? XP.taskCorrect : XP.taskWrong;
-  let coins = correct ? COINS.taskCorrect : COINS.taskWrong;
-  if (correct && combo > 1) {
-    const bonus = Math.min(combo - 1, 5) * XP.comboStep;
-    xp += bonus;
-    coins += Math.floor(bonus / 2);
-  }
+export function earnTask(player: PlayerState, correct: boolean, _combo: number): EarnResult {
+  // Без бонуса за серию: верный ответ по-прежнему даёт больше неверного, но
+  // «непрерывность без ошибок» больше не оплачивается отдельно.
+  const xp = correct ? XP.taskCorrect : XP.taskWrong;
+  const coins = correct ? COINS.taskCorrect : COINS.taskWrong;
   const res = grant(player, xp, coins);
   player.stats.tasks += 1;
   if (correct) player.stats.correctTasks += 1;
@@ -176,14 +173,14 @@ export function completeDay(
   levelUp: { level: number; title: string } | null;
 } {
   const stars = starsForDay(info.tasks, info.correct);
+  // Исторический счётчик «дней без ошибок» сохраняем для старых отчётов и выгрузки,
+  // но он больше ничего не оплачивает и не выдаёт значков.
   const perfect = info.tasks > 0 && info.correct === info.tasks;
 
+  // Завершение дня оплачивается одинаково. Бонус за «день без ошибок» убран:
+  // звёзды остаются отметкой, но не превращаются в доход.
   let xp = XP.dayComplete;
   let coins = 0;
-  if (perfect) {
-    xp += XP.perfectDay;
-    coins += COINS.perfectDay;
-  }
   if (info.isBoss) xp += XP.bossComplete;
 
   const res = grant(player, xp, coins);
@@ -197,7 +194,10 @@ export function completeDay(
     tasksDone: info.tasks,
     comboBest: info.comboBest,
     correctStreak: info.correctStreak,
-    goodChoice: info.scenarioCompleted ?? (info.quality !== undefined),
+    /* Участие в истории. Раньше это же поле выводилось из метки качества,
+       но меток больше нет: выбор ребёнка не оценивается, а миссия должна
+       оставаться выполнимой после того, как подпись убрали из контента. */
+    goodChoice: info.scenarioCompleted === true,
     perfectDay: perfect,
     bossPassed: info.isBoss,
     stars,
@@ -246,7 +246,6 @@ export function playerReportBlock(player: PlayerState, levelTitle: string): Week
     stars: player.stars,
     badges: player.badges.length,
     days: player.stats.days,
-    perfectDays: player.stats.perfectDays,
   };
 }
 

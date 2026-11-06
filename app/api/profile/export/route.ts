@@ -15,6 +15,8 @@ export async function GET(req: Request) {
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, id);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    // Экспорт — единственное место, где нужно всё состояние целиком: это
+    // выгрузка данных профиля, и полнота здесь важнее стоимости чтения.
     const db = store.all();
     const data = makeProfileExport({ profile, ...db });
     return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store, private', 'Content-Disposition': 'attachment; filename="gib-profile.json"', 'X-Content-Type-Options': 'nosniff' } });
