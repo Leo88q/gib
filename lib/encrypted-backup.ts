@@ -58,7 +58,15 @@ export async function decryptFile(source: string, target: string, key: Buffer): 
     decipher.setAuthTag(tag);
     // Keep the descriptor open and use it for the payload too, preventing path replacement races.
     const input = fs.createReadStream(source, { fd, autoClose: false, start: HEADER_BYTES, end: size - TAG_BYTES - 1 });
-    await pipeline(input, decipher, fs.createWriteStream(target, { flags: 'wx', mode: 0o600 }));
+    try {
+      await pipeline(input, decipher, fs.createWriteStream(target, { flags: 'wx', mode: 0o600 }));
+    } catch (error) {
+      // GCM проверяет тег в конце, поэтому при неверном ключе файл уже создан и
+      // содержит мусор. Оставлять его нельзя: «файл есть» дежурный прочитает
+      // как «копия восстановлена». Удаляем только свой, созданный с флагом wx.
+      try { fs.rmSync(target, { force: true }); } catch { /* файла могло не быть */ }
+      throw error;
+    }
   } finally { fs.closeSync(fd); }
 }
 

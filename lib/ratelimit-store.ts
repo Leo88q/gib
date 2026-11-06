@@ -11,11 +11,14 @@
  *  - `sqlite` — на том же файле, что и состояние игры: одна маленькая таблица
  *    `rate_limits`, атомарный UPSERT внутри `BEGIN IMMEDIATE`. Годится для
  *    нескольких процессов на одной машине.
- *  - PostgreSQL для нескольких машин **не реализован**: интерфейс маршрутов
- *    синхронный, а сетевой вызов синхронным не бывает. Поэтому режим
- *    `postgres` не подменяется памятью молча — он возвращает причину, и это
- *    видно в отчёте готовности. Делать его нужно вместе с асинхронными
- *    маршрутами (тот же переход, что и перенос на PostgreSQL).
+ *  - `postgres` — общий счётчик для нескольких машин: таблица `gib.rate_limits`
+ *    в той же базе, что и состояние игры. Синхронность сохранена тем же мостом
+ *    (`lib/postgres/bridge.ts`), что и у `store`: маршруты не переписывались на
+ *    `async`. UPSERT и чтение идут одной командой `INSERT … ON CONFLICT …
+ *    RETURNING`, поэтому два процесса не могут оба увидеть «осталось 1».
+ *
+ * Режим `postgres` без строки подключения **не** подменяется памятью молча:
+ * он возвращает причину, и это видно в отчёте готовности.
  *
  * Хранилище сознательно не знает ничего о пользователе: ключ — уже готовый
  * хеш области и владельца (см. `clientKey`), значение — счётчик и время сброса.
@@ -23,10 +26,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { openDetachedBridge } from './postgres/state-backend.ts';
+import type { PgBridge } from './postgres/bridge.ts';
 
 export type Decision = { allowed: boolean; remaining: number; resetAt: number; limit: number };
 
-export type LimitStoreKind = 'memory' | 'sqlite';
+export type LimitStoreKind = 'memory' | 'sqlite' | 'postgres';
 
 export type LimitStore = {
   readonly kind: LimitStoreKind;
@@ -154,6 +159,65 @@ export class SqliteLimitStore implements LimitStore {
   close(): void { this.db.close(); }
 }
 
+/**
+ * PostgreSQL-хранилище счётчиков.
+ *
+ * Один оператор на весь шаг: `INSERT … ON CONFLICT … DO UPDATE … RETURNING`.
+ * Считать и записывать двумя запросами нельзя — между ними влез бы второй
+ * процесс. При истёкшем окне строка перезаписывается с новым `reset_at`.
+ *
+ * `count` в ответе — включая текущий запрос, поэтому сравнение идёт с `> limit`
+ * (та же арифметика, что у памяти и SQLite: `windowDecision`).
+ */
+/**
+ * Один оператор на весь шаг лимита. Вынесен в константу, чтобы тест проверял
+ * на настоящем сервере именно тот SQL, который выполняется в приложении, а не
+ * его копию.
+ */
+export const RATE_LIMIT_UPSERT = `INSERT INTO gib.rate_limits (bucket_key, count, reset_at) VALUES ($1, 1, $2)
+       ON CONFLICT (bucket_key) DO UPDATE SET
+         count = CASE WHEN gib.rate_limits.reset_at <= $3 THEN 1 ELSE gib.rate_limits.count + 1 END,
+         reset_at = CASE WHEN gib.rate_limits.reset_at <= $3 THEN $2 ELSE gib.rate_limits.reset_at END
+       RETURNING count, reset_at`;
+
+export class PgLimitStore implements LimitStore {
+  readonly kind = 'postgres' as const;
+  readonly distributed = true;
+  private readonly bridge: PgBridge;
+
+  constructor(bridge: PgBridge) {
+    this.bridge = bridge;
+    // Схема могла быть создана до появления таблицы лимитов: создаём, если нет.
+    this.bridge.exec('CREATE SCHEMA IF NOT EXISTS gib');
+    this.bridge.exec('CREATE TABLE IF NOT EXISTS gib.rate_limits (bucket_key TEXT PRIMARY KEY, count INTEGER NOT NULL CHECK (count >= 0), reset_at BIGINT NOT NULL CHECK (reset_at >= 0))');
+    this.bridge.exec('CREATE INDEX IF NOT EXISTS rate_limits_reset ON gib.rate_limits(reset_at)');
+  }
+
+  hit(key: string, limit: number, windowMs: number): Decision {
+    const now = clock();
+    const resetAt = now + windowMs;
+    // Окно истекло — начинаем заново; иначе увеличиваем счётчик.
+    // `attempt` — счётчик попытки: при истёкшем окне он равен 1.
+    const rows = this.bridge.query(RATE_LIMIT_UPSERT, [key, resetAt, now]);
+    const row = rows[0];
+    if (!row) throw new Error('rate limit upsert returned no row');
+    return windowDecision(Number(row.count), Number(row.reset_at), limit, now);
+  }
+
+  prune(now = clock()): number {
+    const rows = this.bridge.query('DELETE FROM gib.rate_limits WHERE reset_at <= $1 RETURNING bucket_key', [now]);
+    return rows.length;
+  }
+
+  size(): number {
+    const row = this.bridge.query('SELECT COUNT(*) AS n FROM gib.rate_limits')[0];
+    return Number(row?.n ?? 0);
+  }
+
+  /** Соединение общее на процесс: закрывать его здесь нельзя. */
+  close(): void { /* ничего не делает намеренно */ }
+}
+
 /** Выбор хранилища по окружению. Ничего не бросает: при сбое — память и метка. */
 export type ResolvedLimitStore = { store: LimitStore; fallbackReason?: string };
 
@@ -169,9 +233,16 @@ export function resolveLimitStore(env: NodeJS.ProcessEnv = process.env): Resolve
     }
   }
   if (mode === 'postgres') {
-    // Синхронный интерфейс маршрутов не ждёт сети: честно сообщаем, что
-    // кластерный лимит не включён, вместо тихой подмены на память.
-    return { store: new MemoryLimitStore(), fallbackReason: 'postgres: требует асинхронного слоя, не включён' };
+    // Без строки подключения честно говорим причину: молчаливая память
+    // означала бы, что лимит умножается на число инстансов незаметно.
+    if (!env.GIB_POSTGRES_URL && !env.DATABASE_URL && !env.GIB_PG_DIR) {
+      return { store: new MemoryLimitStore(), fallbackReason: 'postgres: не задана строка подключения (GIB_POSTGRES_URL)' };
+    }
+    try {
+      return { store: new PgLimitStore(openDetachedBridge(env)) };
+    } catch (error) {
+      return { store: new MemoryLimitStore(), fallbackReason: `postgres: ${(error as Error).message}` };
+    }
   }
   return { store: new MemoryLimitStore(), fallbackReason: `unknown mode: ${mode}` };
 }

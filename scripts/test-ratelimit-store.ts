@@ -68,9 +68,9 @@ const sqliteResolved = resolveLimitStore({ GIB_RATE_LIMIT_STORE: 'sqlite', GIB_S
 assert.equal(sqliteResolved.store.kind, 'sqlite');
 assert.equal(sqliteResolved.store.distributed, true, 'общий счётчик помечен как распределённый');
 
-// 8. PostgreSQL не подменяется памятью молча.
+// 8. PostgreSQL без строки подключения не подменяется памятью молча.
 const pg = resolveLimitStore({ GIB_RATE_LIMIT_STORE: 'postgres' } as unknown as NodeJS.ProcessEnv);
-assert.equal(pg.store.kind, 'memory', 'без асинхронного слоя остаётся память');
+assert.equal(pg.store.kind, 'memory', 'без строки подключения остаётся память');
 assert.ok(pg.fallbackReason && pg.fallbackReason.includes('postgres'), 'причина названа, а не скрыта');
 console.log('  ok выбор хранилища честно сообщает об ограничениях');
 
