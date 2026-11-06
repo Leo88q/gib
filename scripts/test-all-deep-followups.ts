@@ -68,6 +68,39 @@ for (const id of allIds) {
 }
 console.log('  ok 121 история × 3 возраста: второй шаг, две ветки, ни одной оценки выбора');
 
+/* ---- 1в. Первый шаг истории: возраст, длина, отсутствие пугающего и обещаний ---- */
+{
+  // Порог — про то, что читает ребёнок сам. Второй шаг короче, потому что сцена
+  // уже задана; первый её задаёт, поэтому ему дан запас на одну фразу.
+  const MAX_LEN: Record<AgeBand, number> = { '5-7': 85, '8-10': 120, '11-13': 140 };
+  const SCARY = ['кошмар', 'ужас', 'смерт', 'похит', 'маньяк', 'труп', 'катастроф'];
+  const PROMISE = ['гарант', 'точно получится', 'всегда получится', 'обязательно получится', 'все получится'];
+  const BLAME = ['ты виноват', 'сам виноват', 'сама виновата', 'тебя накажут', 'неудачник'];
+  const ADULT_WORDS = /вывод|эпизод|пределы|ресурс|оправдан|версия|контекст|рефлекси|стратеги/i;
+  let phrases = 0;
+  for (const id of allIds) {
+    const scenario = [...PROGRAM_SCENARIOS, ...Object.values(STORYLETS_BY_ID)].find(s => s.id === id)!;
+    for (const [band] of bands) {
+      const variant = scenario.variants[band];
+      assert.ok(variant, `${id}/${band}: нет возрастного варианта`);
+      const texts = [variant.title, variant.text, ...variant.options.flatMap(o => [o.text, o.note])];
+      assert.ok(variant.text.length <= MAX_LEN[band], `${id}/${band}: первый шаг длинноват (${variant.text.length}): «${variant.text}»`);
+      for (const phrase of texts) {
+        phrases++;
+        const low = phrase.toLowerCase();
+        for (const word of SCARY) assert.ok(!low.includes(word), `${id}/${band}: пугающее слово «${word}»`);
+        for (const word of PROMISE) assert.ok(!low.includes(word), `${id}/${band}: обещание «${word}»`);
+        for (const word of BLAME) assert.ok(!low.includes(word), `${id}/${band}: обвинение «${word}»`);
+        // Младшему не подсовываем взрослую лексику — то же правило, что для второго шага.
+        if (band === '5-7') assert.ok(!ADULT_WORDS.test(phrase), `${id}/5-7: взрослое слово в «${phrase}»`);
+      }
+    }
+  }
+  console.log(`  ok ${allIds.length} историй × 3 возраста: первый шаг читаем по возрасту, без пугающего и обещаний (${phrases} фраз)`);
+}
+
+
+
 /* ---- 2. Второй шаг читается деревом и не отличается от снимка ---- */
 {
   const checked = new Set<string>();
