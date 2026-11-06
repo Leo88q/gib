@@ -11,6 +11,8 @@ import type { Scenario } from '../content/softskills';
 import { hasSupportPractice, makeSupportPractice } from '../content/support-practice';
 import { STORYLETS_BY_ID } from '../content/storylets';
 import { selectStoryCards, DAY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
+import { STORY_SKILLS } from '../content/story-skills';
+import { SKILL_BY_ID } from '../content/skills-catalog';
 import { nextDayStage } from '../day/day-machine';
 import { eventJournal, dedupeKeyFor, type EventJournal } from '../events/journal';
 import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor, type ReviewTopic } from '../review/topics';
@@ -764,6 +766,18 @@ export function buildReport(profile: Profile): WeeklyReport {
     })
     .filter(Boolean) as { scenarioId: string; text: string }[];
 
+  // Какие гибкие навыки тренировались на неделе: берём карту «история →
+  // навыки». Это не оценка ребёнка: навык либо встречался, либо нет.
+  const skillIds = new Set<string>();
+  for (const entry of weekScenarios) {
+    const mapped = STORY_SKILLS[entry.scenarioId]?.skills ?? [];
+    for (const skillId of mapped) skillIds.add(skillId);
+  }
+  const softSkills = [...skillIds]
+    .map(skillId => SKILL_BY_ID[skillId])
+    .filter(Boolean)
+    .map(skill => ({ id: skill.id, title: skill.title, competency: skill.competency }));
+
   const lastScenario = weekScenarios.length
     ? ALL_SCENARIOS[weekScenarios[weekScenarios.length - 1].scenarioId]
     : null;
@@ -791,6 +805,7 @@ export function buildReport(profile: Profile): WeeklyReport {
     home: lastScenario?.home ?? 'Сыграйте вместе 10 минут в настольную игру.',
     question: lastScenario?.question ?? 'Что сегодня было хорошего?',
     scenarioNotes: notes,
+    softSkills,
     program: {
       week: pos.week.week,
       weekTitle: pos.week.title,

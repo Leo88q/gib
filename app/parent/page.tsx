@@ -35,6 +35,7 @@ type Report = {
   home: string;
   question: string;
   scenarioNotes: { scenarioId: string; text: string }[];
+  softSkills?: { id: string; title: string; competency: keyof typeof COMPETENCY_LABEL }[];
   program: {
     week: number;
     weekTitle: string;
@@ -556,6 +557,31 @@ function ParentPage() {
             <h2>Вопрос за ужином</h2>
             <p>{report.question}</p>
           </div>
+
+          {(report.softSkills?.length ?? 0) > 0 && (
+            <div className="card">
+              <h2>Гибкие навыки на этой неделе</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Что встречалось в историях. Это список тем, а не оценка ребёнка:
+                навык либо был в сюжете, либо нет.
+              </p>
+              {(['self_awareness','self_regulation','empathy','relationships','decision_making','creative_thinking','growth_mindset'] as const)
+                .map(competency => ({ competency, items: (report.softSkills ?? []).filter(skill => skill.competency === competency) }))
+                .filter(group => group.items.length > 0)
+                .map(group => (
+                  <div key={group.competency} style={{ marginTop: 10 }}>
+                    <b>{COMPETENCY_LABEL[group.competency]}</b>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                      {group.items.map(skill => (
+                        <span key={skill.id} className="muted" style={{ border: '1px solid rgba(0,0,0,.12)', borderRadius: 999, padding: '2px 10px', fontSize: 13 }}>
+                          {skill.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
 
           {report.scenarioNotes.length > 0 && (
             <div className="card">

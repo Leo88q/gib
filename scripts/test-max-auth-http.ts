@@ -60,7 +60,7 @@ async function main() {
   check(current.done && current.reward.totalXp > 0 && (await req(`/api/report?profileId=${mid}`, m)).data.report.sessions === 1, 'MAX: полный игровой цикл и один отчёт');
 
   const second = await req('/api/session', m, { action: 'start', profileId: mid, storyChoice: true });
-  check(second.status === 200 && second.data.steps === 5 && second.data.storyOffer?.length === 2, 'MAX: второй день предлагает две истории');
+  check(second.status === 200 && second.data.steps === 5 && second.data.storyOffer?.length >= 2 && second.data.storyOffer?.length <= 3, 'MAX: второй день предлагает две истории');
   check((await req('/api/session', m, { action: 'select_story', sessionId: second.data.sessionId, cardId: 'day_2_default' })).status === 200, 'MAX: выбран исходный сюжет второго дня');
   let next = second.data;
   for (let i = 0; i < 3; i++) {

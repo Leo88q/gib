@@ -4,6 +4,8 @@ import { playerReportBlock } from '../lib/engine/rewards.ts';
 import { makeProfileExport } from '../lib/profile-export.ts';
 import { emptyStats } from '../lib/gamification.ts';
 import type { PlayerState, Profile } from '../lib/types.ts';
+import { STORY_SKILLS } from '../lib/content/story-skills.ts';
+import { SKILL_BY_ID } from '../lib/content/skills-catalog.ts';
 
 /**
  * Отчёт родителю — единственное место, где взрослый видит ребёнка. Здесь
@@ -37,6 +39,30 @@ const player: PlayerState = {
   assert.equal(JSON.stringify(report).includes('"quality"'), false, 'метки оценки в отчёте нет');
   assert.equal(JSON.stringify(report).includes('perfectDays'), false, 'счётчик безошибочности в отчёт не проходит');
   console.log('  ok в отчёте нет ни метки оценки, ни счётчика безошибочности');
+}
+
+/* ---- 2b. Гибкие навыки в отчёте — список тем, а не оценка ---- */
+{
+  // Навык недели собирается из карты «история → навыки». Проверяем сам
+  // источник: то, что попадёт в отчёт, не содержит оценок и цифр успеха.
+  const weekScenarioIds = ['sk_name_feelings', 'w7d3', 'sk_not_judge'];
+  const ids = new Set<string>();
+  for (const storyId of weekScenarioIds) for (const skillId of STORY_SKILLS[storyId]?.skills ?? []) ids.add(skillId);
+  const softSkills = [...ids].map(id => SKILL_BY_ID[id]).filter(Boolean);
+  assert.ok(softSkills.length > 0, 'навыки недели не собрались');
+  // Оценивает не любое слово «плохо»: в описании навыка оно может быть
+  // примером расплывчатого самоописания. Оценкой ребёнка считаются только
+  // прямые ярлыки и числовые рейтинги.
+  for (const skill of softSkills) {
+    const text = `${skill.title} ${skill.looksLike}`.toLowerCase();
+    for (const word of ['молодец', 'неудачник', 'уровень развития', 'хуже других', 'баллы за']) {
+      assert.equal(text.includes(word), false, `навык ${skill.id}: оценочное слово «${word}»`);
+    }
+    assert.equal(/\d+\s*(балл|очк|%|процент)/i.test(text), false, `навык ${skill.id}: число как оценка`);
+  }
+  // Один навык встречается в нескольких историях — список не раздувается.
+  assert.equal(new Set(softSkills.map(skill => skill.id)).size, softSkills.length, 'навыки недели повторяются');
+  console.log('  ok гибкие навыки недели — темы без оценок, без повторов');
 }
 
 /* ---- 3. Исторические данные не теряются ---- */

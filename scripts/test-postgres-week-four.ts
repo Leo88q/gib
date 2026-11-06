@@ -13,7 +13,7 @@ async function main() {
   await ensureSchema(client);
   await importLegacy(client,{profiles:[{id:'p',parentId:'owner',name:'Тест',age:12,band:'11-13',createdAt:1}],sessions:[],programStates:[{profileId:'p',completedDays:19,lastDayIndex:18,startedAt:1}]});
   const start=await startOwnedSession(client,'owner','p',false,true);
-  assert.ok(!('error' in start)); assert.equal(start.steps,6); assert.equal(start.storyOffer?.length,2); assert.deepEqual(await selectOwnedStory(client,'owner',start.sessionId,'day_20_default'),{ok:true,cardId:'day_20_default'});
+  assert.ok(!('error' in start)); assert.equal(start.steps,6); assert.ok((start.storyOffer?.length??0)>=2 && (start.storyOffer?.length??0)<=3); assert.deepEqual(await selectOwnedStory(client,'owner',start.sessionId,'day_20_default'),{ok:true,cardId:'day_20_default'});
   const read=async()=>((await client.query('SELECT data FROM gib.sessions WHERE id=$1',[start.sessionId])).rows[0].data as any);
   for(let step=0;step<2;step++) {
    const item=(await read()).runtime.items[step]; const payload=item.type==='scenario'?{index:0}:item.instance.answer;

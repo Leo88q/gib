@@ -11,7 +11,8 @@ for (const [band, age] of [['5-7', 6], ['8-10', 9], ['11-13', 12]] as [AgeBand, 
   const old = create(); const legacy = startSession(profile, false, old.store);
   assert.ok(!old.state.sessions[0].plan.includes('support-practice')); assert.equal(legacy.steps, day === 4 ? 5 : 4);
   const mem = create(); const started = startSession(profile, false, mem.store, { storyChoice:true });
-  if (day <= 4) { assert.equal(started.storyOffer?.length,2); assert.deepEqual(selectSessionStory(started.sessionId, `day_${day+1}_default`, mem.store),{ok:true,cardId:`day_${day+1}_default`}); } else assert.equal(started.storyOffer, undefined);
+  if (day <= 4) { // 2–3 карточки: основная, дополнительная и сцены под непокрытые навыки.
+   assert.ok((started.storyOffer?.length ?? 0) >= 2 && (started.storyOffer?.length ?? 0) <= 3); assert.deepEqual(selectSessionStory(started.sessionId, `day_${day+1}_default`, mem.store),{ok:true,cardId:`day_${day+1}_default`}); } else assert.equal(started.storyOffer, undefined);
   assert.equal(started.steps, day === 4 ? 6 : 5);
   let session = mem.state.sessions[0]; const story = session.runtime!.items[2];
   assert.equal(story.type, 'scenario'); assert.equal(story.scenarioId, `w1d${day+1}`);

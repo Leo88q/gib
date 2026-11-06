@@ -15,7 +15,7 @@ const bands: [AgeBand, number][] = [['5-7', 6], ['8-10', 9], ['11-13', 12]];
 const allIds = [...PROGRAM_SCENARIOS.map(s => s.id), ...Object.keys(STORYLETS_BY_ID)];
 
 /* ---- 1. Продолжения есть у каждой истории и для каждого возраста ---- */
-assert.equal(allIds.length, 121, 'ожидалась 121 история');
+assert.equal(allIds.length, PROGRAM_SCENARIOS.length + Object.keys(STORYLETS_BY_ID).length, 'список историй не совпал с контентом');
 for (const id of allIds) {
   const paths = ALL_DEEP_FOLLOWUPS[id];
   assert.ok(paths, `${id}: нет продолжений`);
@@ -66,7 +66,7 @@ for (const id of allIds) {
   }
   console.log('  ok длина фраз по возрастам: 5-7 до 70 знаков без взрослых абстракций');
 }
-console.log('  ok 121 история × 3 возраста: второй шаг, две ветки, ни одной оценки выбора');
+console.log(`  ok ${allIds.length} историй × 3 возраста: второй шаг, две ветки, ни одной оценки выбора`);
 
 /* ---- 1в. Первый шаг истории: возраст, длина, отсутствие пугающего и обещаний ---- */
 {

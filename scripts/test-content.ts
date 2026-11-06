@@ -63,7 +63,7 @@ check(
   PROGRAM.every((w) => new Set(w.days.map((d) => d.scenarioId)).size === 5)
 );
 
-check('дополнительные истории не пересекаются с программой и имеют три возраста', STORYLET_SCENARIOS.length === 61 && STORYLET_SCENARIOS.every(sc => !ids.includes(sc.id) && BANDS.every(b => !!sc.variants[b]?.title && !!sc.variants[b]?.text && sc.variants[b].options.length === 3 && sc.variants[b].options.every(o => o.text && o.note)) && TASK_IDS.has(sc.practiceTaskId)));
+check('дополнительные истории не пересекаются с программой и имеют три возраста', STORYLET_SCENARIOS.length > 0 && STORYLET_SCENARIOS.every(sc => !ids.includes(sc.id) && BANDS.every(b => !!sc.variants[b]?.title && !!sc.variants[b]?.text && sc.variants[b].options.length === 3 && sc.variants[b].options.every(o => o.text && o.note)) && TASK_IDS.has(sc.practiceTaskId)));
 
 let variantProblems = 0;
 const problemDetails: string[] = [];

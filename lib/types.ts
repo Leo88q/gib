@@ -170,6 +170,8 @@ export type WeeklyReport = {
   home: string;
   question: string;
   scenarioNotes: { scenarioId: string; text: string }[];
+  /** Гибкие навыки, которые встречались в историях недели. Не оценка, а список. */
+  softSkills: { id: string; title: string; competency: CompetencyId }[];
   program: {
     week: number;
     weekTitle: string;

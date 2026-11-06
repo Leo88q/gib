@@ -1,5 +1,5 @@
 /**
- * Собирает второй шаг для всех 121 истории программы.
+ * Собирает второй шаг для всех историй программы.
  *
  * Первый шаг каждой истории уже написан: ситуация и три варианта выбора.
  * Здесь добавляется второй шаг — что герой может сделать дальше, — чтобы
@@ -176,7 +176,8 @@ for (const { id, scenario } of sources) {
   })) as Paths;
 }
 
-if (Object.keys(out).length !== 121) throw new Error(`ожидалось 121 история, собрано ${Object.keys(out).length}`);
+const expected = sources.length;
+if (Object.keys(out).length !== expected) throw new Error(`ожидалось ${expected} историй, собрано ${Object.keys(out).length}`);
 fs.mkdirSync('lib/content/program', { recursive: true });
 const header = `import type { AgeBand } from '../../types.ts';
 

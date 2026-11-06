@@ -105,7 +105,7 @@ async function main() {
       check(map.status === 200 && topic.stories === 1 && topic.practices === (r.age === 6 ? 0 : 1) && !JSON.stringify(map.data).includes('choice'), 'карта учитывает завершение и пропуск без раскрытия ответа');
       check((await request(r.parent, '/api/session', payload)).status === 200, 'выбор повторно подтверждается после завершения');
       const nextDay = await request(r.parent, '/api/session', { action: 'start', profileId: r.profileId, storyChoice: true });
-      check(nextDay.status === 200 && nextDay.data.storyOffer?.length === 2, 'во втором дне доступны две истории');
+      check(nextDay.status === 200 && nextDay.data.storyOffer?.length >= 2 && nextDay.data.storyOffer?.length <= 3, 'во втором дне доступны две истории');
     }
   } else if (phase === 'final') {
     const records = JSON.parse(fs.readFileSync(marker, 'utf8'));

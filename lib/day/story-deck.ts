@@ -76,6 +76,15 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_59_offer', dayIndex: 58, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d4_offer', repeatable: true },
   { id: 'day_60_finish', dayIndex: 59, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d5_finish', repeatable: true },
   { id: 'day_1_picture', dayIndex: 0, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w1d1_picture', repeatable: true },
+  // Истории под навыки, у которых не было ни одной сцены. Ставятся на дни
+  // своей компетенции, чтобы ребёнок действительно до них дошёл: история без
+  // карточки в дне остаётся на складе.
+  { id: 'day_3_name_feelings', dayIndex: 2, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_name_feelings', repeatable: true },
+  { id: 'day_5_strengths', dayIndex: 4, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_recognize_strengths', repeatable: true },
+  { id: 'day_8_hold_impulse', dayIndex: 7, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_hold_impulse', repeatable: true },
+  { id: 'day_13_comfort_other', dayIndex: 12, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_comfort_other', repeatable: true },
+  { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
+  { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];
 const bands: readonly AgeBand[] = ['5-7', '8-10', '11-13'];
 const idPattern = /^[a-zA-Z0-9_-]{1,80}$/;
