@@ -25,6 +25,12 @@ async function main() {
 
   // 1. Профиль готовим по HTTP без заголовка владельца: браузер в демо-режиме
   //    получает того же владельца по умолчанию, поэтому кабинет увидит профиль.
+  // Демо-владелец один на весь сервер, а POST /api/profile без addChild
+  // намеренно возвращает уже существующего ребёнка (защита от повторной
+  // отправки формы). В общем прогоне тест получил бы профиль предыдущего
+  // теста и проверял чужое состояние. Чистим заранее.
+  const stale = await fetch(`${BASE}/api/profile`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  if (stale?.profile?.id) await fetch(`${BASE}/api/profile?profileId=${stale.profile.id}`, { method: 'DELETE' }).catch(() => {});
   const created = await fetch(`${BASE}/api/profile`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
