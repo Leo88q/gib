@@ -509,8 +509,10 @@ export const SCENARIOS_W4_6: Scenario[] = [
   },
   {
     id: 'w5d4',
-    competency: 'decision_making',
-    skillLabel: 'Ответственные решения',
+    // Герои договариваются в споре: это разрешение конфликта, а не выбор из
+    // вариантов. Метка «ответственные решения» осталась от первого набора.
+    competency: 'relationships',
+    skillLabel: 'Договориться в споре',
     variants: {
       '5-7': {
         title: 'Ссора друзей',

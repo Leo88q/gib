@@ -14,44 +14,41 @@ import { STORYLETS_BY_ID } from './storylets';
  * Одна история может тренировать несколько навыков: «предложить помощь» и
  * «уважать отказ» часто живут в одной сцене.
  *
- * Второе назначение карты — вскрывать расхождения. Часть историй размечена
- * компетенцией, которая не совпадает с содержанием (например, дни 8 — это
- * стратегии памяти, а не «самопознание»). Карта фиксирует это как
- * `mismatch`, а не прячет: `npm run skills:map` показывает такие истории
- * списком, чтобы их можно было переразметить осознанно.
+ * Второе назначение карты — держать компетенцию истории честной. Навык
+ * всегда принадлежит ровно одной компетенции, поэтому по навыкам видно,
+ * совпадает ли метка истории с содержанием. Это проверяет
+ * `test:competency-alignment`, а не человек глазами.
  */
 
 export type StorySkillMap = {
   /** Навыки, которые история действительно тренирует. */
   skills: string[];
-  /** Компетенция истории расходится с содержанием: что здесь на самом деле. */
-  mismatch?: CompetencyId;
 };
 
 export const STORY_SKILLS: Record<string, StorySkillMap> = {
   /* ================= Самопознание ================= */
   // История про поддержку молчащего друга: тренируется чтение сигналов,
   // хотя размечена как «замечаем чувства».
-  w1d1: { skills: ['read_signals', 'not_assume'], mismatch: 'empathy' },
+  w1d1: { skills: ['read_signals', 'not_assume'] },
   w1d2: { skills: ['notice_feelings', 'know_preferences'] },
   w1d3: { skills: ['notice_body_signals', 'take_break'] },
   w1d5: { skills: ['know_preferences', 'personal_boundaries'] },
   // Дни 8 — стратегии памяти (списки, подсказки, сверка), а не самопознание.
-  w8d1: { skills: ['plan_steps', 'gather_info'], mismatch: 'decision_making' },
-  w8d2: { skills: ['plan_steps', 'many_ideas'], mismatch: 'decision_making' },
-  w8d3: { skills: ['gather_info', 'ask_help'], mismatch: 'decision_making' },
-  w8d4: { skills: ['show_idea', 'return_to_task'], mismatch: 'decision_making' },
-  w8d5: { skills: ['return_to_task', 'gather_info'], mismatch: 'decision_making' },
-  w1d1_music: { skills: ['read_signals', 'not_assume', 'ask_how_are_you'], mismatch: 'empathy' },
-  w1d1_picture: { skills: ['offer_help', 'respect_emotions'], mismatch: 'empathy' },
+  w8d1: { skills: ['plan_steps', 'gather_info'] },
+  w8d2: { skills: ['plan_steps', 'many_ideas'] },
+  w8d3: { skills: ['gather_info', 'ask_help'] },
+  w8d4: { skills: ['show_idea', 'return_to_task'] },
+  w8d5: { skills: ['return_to_task', 'gather_info'] },
+  w1d1_music: { skills: ['read_signals', 'not_assume', 'ask_how_are_you'] },
+  w1d1_picture: { skills: ['offer_help', 'respect_emotions'] },
   w1d2_postcard: { skills: ['personal_boundaries', 'know_preferences'] },
   w1d3_garden: { skills: ['take_break', 'notice_body_signals'] },
   w1d5_puppet: { skills: ['personal_boundaries', 'say_no'] },
-  w8d1_supplies: { skills: ['plan_steps', 'gather_info'], mismatch: 'decision_making' },
-  w8d2_path: { skills: ['many_ideas', 'show_idea'], mismatch: 'creative_thinking' },
-  w8d3_step: { skills: ['ask_help', 'gather_info'], mismatch: 'decision_making' },
-  w8d4_tell: { skills: ['show_idea'], mismatch: 'creative_thinking' },
-  w8d5_gallery: { skills: ['return_to_task', 'gather_info'], mismatch: 'decision_making' },
+  w8d1_supplies: { skills: ['plan_steps', 'gather_info'] },
+  w8d2_path: { skills: ['many_ideas', 'show_idea'] },
+  w8d3_step: { skills: ['ask_help', 'gather_info'] },
+  w8d4_tell: { skills: ['show_idea'] },
+  w8d5_gallery: { skills: ['return_to_task', 'gather_info'] },
 
   /* ================= Саморегуляция ================= */
   w2d1: { skills: ['gather_info', 'pause_before_answer'] },
@@ -62,11 +59,11 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   // Дни 7 — приёмы памяти и внимания: частично саморегуляция, частично планирование.
   w7d1: { skills: ['calm_down', 'switch_attention'] },
   w7d2: { skills: ['return_to_task', 'gather_info'] },
-  w7d3: { skills: ['wait_turn'], mismatch: 'relationships' },
-  w7d4: { skills: ['plan_steps'] },
+  w7d3: { skills: ['agree_rules', 'wait_turn'] },
+  w7d4: { skills: ['return_to_task', 'plan_steps'] },
   w7d5: { skills: ['return_to_task'] },
   w12d2: { skills: ['respect_emotions', 'say_no', 'manage_frustration'] },
-  w2d1_club: { skills: ['gather_info', 'see_consequences'] },
+  w2d1_club: { skills: ['gather_info', 'pause_before_answer'] },
   w2d2_library: { skills: ['take_break', 'calm_down'] },
   w2d3_pencil: { skills: ['personal_boundaries', 'say_no'] },
   w2d4_station: { skills: ['take_break', 'calm_down'] },
@@ -74,14 +71,14 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w7d1_space: { skills: ['calm_down', 'switch_attention'] },
   w7d2_remember: { skills: ['return_to_task'] },
   w7d3_switch: { skills: ['switch_attention'] },
-  w7d4_note: { skills: ['plan_steps'] },
+  w7d4_note: { skills: ['return_to_task', 'plan_steps'] },
   w7d5_check: { skills: ['return_to_task'] },
   w12d2_comment: { skills: ['respect_emotions', 'say_no', 'manage_frustration'] },
 
   /* ================= Эмпатия ================= */
   w3d1: { skills: ['read_signals', 'offer_help'] },
   w3d2: { skills: ['gather_info', 'ask_how_are_you'] },
-  w3d3: { skills: ['accept_refusal'] },
+  w3d3: { skills: ['respect_emotions', 'accept_refusal'] },
   w3d4: { skills: ['not_assume'] },
   w3d5: { skills: ['know_preferences', 'see_options'] },
   w12d4: { skills: ['notice_distress', 'offer_help'] },
@@ -109,10 +106,10 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w4d3_book: { skills: ['say_no', 'personal_boundaries'] },
   w4d4_route: { skills: ['agree_rules', 'gather_info'] },
   w4d5_spill: { skills: ['apologize', 'offer_help'] },
-  w9d1_rules: { skills: ['change_plan', 'see_consequences'] },
-  w9d2_weather: { skills: ['change_plan'] },
+  w9d1_rules: { skills: ['agree_rules', 'see_consequences'] },
+  w9d2_weather: { skills: ['agree_rules', 'change_plan'] },
   w9d3_roles: { skills: ['know_preferences', 'say_no'] },
-  w9d4_signal: { skills: ['gather_info'] },
+  w9d4_signal: { skills: ['agree_rules', 'gather_info'] },
   w9d5_plan: { skills: ['change_plan', 'agree_rules'] },
   w12d1_invite: { skills: ['gather_info', 'join_group'] },
 
@@ -193,25 +190,4 @@ export function storiesForSkill(skillId: string): string[] {
     .map(([storyId]) => storyId);
 }
 
-/**
- * Истории, где разметка компетенции расходится с содержанием.
- *
- * Компетенция берётся из самой истории, а не из навыка: навык мог быть
- * выбран под фактическое содержание, и тогда сравнение с навыком скрыло бы
- * расхождение.
- */
-export function mismatchedStories(): { storyId: string; has: CompetencyId; actually: CompetencyId }[] {
-  const declared = new Map<string, CompetencyId>();
-  for (const scenario of PROGRAM_SCENARIOS) declared.set(scenario.id, scenario.competency);
-  for (const storylet of Object.values(STORYLETS_BY_ID)) declared.set(storylet.id, storylet.competency);
 
-  const result: { storyId: string; has: CompetencyId; actually: CompetencyId }[] = [];
-  for (const [storyId, entry] of Object.entries(STORY_SKILLS)) {
-    if (!entry.mismatch) continue;
-    const actual = declared.get(storyId);
-    if (actual && actual !== entry.mismatch) {
-      result.push({ storyId, has: actual, actually: entry.mismatch });
-    }
-  }
-  return result;
-}

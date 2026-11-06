@@ -9,7 +9,7 @@
  * оценивает и никого не ранжирует.
  */
 import { SKILLS_CATALOG, SKILLS_PER_COMPETENCY, skillsForCompetency } from '../lib/content/skills-catalog.ts';
-import { STORY_SKILLS, coveredSkillIds, storiesForSkill, mismatchedStories } from '../lib/content/story-skills.ts';
+import { STORY_SKILLS, coveredSkillIds, storiesForSkill } from '../lib/content/story-skills.ts';
 import { COMPETENCY_LABELS } from '../lib/content/softskills.ts';
 import type { CompetencyId } from '../lib/types.ts';
 
@@ -57,20 +57,8 @@ if (filter) {
 if (process.env.SKILLS_VERBOSE === '1') {
   console.log('\nИстория → навыки\n');
   for (const [storyId, entry] of Object.entries(STORY_SKILLS)) {
-    const mismatch = entry.mismatch ? `  ⟵ размечено иначе: ${COMPETENCY_LABELS[entry.mismatch]}` : '';
-    console.log(`${storyId}: ${entry.skills.join(', ')}${mismatch}`);
+    console.log(`${storyId}: ${entry.skills.join(', ')}`);
   }
-}
-
-/* Расхождения разметки: компетенция истории не совпадает с содержанием. */
-const mismatched = mismatchedStories().filter(item => !filter || item.has === filter || item.actually === filter);
-if (mismatched.length) {
-  console.log(`\nРазметка расходится с содержанием — ${mismatched.length} историй:\n`);
-  for (const item of mismatched) {
-    console.log(`  ${item.storyId}: стоит «${COMPETENCY_LABELS[item.has]}», по содержанию — «${COMPETENCY_LABELS[item.actually]}»`);
-  }
-  console.log('\nЭто не ошибка сборки: истории писались под другую неделю. Но если');
-  console.log('показывать родителю компетенцию истории, она должна совпадать.');
 }
 
 /* Итог по покрытию. */

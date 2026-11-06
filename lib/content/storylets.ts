@@ -19,7 +19,7 @@ import { SKILL_GAP_STORIES } from './skill-gap-stories.ts';
 /** Original extra stories for days 1–60. Expert and device review is still required. */
 export const STORYLET_SCENARIOS: Scenario[] = [
   {
-    id: 'w1d1_music', competency: 'self_awareness', skillLabel: 'Замечаем чувства', practiceTaskId: 'stroop',
+    id: 'w1d1_music', competency: 'empathy', skillLabel: 'Предложить поддержку', practiceTaskId: 'stroop',
     practiceWhy: 'Игра помогает потренировать внимание и паузу перед выбором.',
     home: 'Если хочется, предложите вместе послушать любимую мелодию.',
     report: 'Ребёнок исследовал историю о выборе подходящего занятия.',
@@ -44,7 +44,7 @@ export const STORYLET_SCENARIOS: Scenario[] = [
     },
   },
   {
-    id: 'w1d1_picture', competency: 'self_awareness', skillLabel: 'Замечаем чувства', practiceTaskId: 'stroop',
+    id: 'w1d1_picture', competency: 'empathy', skillLabel: 'Предложить поддержку', practiceTaskId: 'stroop',
     practiceWhy: 'Игра помогает тренировать внимание перед действием.',
     home: 'По желанию можно нарисовать вместе или каждому отдельно.',
     report: 'Ребёнок рассмотрел способы предложить поддержку без давления.',

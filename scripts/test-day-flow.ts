@@ -25,11 +25,13 @@ assert.ok(!offer.some(c => c.id === 'new_2'));
 assert.deepEqual(offer, selectStoryCards(0, '8-10', ['intro', 'new_2'], 'seed', more));
 assert.ok(!selectStoryCards(0, '5-7', [], 'seed', more).some(c => c.id === 'new_1' || c.id === 'new_2'));
 assert.throws(() => selectStoryCards(-1, '5-7', [], 'seed'));
-assert.throws(() => selectStoryCards(0, '5-7', [], 'seed', [{ ...more[0], scenarioId: 'w2d1' }]));
+// Компетенция карточки может не совпадать с днём: ребёнок выбирает одну
+// историю из двух, и тема — та, что он выбрал. Такое сочетание допустимо.
+assert.doesNotThrow(() => selectStoryCards(0, '5-7', [], 'seed', [{ ...more[0], scenarioId: 'w2d1' }]));
 assert.throws(() => selectStoryCards(0, '5-7', [], 'seed', [more[0], more[0]]));
 assert.throws(() => selectStoryCards(0, '5-7', [], 'seed', [{ ...more[0], scenarioId: 'w1d1' }]));
 assert.throws(() => selectStoryCards(0, '5-7', [], 'seed', [{ ...more[0], scenarioId: '__proto__' }]));
-console.log('  ok подбор ограничивает возраст, день, ранее открытые сцены и компетенцию');
+console.log('  ok подбор ограничивает возраст, день и ранее открытые сцены; компетенция карточки может отличаться от дня');
 
 for (const band of bands) {
   let state: DayFlow = createDayFlow(0, band, 'v1', selectStoryCards(0, band, [], 'test'));

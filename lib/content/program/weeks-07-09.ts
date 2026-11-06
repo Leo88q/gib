@@ -125,7 +125,9 @@ export const WEEK_9: WeekPlan = {
   week: 9,
   title: 'Гибкость',
   subtitle: 'Учимся менять план, когда обстоятельства другие',
-  competency: 'relationships',
+  // Неделя про смену плана и перестройку действий. Когнитивный навык —
+  // гибкость, а истории — про решения; «отношения» здесь не про что.
+  competency: 'decision_making',
   focusSkills: ['flexibility', 'inhibition'],
   parentNote:
     'Неделя про гибкость — главный навык взрослой жизни. Ребёнок тренирует: заметить, что привычный способ не работает, и переключиться, а не ломать ситуацию и не сдаваться.',
@@ -267,8 +269,11 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w7d3',
-    competency: 'self_regulation',
-    skillLabel: 'Саморегуляция',
+    // Содержание задаётся в weeks-six-eight-story-options: герои договариваются
+    // говорить по очереди. Это отношения, а не саморегуляция; старая метка
+    // осталась от первого варианта текста про возврат внимания.
+    competency: 'relationships',
+    skillLabel: 'Слушать по очереди',
     variants: {
       '5-7': {
         title: 'Делать и слушать',
@@ -389,15 +394,17 @@ export const SCENARIOS_W7_9: Scenario[] = [
   /* ---------------------------- НЕДЕЛЯ 8 ---------------------------- */
   {
     id: 'w8d1',
-    competency: 'self_awareness',
-    skillLabel: 'Самопознание',
+    // Неделя про память и приёмы: список, подсказка, порядок, сверка.
+    // Ребёнок выбирает, как организовать работу, — это решения, не самопознание.
+    competency: 'decision_making',
+    skillLabel: 'Собрать по списку',
     variants: {
       '5-7': {
         title: 'Запомнить список',
         text: 'Мама просила купить: хлеб, молоко и яблоки. Что сделаешь, чтобы не забыть?',
         options: [
           { text: 'Запишу на бумажку и возьму с собой', note: 'Ты сделал работу до магазина.' },
-          { text: 'Буду стараться не забыть', note: 'Намерение без опоры quickly забывается.' },
+          { text: 'Буду стараться не забыть', note: 'Намерение без опоры быстро забывается.' },
           { text: 'Куплю всё, кроме молока', note: 'Ты забыл и проверил только в магазине.' },
         ],
       },
@@ -429,8 +436,10 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w8d2',
-    competency: 'self_awareness',
-    skillLabel: 'Самопознание',
+    // Неделя про память и приёмы: список, подсказка, порядок, сверка.
+    // Ребёнок выбирает, как организовать работу, — это решения, не самопознание.
+    competency: 'decision_making',
+    skillLabel: 'Подсказка-история',
     variants: {
       '5-7': {
         title: 'История вместо списка',
@@ -469,8 +478,10 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w8d3',
-    competency: 'self_awareness',
-    skillLabel: 'Самопознание',
+    // Неделя про память и приёмы: список, подсказка, порядок, сверка.
+    // Ребёнок выбирает, как организовать работу, — это решения, не самопознание.
+    competency: 'decision_making',
+    skillLabel: 'Вернуться к списку',
     variants: {
       '5-7': {
         title: 'Забыл на полпути',
@@ -509,8 +520,10 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w8d4',
-    competency: 'self_awareness',
-    skillLabel: 'Самопознание',
+    // Неделя про память и приёмы: список, подсказка, порядок, сверка.
+    // Ребёнок выбирает, как организовать работу, — это решения, не самопознание.
+    competency: 'decision_making',
+    skillLabel: 'Рассказать по порядку',
     variants: {
       '5-7': {
         title: 'Расскажи по порядку',
@@ -549,8 +562,10 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w8d5',
-    competency: 'self_awareness',
-    skillLabel: 'Самопознание',
+    // Неделя про память и приёмы: список, подсказка, порядок, сверка.
+    // Ребёнок выбирает, как организовать работу, — это решения, не самопознание.
+    competency: 'decision_making',
+    skillLabel: 'Сверить готовое',
     variants: {
       '5-7': {
         title: 'Проверка: пять пунктов',
@@ -591,8 +606,8 @@ export const SCENARIOS_W7_9: Scenario[] = [
   /* ---------------------------- НЕДЕЛЯ 9 ---------------------------- */
   {
     id: 'w9d1',
-    competency: 'relationships',
-    skillLabel: 'Навыки отношений',
+    competency: 'decision_making',
+    skillLabel: 'Договориться о правиле',
     variants: {
       '5-7': {
         title: 'Правило изменилось',
@@ -631,8 +646,8 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w9d2',
-    competency: 'relationships',
-    skillLabel: 'Навыки отношений',
+    competency: 'decision_making',
+    skillLabel: 'Перестроиться',
     variants: {
       '5-7': {
         title: 'План сорвался',
@@ -671,8 +686,8 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w9d3',
-    competency: 'relationships',
-    skillLabel: 'Навыки отношений',
+    competency: 'decision_making',
+    skillLabel: 'Выбрать роль',
     variants: {
       '5-7': {
         title: 'Другая роль',
@@ -711,8 +726,8 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w9d4',
-    competency: 'relationships',
-    skillLabel: 'Навыки отношений',
+    competency: 'decision_making',
+    skillLabel: 'Найти другой способ',
     variants: {
       '5-7': {
         title: 'Привычка мешает',
@@ -751,8 +766,8 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w9d5',
-    competency: 'relationships',
-    skillLabel: 'Навыки отношений',
+    competency: 'decision_making',
+    skillLabel: 'Разобраться в правилах',
     variants: {
       '5-7': {
         title: 'Проверка: смена правил',

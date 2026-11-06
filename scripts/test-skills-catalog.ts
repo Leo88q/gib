@@ -19,7 +19,7 @@
  */
 import assert from 'node:assert/strict';
 import { SKILLS_CATALOG, SKILLS_PER_COMPETENCY, SKILL_BY_ID, skillsForCompetency } from '../lib/content/skills-catalog.ts';
-import { STORY_SKILLS, coveredSkillIds, mismatchedStories } from '../lib/content/story-skills.ts';
+import { STORY_SKILLS, coveredSkillIds } from '../lib/content/story-skills.ts';
 import { PROGRAM_SCENARIOS } from '../lib/content/program/index.ts';
 import { STORYLETS_BY_ID } from '../lib/content/storylets.ts';
 import { PROGRAM_DAYS } from '../lib/content/program/index.ts';
@@ -129,21 +129,6 @@ console.log('  ok ссылки на навыки существуют, у ист
   assert.deepEqual(unreachable, [],
     `навыки недостижимы за один проход (сцена есть, но ребёнок до неё не дойдёт): ${unreachable.join(', ')}`);
   console.log(`  ok все 48 навыков достижимы за один проход (${reachable.size}/48)`);
-}
-
-/* ---- 7. Расхождения разметки видны, а не спрятаны ---- */
-{
-  const mismatched = mismatchedStories();
-  // Расхождения допустимы: часть историй писалась под другую компетенцию.
-  // Важно, что они перечислены явно, а не выглядят как норма.
-  for (const item of mismatched) {
-    assert.ok(contentById.has(item.storyId), `${item.storyId}: расхождение для несуществующей истории`);
-  }
-  if (mismatched.length) {
-    console.log(`  ! разметка компетенции расходится с содержанием: ${mismatched.length} историй (см. npm run skills:map)`);
-  } else {
-    console.log('  ok разметка компетенции совпадает с содержанием');
-  }
 }
 
 console.log(`\nКарта навыков: 48 навыков, ${contentStories.size} историй, покрытие проверено.`);
