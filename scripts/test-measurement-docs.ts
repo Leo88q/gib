@@ -32,6 +32,9 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 const normalize = (text: string) => text.replace(/\s+/g, ' ');
 
 const design = normalize(read('docs/research-measurement-design.md'));
+// Бланк тоже нормализуется: якоря живут в таблице одной строкой, но брифинг
+// может переносить их по-другому, и сравнивать надо смысл, а не форматирование.
+const kitNormalized = normalize(read('docs/research-measurement-kit.md'));
 const kit = read('docs/research-measurement-kit.md');
 const script = read('scripts/measurement-design.ts');
 
@@ -155,4 +158,59 @@ assert.ok(
 );
 console.log('  ok дизайн и бланки ссылаются друг на друга');
 
-console.log('\nДокументы замера согласованы: 14 признаков, 4 отрезка, пороги на месте.');
+/* ---- 7. Брифинг для методиста не разошёлся с дизайном ---- */
+
+const brief = normalize(read('docs/research-methodist-briefing.md'));
+
+// Восемь решений — это повестка встречи. Если в брифинге появилось девятое
+// или пропало одно, встреча не влезет в 90 минут и решения будут приняты
+// наполовину.
+const decisions = [...brief.matchAll(/## Решение (\d+)\./g)].map((match) => Number(match[1]));
+assert.deepEqual(
+  decisions,
+  [1, 2, 3, 4, 5, 6, 7, 8],
+  `решения в брифинге идут как ${decisions.join(', ')}, ожидалось 1..8`,
+);
+console.log('  ok в брифинге ровно восемь решений по порядку');
+
+// Каждое решение должно заканчиваться местом для ответа: брифинг, из которого
+// нельзя уйти с записанным ответом, — это ещё один документ, а не встреча.
+const answerSlots = (brief.match(/\*\*Решение:\*\*/g) ?? []).length;
+assert.ok(
+  answerSlots >= 8,
+  `мест для записи решения ${answerSlots}, а решений восемь: на встрече некуда писать ответ`,
+);
+
+// Якоря, которые обсуждаются на встрече, должны совпадать с бланком: если в
+// брифинге уровень описан иначе, методист утвердит не тот протокол.
+const anchors = [
+  'отказался после двух приглашений',
+  'вышел после второго приглашения',
+  'вышел после первого приглашения',
+  'вышел сразу, до приглашения',
+];
+for (const anchor of anchors) {
+  assert.ok(
+    kitNormalized.toLowerCase().includes(anchor.toLowerCase()),
+    `якорь «${anchor}» пропал из бланка`,
+  );
+  assert.ok(brief.includes(anchor), `якорь «${anchor}» обсуждается на встрече, но не совпадает с бланком`);
+}
+console.log('  ok спорные якоря в брифинге совпадают с бланком');
+
+// Пороги надёжности и числа выборки на встрече называются те же, что в дизайне.
+for (const number of ['0.61', '0.80', '250 детей', '20 детей', '40 двойных']) {
+  assert.ok(
+    design.includes(number) || kit.includes(number),
+    `число «${number}» из брифинга не найдено в дизайне или бланке`,
+  );
+}
+console.log('  ok числа в брифинге взяты из дизайна, а не придуманы заново');
+
+assert.ok(
+  brief.includes('research-measurement-design.md') && brief.includes('research-measurement-kit.md'),
+  'брифинг не ссылается на оба документа: участники не найдут детали',
+);
+console.log('  ok брифинг ссылается на дизайн и бланки');
+
+console.log('\nДокументы замера согласованы: 14 признаков, 4 отрезка, 8 решений, пороги на месте.');
