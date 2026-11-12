@@ -3,11 +3,12 @@ import { requireParent, ownedProfile } from '@/lib/auth';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { YEAR } from '@/lib/content/year/index.ts';
+import { yearProgress } from '@/lib/content/year/types.ts';
 import {
   attendanceSummary,
   buildSchedule,
+  lessonToShow,
   markAttendance,
-  nextLesson,
   type ScheduledLesson,
 } from '@/lib/year/lessons.ts';
 
@@ -79,7 +80,22 @@ export async function GET(req: Request) {
         isShowcase: YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.isShowcase ?? false,
       })),
       attendance: attendanceSummary(schedule, today),
-      next: nextLesson(schedule, today) ?? null,
+      /**
+       * Какое занятие считать следующим. Не «где календарь», а «к чему ребёнок
+       * готов»: если он прошёл дни вперёд, показываем занятие по факту и
+       * говорим об этом прямо (`reason: 'ahead'`). Иначе семья видит 11-е
+       * занятие, хотя симулятор уже на 14-м, и решает, что прогресс потерялся.
+       */
+      next: (() => {
+        const completed = Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i);
+        const shown = lessonToShow({ year: YEAR, schedule, completedDayIndexes: completed, today });
+        if (!shown) return null;
+        const entry = schedule.find((item) => item.lesson === shown.lesson);
+        // `lesson` — ближайшая встреча по расписанию, `readyFor` — занятие, к
+        // которому ребёнок готов. Это два разных числа, и родителю нужны оба.
+        return { ...shown, attended: entry?.attended ?? null };
+      })(),
+      progress: yearProgress(YEAR, Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i)),
       total: YEAR.total,
     });
   });

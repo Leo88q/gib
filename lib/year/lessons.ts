@@ -139,3 +139,83 @@ function addDays(date: { year: number; month: number; day: number }, days: numbe
     day: asUtc.getUTCDate(),
   };
 }
+
+/**
+ * Какому занятию принадлежит день симулятора.
+ *
+ * `dayIndexes` занятия — это дни, которые идут ПОСЛЕ него. Значит день N
+ * относится к последнему занятию, все дни которого ≤ N.
+ */
+export function lessonOfDayIndex(year: YearPlan, dayIndex: number): Lesson | undefined {
+  let found: Lesson | undefined;
+  for (const lesson of year.lessons) {
+    if (lesson.dayIndexes.length === 0) continue;
+    // День относится к занятию, если он в его днях. Проверка через `includes`,
+    // а не через `max <= dayIndex`: первое занятие начинается с дня 0, и
+    // условие «максимум не больше нуля» для него не выполняется — день 0
+    // попадал в никуда. Тест поймал это на первом же дне.
+    if (lesson.dayIndexes.includes(dayIndex)) return lesson;
+    if (Math.max(...lesson.dayIndexes) <= dayIndex) found = lesson;
+  }
+  return found;
+}
+
+/**
+ * «Следующая встреча» и «к чему ребёнок готов» — два разных вопроса.
+ *
+ * Раньше здесь было одно поле, и это была ошибка, которую поймал тест.
+ * Календарная встреча назначается школой: она не сдвигается от того, что
+ * ребёнок прошёл дни вперёд или не прошёл назад. А готовность ребёнка — это
+ * его дни в приложении, и она может и обгонять календарь, и отставать от него.
+ *
+ * Если смешать их в одном числе, получается враньё в обе стороны:
+ *  - ребёнок ушёл вперёд — семья видит «11» и думает, что прогресс потерялся;
+ *  - ребёнок отстал — семья видит «31» и не понимает, почему на встрече
+ *    спрашивают про то, чего он не проходил.
+ *
+ * Поэтому возвращаются оба числа, а `gap` говорит, расходятся ли они.
+ */
+export type LessonToShow = {
+  /** Ближайшая встреча по расписанию: дата и номер, как их знает школа. */
+  lesson: number;
+  date: string;
+  /** Первое занятие, у которого не пройдены все дни симулятора. */
+  readyFor: number;
+  /**
+   * `ahead` — ребёнок прошёл дни дальше ближайшей встречи;
+   * `behind` — не прошёл дни предыдущих занятий;
+   * `calendar` — идёт ровно в календаре.
+   */
+  gap: 'calendar' | 'ahead' | 'behind';
+};
+
+/**
+ * Ближайшая встреча по расписанию, если она вообще есть.
+ *
+ * Будущее занятие всегда «дальше»: расписание не зависит от прогресса.
+ * Возвращается `undefined`, только когда год закончился.
+ */
+export function lessonToShow(params: {
+  year: YearPlan;
+  schedule: readonly ScheduledLesson[];
+  completedDayIndexes: readonly number[];
+  today: string;
+}): LessonToShow | undefined {
+  const { year, schedule, completedDayIndexes, today } = params;
+
+  const byCalendar = nextLesson(schedule, today);
+  if (!byCalendar) return undefined;
+
+  const done = new Set(completedDayIndexes);
+  const firstUnfinished = year.lessons.find((lesson) => !lesson.dayIndexes.every((index) => done.has(index)));
+
+  // Год пройден: встреча есть, а готовиться не к чему. Это не «вперёд» и не
+  // «отстаёт», а конец программы.
+  if (!firstUnfinished) {
+    return { lesson: byCalendar.lesson, date: byCalendar.date, readyFor: year.lessons[year.lessons.length - 1].number, gap: 'calendar' };
+  }
+
+  const gap = firstUnfinished.number > byCalendar.lesson ? 'ahead' : firstUnfinished.number < byCalendar.lesson ? 'behind' : 'calendar';
+
+  return { lesson: byCalendar.lesson, date: byCalendar.date, readyFor: firstUnfinished.number, gap };
+}

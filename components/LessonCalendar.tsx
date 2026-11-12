@@ -41,7 +41,7 @@ type Attendance = {
 type LessonsResponse = {
   lessons: LessonEntry[];
   attendance: Attendance;
-  next: LessonEntry | null;
+  next: { lesson: number; date: string; readyFor: number; gap: 'calendar' | 'ahead' | 'behind'; attended: boolean | null } | null;
   total: number;
 };
 
@@ -122,8 +122,22 @@ export default function LessonCalendar({ profileId }: { profileId: string }) {
       <div className="stat">
         <span>Следующее занятие</span>
         <b>
-          {next ? `${formatDate(next.date)} · тема ${next.unit ?? '—'}` : 'год закончен'}
+          {next ? `${formatDate(next.date)} · занятие ${next.lesson}` : 'год закончен'}
         </b>
+        {/* Если ребёнок прошёл дни вперёд, это говорится прямо. Иначе семья
+            видит отставание там, где его нет, и решает, что прогресс потерялся. */}
+        {next?.gap === 'ahead' && (
+          <span className="muted">
+            В приложении ребёнок уже дальше: по дням он готов к занятию {next.readyFor}. Встреча не
+            переносится — её назначает школа.
+          </span>
+        )}
+        {next?.gap === 'behind' && (
+          <span className="muted">
+            По дням в приложении ребёнок пока на занятии {next.readyFor}. Догнать можно в любой момент:
+            дни не сгорают.
+          </span>
+        )}
       </div>
 
       <div className="stat">
