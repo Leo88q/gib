@@ -130,6 +130,28 @@ async function main() {
   );
   console.log('  ok педагог видит одного ребёнка, в карточке только разрешённые поля');
 
+  /* ---- 3b. Методическая подложка уходит вместе с группой ---- */
+
+  /**
+   * Экран педагога читает method.{alignments,coverage,pages,demos,backup,briefs}.
+   * Если маршрут перестанет отдавать хоть одно, экран молча опустеет, а
+   * зелёными останутся оба теста по отдельности. Поэтому сверяем здесь.
+   */
+  const method = res.body.method as Record<string, unknown> | undefined;
+  assert.ok(method, 'маршрут не отдаёт методическую подложку');
+  for (const field of ['alignments', 'coverage', 'pages', 'demos', 'backup', 'briefs', 'refusalAlert']) {
+    assert.ok(field in method, `в подложке нет поля ${field}`);
+  }
+  assert.equal((method.alignments as unknown[]).length, 36, 'в подложке не 36 размеченных занятий');
+  assert.equal((method.pages as unknown[]).length, 36, 'в подложке не 36 страниц занятий');
+  assert.equal((method.demos as { items: unknown[] }).items.length, 12, 'в подложке не 12 роликов');
+  assert.equal((method.backup as { items: unknown[] }).items.length, 18, 'в подложке не 18 запасных упражнений');
+  assert.equal((method.briefs as { items: unknown[] }).items.length, 36, 'в подложке не 36 разборов');
+
+  const coverage = (method.coverage as { byGroup: Record<string, number> }).byGroup;
+  assert.ok(coverage.personal > 0 && coverage.meta > 0, 'покрытие ФГОС пустое');
+  console.log('  ok подложка: 36 занятий, 36 страниц, 36 разборов, 12 роликов, 18 запасных');
+
   res = await json(await GET(req('GET', undefined, 'boris')));
   assert.deepEqual(res.body.groups, [], 'педагог без групп видит чужие группы');
   res = await json(await GET(req('GET', undefined, 'olga')));

@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React, { createElement } from 'react';
 import { readFileSync } from 'node:fs';
 import TeacherCabinet from '../components/TeacherCabinet';
+import { join } from 'node:path';
 
 const raw = readFileSync(new URL('../components/TeacherCabinet.tsx', import.meta.url), 'utf8');
 
@@ -104,5 +105,24 @@ const html = renderToStaticMarkup(createElement(TeacherCabinet));
 assert.ok(html.includes('Моя группа'), 'экран без заголовка');
 assert.ok(!html.includes('NaN'), 'в разметке NaN');
 console.log('  ok компонент рендерится без данных и без NaN');
+
+/* ---- 8. Контракт экрана и маршрута ---- */
+
+/**
+ * Данные для подложки приходят из GET /api/teacher, а рисует их этот экран.
+ * Расхождение видно только глазом: экран молча ничего не покажет, а маршрут
+ * будет отдавать поле, которого никто не читает (или наоборот).
+ *
+ * Здесь сверяется сторона экрана: какие поля method.* он читает. Тест маршрута
+ * (test-teacher-route) проверяет, что все они приходят.
+ */
+const cabinetSource = readFileSync(join(process.cwd(), 'components/TeacherCabinet.tsx'), 'utf8');
+const readFields = new Set([...cabinetSource.matchAll(/method\.([a-zA-Z]+)/g)].map((match) => match[1]));
+
+const REQUIRED = ['alignments', 'coverage', 'pages', 'demos', 'backup', 'briefs'] as const;
+for (const field of REQUIRED) {
+  assert.ok(readFields.has(field), `экран не читает method.${field}: раздел мёртвый`);
+}
+console.log(`  ok экран читает ${readFields.size} полей подложки, все обязательные на месте`);
 
 console.log('\nЭкран педагога: посещаемость группы, без содержимого ребёнка.');
