@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { skillArt, DEFAULT_ART } from '@/lib/art-paths';
+import { YEAR, lessonOfDay } from '@/lib/content/year/index.ts';
 import type { AgeBand } from '@/lib/types';
 import TaskView, { type AnswerPayload, type TaskInstance } from '@/components/TaskView';
 import ScenarioView from '@/components/ScenarioView';
@@ -95,6 +96,19 @@ type Summary = {
   stars: number;
   comboBest: number;
 };
+
+/**
+ * Подпись «занятие N из 36» для дня программы.
+ *
+ * Ребёнку не нужно знать про учебный год и календарь школы. Ему нужно понимать,
+ * что этот день — часть одной встречи, а не отдельное задание из шестидесяти.
+ * Поэтому подпись короткая и без слова «занятие» в смысле «урок»: «встреча».
+ */
+function lessonOfDayLabel(dayIndex: number): string {
+  const lesson = lessonOfDay(YEAR, dayIndex);
+  if (!lesson) return '';
+  return `Встреча ${lesson.number} из ${YEAR.total}`;
+}
 
 export default function Home() {
   const [stage, setStage] = useState<'boot' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
@@ -594,6 +608,12 @@ export default function Home() {
                 <span className="chip">
                   Неделя {program?.week ?? 1} · день {program?.day ?? 1}
                 </span>
+                {/* Год — вид сверху: ребёнок видит, к какому занятию относится
+                    день. Без этого 36 занятий существуют только в кабинете
+                    родителя, а ребёнок продолжает считать дни «из 60». */}
+                {lessonOfDayLabel(program?.completedDays ?? 0) && (
+                  <span className="chip">{lessonOfDayLabel(program?.completedDays ?? 0)}</span>
+                )}
                 <span className="chip">{program?.weekTitle ?? 'Программа'}</span>
               </div>
               <h2>{program?.dayTheme ?? 'Тренировка дня'}</h2>
