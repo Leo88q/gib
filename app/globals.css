@@ -1939,3 +1939,211 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .review-toggle { margin-top: 12px; border-top: 2px dashed var(--ink); padding-top: 10px; }
 .review-toggle label { font-weight: bold; margin-right: 8px; }
 .review-toggle input[type="checkbox"] { width: 22px; height: 22px; vertical-align: middle; }
+
+/* ------------------------ методические подсказки ----------------------- */
+
+/*
+  Подсказка педагогу — не украшение карточки, а рабочий инструмент, который
+  читают за две минуты до занятия. Поэтому у неё своя рамка: без неё текст
+  сливается с посещаемостью и педагог его пролистывает.
+
+  Тревожный сигнал (три отказа подряд) отличается формой и цветом, а не только
+  словом: цвет помогает найти взглядом, но смысл остаётся в тексте — при
+  дальтонизме рамка всё равно видна.
+*/
+.teacher-hint {
+  border-left: 3px solid var(--sky);
+  padding: 6px 0 6px 10px;
+  margin: 6px 0 2px;
+  font-size: 13px;
+}
+
+.teacher-hint p {
+  margin: 2px 0;
+}
+
+.teacher-hint summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.teacher-hint-alert {
+  border-left: 3px solid var(--orange);
+  background: #fff4ec;
+  border-radius: 0 10px 10px 0;
+  padding: 8px 10px 8px 12px;
+}
+
+.teacher-hint-alert strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.teacher-method {
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+
+.teacher-method summary {
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.teacher-method h3 {
+  font-size: 14px;
+  margin: 14px 0 4px;
+}
+
+.teacher-method details {
+  margin: 4px 0 4px 6px;
+  border-left: 2px solid #e6e6f0;
+  padding-left: 10px;
+}
+
+.teacher-method details summary {
+  cursor: pointer;
+}
+
+/* Страница занятия для родителя: ценность рядом с отчётом о посещении. */
+.lesson-page {
+  border: 2.5px dashed var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+
+.lesson-page h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.lesson-page ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.lesson-page li {
+  margin: 3px 0;
+}
+
+/* ------------------------- кабинет педагога --------------------------- */
+
+/*
+  Кабинет педагога — рабочее место, а не витрина: его открывают на минуту
+  перед занятием и на минуту после. Поэтому рамки, отбивки и плотность выше,
+  чем у детских экранов, а кнопки мельче: взрослому не нужен палец в 48 px,
+  ему нужен план на одном экране телефона.
+
+  Раньше этих правил не было вовсе — планы, ученики и переключатели выводились
+  простым текстом в общий поток. Тест test-method-ui-styles следит, чтобы так
+  не повторилось.
+*/
+.teacher-plan,
+.teacher-group,
+.teacher-student {
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.teacher-plan h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+/* Блок встречи — по нему педагог ведёт занятие с листа. */
+.teacher-block {
+  border-left: 3px solid var(--mint);
+  padding: 4px 0 4px 10px;
+  margin: 8px 0;
+}
+
+.teacher-block strong {
+  font-size: 14px;
+}
+
+.teacher-block p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+/* Строка ученика: имя слева, кнопка справа, даже на узком экране. */
+.teacher-student {
+  padding: 10px 12px;
+}
+
+.teacher-student .row {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.teacher-student .row > .btn {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.teacher-group .chip {
+  font-weight: 700;
+}
+
+/* Кнопки кабинета не должны занимать всю ширину, как детские. */
+.btn.small,
+.teacher-plan .btn,
+.teacher-group .btn {
+  width: auto;
+  padding: 8px 13px;
+  font-size: 13px;
+  border-width: 2.5px;
+  border-radius: 12px;
+}
+
+.btn.primary {
+  background: var(--mint);
+}
+
+.btn.primary:hover {
+  background: #4fdcba;
+}
+
+.input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* Переключатель недели в календаре: строка, а не кнопка на всю ширину. */
+.week-toggle {
+  width: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.week-toggle:hover {
+  background: var(--cream);
+}
+
+.lesson-list {
+  margin: 4px 0 10px;
+  padding-left: 2px;
+}
+
+/* Действия у занятия: две кнопки рядом, а не столбиком. */
+.lesson-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+}

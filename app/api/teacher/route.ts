@@ -10,6 +10,7 @@ import { MEETING_MINUTES, meetingPlan } from '@/lib/year/meeting.ts';
 import { alignYear, fgosCoverage } from '@/lib/year/fgos.ts';
 import { lessonPage } from '@/lib/year/valued.ts';
 import { DEMOS, totalSeconds } from '@/lib/year/demos.ts';
+import { quickBriefs, totalBriefMinutes } from '@/lib/year/briefs.ts';
 import { BACKUP_EXERCISES, SITUATION_LABEL } from '@/lib/year/backup-exercises.ts';
 import { REFUSAL_ALERT, refusalsInRow, stageFor } from '@/lib/year/stage.ts';
 import { hintFor } from '@/lib/year/anxious.ts';
@@ -150,7 +151,11 @@ export async function GET(req: Request) {
           items: BACKUP_EXERCISES,
           labels: SITUATION_LABEL,
         },
-        refusalAlert: REFUSAL_ALERT,
+          refusalAlert: REFUSAL_ALERT,
+      briefs: (() => {
+        const briefs = quickBriefs(YEAR);
+        return { items: briefs, totalMinutes: totalBriefMinutes(briefs) };
+      })(),
       };
     })(),
     plan: {

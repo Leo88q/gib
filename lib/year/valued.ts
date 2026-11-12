@@ -94,7 +94,7 @@ const LIFE_EXAMPLES: Readonly<Record<CompetencyId, readonly LifeExample[]>> = {
 };
 
 /** Что тренировали — простыми словами, по главной компетенции. */
-const TRAINED: Readonly<Record<CompetencyId, string>> = {
+export const TRAINED: Readonly<Record<CompetencyId, string>> = {
   self_awareness: 'замечать, что чувствуешь, и называть это словами',
   self_regulation: 'возвращаться к делу, когда отвлёкся или не выходит',
   empathy: 'замечать состояние другого и предлагать помощь так, чтобы её приняли',
@@ -119,6 +119,23 @@ const NOTICE_AT_HOME: Readonly<Record<CompetencyId, string>> = {
 function mainCompetency(lesson: Lesson): CompetencyId {
   return competenciesOfLesson(lesson)[0] ?? weekByNumber(lesson.unit).competency;
 }
+
+/**
+ * Название компетенции для педагога.
+ *
+ * Отдельно от TRAINED: там «что тренировали», здесь — как назвать это в
+ * разговоре. Смешивать нельзя: «эмпатия» в разборе уместна, а в отчёте
+ * родителю — нет.
+ */
+export const COMPETENCY_TITLE: Readonly<Record<CompetencyId, string>> = {
+  self_awareness: 'самопознание',
+  self_regulation: 'саморегуляция',
+  empathy: 'эмпатия',
+  relationships: 'отношения',
+  decision_making: 'решение выбором',
+  creative_thinking: 'творческое мышление',
+  growth_mindset: 'отношение к ошибке',
+};
 
 /**
  * Страница занятия.

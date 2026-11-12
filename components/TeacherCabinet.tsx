@@ -59,6 +59,20 @@ type Method = {
   demos: { items: { id: string; title: string; seconds: number; shot: string; says: string; mustSee: string }[]; totalMinutes: number };
   backup: { items: { id: string; title: string; situation: string; minutes: number; lead: string; why: string }[]; labels: Record<string, string> };
   refusalAlert: number;
+  briefs: {
+    items: {
+      lesson: number;
+      unitTitle: string;
+      about: string;
+      whatChildrenDo: string;
+      why: string;
+      watchFor: string;
+      keep: string;
+      askYourself: string;
+      seconds: number;
+    }[];
+    totalMinutes: number;
+  };
 };
 
 type MeetingPlan = {
@@ -305,6 +319,33 @@ export default function TeacherCabinet() {
           <summary>
             <strong>Методическая подложка</strong> — ФГОС, страницы занятий, как вести
           </summary>
+
+          <h3>Что происходит на занятии и зачем</h3>
+          <p className="muted">
+            {method.briefs.items.length} разборов, {method.briefs.totalMinutes} минут на все. Один — меньше
+            минуты: читается перед занятием, а не вместо плана.
+          </p>
+          {method.briefs.items.slice(0, 4).map((brief) => (
+            <details key={brief.lesson}>
+              <summary className="muted">
+                Занятие {brief.lesson}: {brief.unitTitle} · {brief.seconds} сек
+              </summary>
+              <p className="muted">О чём: {brief.about}</p>
+              <p className="muted">Что делают: {brief.whatChildrenDo}</p>
+              <p className="muted">Зачем: {brief.why}</p>
+              <p className="muted">На что смотреть: {brief.watchFor}</p>
+              <p className="muted">Не потерять: {brief.keep}</p>
+              <p className="muted">Спросить себя: {brief.askYourself}</p>
+            </details>
+          ))}
+          <details>
+            <summary className="muted">Все {method.briefs.items.length} разборов</summary>
+            {method.briefs.items.slice(4).map((brief) => (
+              <p key={brief.lesson} className="muted">
+                {brief.lesson}. {brief.unitTitle} — {brief.about} ({brief.seconds} сек)
+              </p>
+            ))}
+          </details>
 
           <h3>Как показывать занятие школе</h3>
           <p className="muted">
