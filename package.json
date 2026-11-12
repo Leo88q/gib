@@ -73,6 +73,7 @@
     "test:data-controls-http": "tsx scripts/test-data-controls-http.ts",
     "test:data-summary-route": "tsx scripts/test-data-summary-route.ts",
     "map:research": "tsx scripts/map-research-constructs.ts",
+    "measure:design": "tsx scripts/measurement-design.ts",
     "test:data-controls-page": "tsx scripts/test-data-controls-page.ts",
     "test:notifications": "tsx scripts/test-notifications.ts",
     "test:notifications-ui": "tsx scripts/test-notifications-ui.tsx",
