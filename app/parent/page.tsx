@@ -313,7 +313,7 @@ function ParentPage() {
       {/* ---------------- прогресс программы ---------------- */}
       {program && (
         <div className="card">
-          <h2>Программа: 12 недель</h2>
+          <h2>Программа: {program.weeks.length} недель</h2>
           <div className="stat">
             <span>Пройдено дней</span>
             <b>
@@ -323,7 +323,7 @@ function ParentPage() {
           <div className="stat">
             <span>Текущая неделя</span>
             <b>
-              {program.progress.currentWeek} из 12
+              {program.progress.currentWeek} из {program.weeks.length}
               {program.progress.finished ? ' — программа пройдена' : ''}
             </b>
           </div>
