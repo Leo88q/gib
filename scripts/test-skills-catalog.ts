@@ -1,5 +1,5 @@
 /**
- * Проверка карты навыков: 51 навык ↔ истории программы.
+ * Проверка карты навыков: 54 навыка ↔ истории программы.
  *
  * Что здесь важно и чего не хватает в обычных проверках контента. Тесты
  * контента смотрят, что история заполнена и не оценивает ребёнка. Они не
@@ -7,7 +7,7 @@
  * иметь сотню отличных историй и три навыка, о которых никто не вспомнил.
  *
  * Проверки:
- *  1. каталог: ровно 51 навык, у каждого одна компетенция, уникальные id;
+ *  1. каталог: ровно 54 навыка, у каждого одна компетенция, уникальные id;
  *  2. у каждого навыка есть формулировка для трёх возрастов, и они разные;
  *  3. формулировки не оценивают ребёнка и не обещают результат;
  *  4. каждая история контента размечена, и в карте нет лишних историй;
@@ -28,19 +28,19 @@ import { DAY_STORY_CARDS } from '../lib/day/story-deck.ts';
 const BANDS = ['5-7', '8-10', '11-13'] as const;
 
 /* ---- 1. Каталог ---- */
-assert.equal(SKILLS_CATALOG.length, 51, `в каталоге ${SKILLS_CATALOG.length} навыков, ожидалось 51`);
+assert.equal(SKILLS_CATALOG.length, 54, `в каталоге ${SKILLS_CATALOG.length} навыков, ожидалось 54`);
 const ids = SKILLS_CATALOG.map(skill => skill.id);
 assert.equal(new Set(ids).size, ids.length, 'идентификаторы навыков повторяются');
 for (const id of ids) assert.match(id, /^[a-z][a-z0-9_]{2,40}$/, `недопустимый id навыка: ${id}`);
 
 const competencies = Object.keys(SKILLS_PER_COMPETENCY) as (keyof typeof SKILLS_PER_COMPETENCY)[];
 const sum = competencies.reduce((total, key) => total + SKILLS_PER_COMPETENCY[key], 0);
-assert.equal(sum, 51, `сумма по компетенциям ${sum}, ожидалось 51`);
+assert.equal(sum, 54, `сумма по компетенциям ${sum}, ожидалось 54`);
 for (const competency of competencies) {
   assert.equal(skillsForCompetency(competency).length, SKILLS_PER_COMPETENCY[competency],
     `${competency}: навыков не столько, сколько заявлено`);
 }
-console.log('  ok каталог: 51 навык, у каждого одна компетенция, id уникальны');
+console.log('  ok каталог: 54 навыка, у каждого одна компетенция, id уникальны');
 
 /* ---- 2. Формулировки для трёх возрастов ---- */
 for (const skill of SKILLS_CATALOG) {
@@ -109,7 +109,7 @@ console.log('  ok ссылки на навыки существуют, у ист
   assert.deepEqual(uncovered, [],
     `навыки без единой истории: ${uncovered.join(', ')}. ` +
     'Нужен контент или честное снижение числа навыков, но не тихая дыра.');
-  console.log(`  ok все 51 навык тренируются хотя бы одной историей`);
+  console.log(`  ok все 54 навыка тренируются хотя бы одной историей`);
 }
 
 /* ---- 6b. Все навыки достижимы за один проход программы ---- */
@@ -128,7 +128,7 @@ console.log('  ok ссылки на навыки существуют, у ист
   const unreachable = SKILLS_CATALOG.filter(skill => !reachable.has(skill.id)).map(skill => skill.id);
   assert.deepEqual(unreachable, [],
     `навыки недостижимы за один проход (сцена есть, но ребёнок до неё не дойдёт): ${unreachable.join(', ')}`);
-  console.log(`  ok все 51 навык достижимы за один проход (${reachable.size}/51)`);
+  console.log(`  ok все 54 навыка достижимы за один проход (${reachable.size}/54)`);
 }
 
-console.log(`\nКарта навыков: 51 навык, ${contentStories.size} историй, покрытие проверено.`);
+console.log(`\nКарта навыков: 54 навыка, ${contentStories.size} историй, покрытие проверено.`);

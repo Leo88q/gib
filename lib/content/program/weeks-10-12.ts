@@ -9,7 +9,12 @@ export const WEEK_10: WeekPlan = {
   week: 10,
   title: 'План и порядок',
   subtitle: 'Учимся разворачивать большие задачи на шаги',
-  competency: 'decision_making',
+  // Было decision_making — и это расходилось с содержанием: дни недели несут
+  // навыки планирования, а они в self_regulation. Три темы (8, 9, 10) стояли
+  // под decision_making, хотя решений в них нет: память, гибкость и порядок
+  // действий — это управление действием. Переразмечено 07.11.2026, чтобы
+  // компетенция недели не спорила с навыками её дней.
+  competency: 'self_regulation',
   focusSkills: ['planning', 'logic'],
   parentNote:
     'Неделя про порядок действий. Здесь родителю полезно быть не контролёром, а соавтором: соберите вместе план ребёнка и дайте ему вести его самому. Отмечайте не «сделал», а «зачем этот шаг».',
@@ -187,7 +192,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   /* ---------------------------- НЕДЕЛЯ 10 ---------------------------- */
   {
     id: 'w10d1',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -227,7 +232,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d2',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -267,7 +272,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d3',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -307,7 +312,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d4',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -347,7 +352,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d5',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {

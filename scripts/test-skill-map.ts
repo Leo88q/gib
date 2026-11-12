@@ -26,18 +26,18 @@ const session = (id: string, scenarioId: string, finishedAt: number | null = NOW
 
 const bands: AgeBand[] = ['5-7', '8-10', '11-13'];
 
-/* ---- 1. Пустая карта: всего 51, но встречено ноль ---- */
+/* ---- 1. Пустая карта: всего 54, но встречено ноль ---- */
 {
   for (const band of bands) {
     const map = skillMap('p', [], band);
     assert.equal(map.length, 7, 'семь тем');
-    assert.equal(map.reduce((sum, group) => sum + group.total, 0), 51, 'всего 51 умение');
+    assert.equal(map.reduce((sum, group) => sum + group.total, 0), 54, 'всего 54 умения');
     assert.equal(map.reduce((sum, group) => sum + group.met, 0), 0, 'на старте ничего не встречено');
     // Умения есть в карте до того, как они встретились: иначе карта — список достижений.
     assert.ok(map.every(group => group.skills.length > 0), 'у каждой темы есть умения');
     assert.ok(map.every(group => group.skills.every(skill => skill.met === false)), 'ни одно не отмечено');
   }
-  console.log('  ok пустая карта: 51 умение на месте, ни одно не отмечено');
+  console.log('  ok пустая карта: 54 умения на месте, ни одно не отмечено');
 }
 
 /* ---- 2. Факт встречи, а не уровень ---- */
@@ -83,14 +83,14 @@ const bands: AgeBand[] = ['5-7', '8-10', '11-13'];
     const map = skillMap('p', [], band);
     return map.flatMap(group => group.skills).map(skill => skill.label);
   });
-  // Все 51 название есть в каждой возрастной линейке и все непустые.
+  // Все 54 названия есть в каждой возрастной линейке и все непустые.
   for (const [index, list] of labels.entries()) {
-    assert.equal(list.length, 51, `линейка ${bands[index]}: 51 название`);
+    assert.equal(list.length, 54, `линейка ${bands[index]}: 54 названия`);
     assert.ok(list.every(label => typeof label === 'string' && label.trim().length > 3), 'названия заполнены');
   }
   // Хотя бы половина названий различается между младшей и старшей линейкой.
   const differs = labels[0].filter((label, i) => label !== labels[2][i]).length;
-  assert.ok(differs >= 24, `названия почти не меняются по возрасту: различий ${differs} из 51`);
+  assert.ok(differs >= 24, `названия почти не меняются по возрасту: различий ${differs} из 54`);
 
   // Названия тем — живые слова, а не названия компетенций из методички.
   for (const label of Object.values(CHILD_COMPETENCY_LABELS)) {
@@ -133,4 +133,4 @@ const bands: AgeBand[] = ['5-7', '8-10', '11-13'];
   console.log('  ok в карте нет полей оценки, рейтинга и правильности');
 }
 
-console.log('\nКарта умений ребёнка: 51 навык, 7 тем, встречи вместо оценок.');
+console.log('\nКарта умений ребёнка: 54 навыка, 7 тем, встречи вместо оценок.');

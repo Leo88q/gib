@@ -649,7 +649,7 @@ export const SCENARIOS_W7_9: Scenario[] = [
   },
   {
     id: 'w9d2',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Перестроиться',
     variants: {
       '5-7': {

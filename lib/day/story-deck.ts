@@ -106,6 +106,11 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_13_show_work', dayIndex: 13, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_show_work', repeatable: true },
   { id: 'day_16_take_role', dayIndex: 16, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_take_role', repeatable: true },
   { id: 'day_17_support_group', dayIndex: 17, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_support_group', repeatable: true },
+  // Тема 10 «План и порядок» — три новые сцены, добавлены 07.11.2026.
+  // Дни внутри темы (46–50): 47 порядок, 48 главное, 49 пересборка.
+  { id: 'day_47_order_steps', dayIndex: 46, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_order_steps', repeatable: true },
+  { id: 'day_48_first_things', dayIndex: 47, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_first_things_first', repeatable: true },
+  { id: 'day_49_rebuild_plan', dayIndex: 48, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_rebuild_plan', repeatable: true },
   { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
   { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];

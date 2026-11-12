@@ -429,7 +429,7 @@ export const SCENARIOS_W4_6: Scenario[] = [
   },
   {
     id: 'w5d2',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {

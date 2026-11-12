@@ -48,7 +48,7 @@ const COMMUNICATION = [
  * вне измерения (0%), хотя это единственная тема, где планирование прямо
  * тренируется.
  */
-const PLANNING = ['plan_steps', 'change_plan'] as const;
+const PLANNING = ['plan_steps', 'change_plan', 'order_steps', 'first_things_first', 'rebuild_plan'] as const;
 
 /** Командная работа: вступить в игру, своя роль и поддержка партнёра. */
 const TEAMWORK = ['join_group', 'take_role', 'support_group'] as const;

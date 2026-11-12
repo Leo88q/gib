@@ -119,11 +119,15 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w5d3: { skills: ['safe_choice', 'find_owner'] },
   w5d4: { skills: ['handle_conflict'] },
   w5d5: { skills: ['choose_and_own'] },
+  // Тема 10 переразмечена 07.11.2026. До этого все пять дней несли один
+  // навык: ребёнок пять раз встречал «разбей задачу на шаги» и ни разу —
+  // порядок, выбор главного или пересборку. День 1 остаётся вводным (сама
+  // разбивка на шаги), остальные четыре раскрывают разные стороны планирования.
   w10d1: { skills: ['plan_steps'] },
-  w10d2: { skills: ['plan_steps'] },
-  w10d3: { skills: ['plan_steps'] },
-  w10d4: { skills: ['plan_steps'] },
-  w10d5: { skills: ['plan_steps', 'see_consequences'] },
+  w10d2: { skills: ['order_steps'] },
+  w10d3: { skills: ['first_things_first'] },
+  w10d4: { skills: ['rebuild_plan'] },
+  w10d5: { skills: ['plan_steps', 'change_plan'] },
   w5d1_crafts: { skills: ['see_options', 'choose_and_own'] },
   w5d2_materials: { skills: ['plan_steps', 'gather_info'] },
   w5d3_scarf: { skills: ['safe_choice', 'find_owner'] },
@@ -132,7 +136,7 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   w10d1_prepare: { skills: ['plan_steps'] },
   w10d2_garden: { skills: ['plan_steps'] },
   w10d3_order: { skills: ['plan_steps', 'see_consequences'] },
-  w10d4_change: { skills: ['change_plan'] },
+  w10d4_change: { skills: ['change_plan', 'rebuild_plan'] },
   w10d5_review: { skills: ['change_plan', 'see_consequences'] },
 
   /* ================= Творческое мышление ================= */
@@ -184,6 +188,9 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   sk3_show_work: { skills: ['show_work'] },
   sk3_take_role: { skills: ['take_role'] },
   sk3_support_group: { skills: ['support_group'] },
+  sk4_order_steps: { skills: ['order_steps'] },
+  sk4_first_things_first: { skills: ['first_things_first'] },
+  sk4_rebuild_plan: { skills: ['rebuild_plan'] },
 };
 
 /** Все навыки, которые встречаются хотя бы в одной истории. */
