@@ -100,6 +100,12 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_9_hold_impulse_2', dayIndex: 9, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_hold_impulse', repeatable: true },
   { id: 'day_11_not_judge_2', dayIndex: 11, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_not_judge', repeatable: true },
   { id: 'day_52_combine_ideas_2', dayIndex: 52, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_combine_ideas', repeatable: true },
+  // Три сцены, добавленные 06.11.2026 под разрывы актёрской методики:
+  // выход и показ работы, своя роль в общем деле, поддержка партнёра. Дни
+  // выбраны так, чтобы ни в одном дне не стало больше двух карточек.
+  { id: 'day_13_show_work', dayIndex: 13, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_show_work', repeatable: true },
+  { id: 'day_16_take_role', dayIndex: 16, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_take_role', repeatable: true },
+  { id: 'day_17_support_group', dayIndex: 17, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_support_group', repeatable: true },
   { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
   { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];

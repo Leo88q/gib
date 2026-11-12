@@ -181,6 +181,9 @@ export const STORY_SKILLS: Record<string, StorySkillMap> = {
   sk2_hold_impulse: { skills: ['hold_impulse'] },
   sk2_not_judge: { skills: ['not_judge'] },
   sk2_combine_ideas: { skills: ['combine_ideas'] },
+  sk3_show_work: { skills: ['show_work'] },
+  sk3_take_role: { skills: ['take_role'] },
+  sk3_support_group: { skills: ['support_group'] },
 };
 
 /** Все навыки, которые встречаются хотя бы в одной истории. */

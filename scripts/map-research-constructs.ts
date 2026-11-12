@@ -38,11 +38,15 @@ const COMMUNICATION = [
   'ask_help', 'offer_help', 'accept_refusal', 'say_no', 'apologize', 'agree_rules', 'handle_conflict',
 ] as const;
 
-/** Командная работа: в продукте честно размечен один навык. */
-const TEAMWORK = ['join_group'] as const;
+/** Командная работа: вступить в игру, своя роль и поддержка партнёра. */
+const TEAMWORK = ['join_group', 'take_role', 'support_group'] as const;
 
-/** Уверенность в выступлении: единственное приближение, и оно в другой компетенции. */
-const PERFORMANCE = ['show_idea'] as const;
+/**
+ * Уверенность в выступлении: показать свою идею и выйти показывать работу.
+ * Второй навык добавлен 06.11.2026 — до этого кульминация актёрской методики
+ * в каталоге отсутствовала.
+ */
+const PERFORMANCE = ['show_idea', 'show_work'] as const;
 
 function buildCoverage(): Map<string, string> {
   const coverage = new Map<string, string>();
@@ -51,6 +55,9 @@ function buildCoverage(): Map<string, string> {
       if (competencies.includes(skill.competency)) coverage.set(skill.id, construct);
     }
   }
+  // Явные списки идут после компетенций и перебивают их: show_work формально
+  // лежит в саморегуляции (ядро — справиться с волнением), но измеряется как
+  // «уверенность в выступлении». Без этого он считался бы в чужом конструкте.
   for (const id of COMMUNICATION) coverage.set(id, 'коммуникация и договорённость');
   for (const id of TEAMWORK) coverage.set(id, 'командная работа');
   for (const id of PERFORMANCE) coverage.set(id, 'уверенность в выступлении');
@@ -65,8 +72,12 @@ function main() {
   for (const id of [...COMMUNICATION, ...TEAMWORK, ...PERFORMANCE]) {
     if (!SKILL_BY_ID[id]) throw new Error(`навык ${id} из карты отсутствует в каталоге`);
   }
-  for (const id of [...TEAMWORK, ...PERFORMANCE]) {
-    if (coverage.get(id) === 'самосознание и эмоции') throw new Error(`${id} попал в два конструкта`);
+  // Новые навыки лежат в других компетенциях и потому не попадают в первые
+  // три конструкта автоматически. Проверяем, что явный список не перебивает
+  // компетенцию молча: у навыка должен остаться ровно один конструкт.
+  for (const id of [...COMMUNICATION, ...TEAMWORK, ...PERFORMANCE]) {
+    const hits = [...coverage].filter(([skillId]) => skillId === id);
+    if (hits.length !== 1) throw new Error(`${id} попал в несколько конструктов`);
   }
 
   console.log('Покрытие по конструктам исследования\n');
