@@ -182,6 +182,16 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
       seenTopics.add(String(state.topicId));
     }
   }
+  if (key === 'programStates' && Array.isArray(row.lessons)) {
+    // Показ: только 0, 1, 2 и только на занятиях-показах. Иначе в хранилище
+    // окажется «3» или отметка показа с обычного занятия, и сводка посчитает
+    // то, чего не было.
+    for (const entry of row.lessons as Record<string, unknown>[]) {
+      if (entry.showcase !== undefined && entry.showcase !== 0 && entry.showcase !== 1 && entry.showcase !== 2) {
+        throw new Error('Invalid showcase level');
+      }
+    }
+  }
   if (key === 'programStates' && row.lessons !== undefined) {
     // Расписание занятий: только номер, дата и отметка. Ни причин отсутствия,
     // ни оценок — их сбор требует отдельного решения и согласия.
@@ -198,7 +208,7 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
       if (previousDate && (entry.date as string) < previousDate) throw new Error('Lesson dates out of order');
       previousDate = entry.date as string;
       if (entry.attended !== undefined && typeof entry.attended !== 'boolean') throw new Error('Invalid attendance');
-      if (Object.keys(entry).some(f => !['lesson', 'date', 'attended'].includes(f))) throw new Error('Invalid lesson fields');
+      if (Object.keys(entry).some(f => !['lesson', 'date', 'attended', 'showcase'].includes(f))) throw new Error('Invalid lesson fields');
     }
   }
   if (key === 'events') {

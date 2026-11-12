@@ -31,7 +31,38 @@ export type ScheduledLesson = {
   date: string;
   /** Был ли ребёнок. `undefined` — занятие ещё не отмечено. */
   attended?: boolean;
+  /**
+   * Как ребёнок вышел показывать — только для занятий-показов.
+   *
+   * Центральный результат актёрской методики: ребёнок преодолевает страх
+   * выхода на публику. Шкала 0–2, и она измеряет не качество выступления, а
+   * факт выхода:
+   *
+   *   0 — отказался после двух приглашений;
+   *   1 — вышел после приглашения;
+   *   2 — вышел сам, не дожидаясь приглашения.
+   *
+   * Почему не 0–3 и почему не «как выступил»: качество на этом этапе
+   * не оценивается вовсе. Оценка выступления превращает показ в экзамен, и
+   * тогда отказ становится рациональным решением, а методика теряет смысл.
+   * Три отметки — минимум, при котором видно движение от отказа к
+   * самостоятельности; одна («выступил / не выступил») этого не различает.
+   */
+  showcase?: ShowcaseLevel;
 };
+
+/**
+ * Якоря шкалы показа. Объявлены здесь, потому что это единственное место, где
+ * шкала живёт в продукте; бланк и протокол ссылаются на этот список, чтобы
+ * через полгода не разошлись формулировки.
+ */
+export const SHOWCASE_ANCHORS: Readonly<Record<ShowcaseLevel, string>> = {
+  0: 'Отказался после двух приглашений',
+  1: 'Вышел после приглашения',
+  2: 'Вышел сам, не дожидаясь приглашения',
+};
+
+export type ShowcaseLevel = 0 | 1 | 2;
 
 /**
  * Расписание года: 36 дат, начиная с даты старта, раз в неделю.
@@ -218,4 +249,55 @@ export function lessonToShow(params: {
   const gap = firstUnfinished.number > byCalendar.lesson ? 'ahead' : firstUnfinished.number < byCalendar.lesson ? 'behind' : 'calendar';
 
   return { lesson: byCalendar.lesson, date: byCalendar.date, readyFor: firstUnfinished.number, gap };
+}
+
+/**
+ * Отметка показа: 0, 1 или 2 по шкале выхода.
+ *
+ * Отдельная функция, а не параметр `markAttendance`: посещение и выход на показ
+ * — разные события, и смешивать их в одной подписи значит однажды передать
+ * одно вместо другого. Здесь же проверка, что занятие вообще показ: отметка
+ * показа на обычном занятии — ошибка вызывающего, а не данные.
+ */
+export function markShowcase(
+  schedule: readonly ScheduledLesson[],
+  year: YearPlan,
+  lessonNumber: number,
+  level: ShowcaseLevel,
+): ScheduledLesson[] {
+  const entry = schedule.find((item) => item.lesson === lessonNumber);
+  if (!entry) throw new Error(`занятия ${lessonNumber} нет в расписании`);
+
+  const lesson = year.lessons.find((item) => item.number === lessonNumber);
+  if (!lesson?.isShowcase) throw new Error(`занятие ${lessonNumber} не показ`);
+
+  if (level !== 0 && level !== 1 && level !== 2) throw new Error('уровень показа вне шкалы 0–2');
+
+  return schedule.map((item) => (item.lesson === lessonNumber ? { ...item, showcase: level } : item));
+}
+
+/**
+ * Сводка показов: сколько раз ребёнок выходил, сколько отказался.
+ *
+ * Отказ считается отдельно и не вычитается из общего: решение методиста
+ * (07.11.2026) — отказавшийся ребёнок это отдельный показатель, а не «ноль
+ * баллов» в общей сумме. Иначе отказ растворяется в среднем и перестаёт быть
+ * видимым, хотя именно он — главный сигнал для педагога.
+ */
+export function showcaseSummary(
+  schedule: readonly ScheduledLesson[],
+  year: YearPlan,
+): { shows: number; invited: number; refused: number; marked: number } {
+  const showcases = schedule.filter((entry) => {
+    const lesson = year.lessons.find((item) => item.number === entry.lesson);
+    return lesson?.isShowcase === true;
+  });
+
+  const marked = showcases.filter((entry) => entry.showcase !== undefined);
+  return {
+    shows: marked.filter((entry) => entry.showcase === 2 || entry.showcase === 1).length,
+    invited: marked.filter((entry) => entry.showcase === 1).length,
+    refused: marked.filter((entry) => entry.showcase === 0).length,
+    marked: marked.length,
+  };
 }

@@ -82,13 +82,13 @@ console.log('  ok идентификатор профиля сам по себе
 
 const marks = (profileId: string) =>
   profileId === 'p1'
-    ? { attended: 8, missed: 1, showcases: 3 }
-    : { attended: 5, missed: 4, showcases: 1 };
+    ? { attended: 8, missed: 1, showcases: 3, refused: 1 }
+    : { attended: 5, missed: 4, showcases: 1, refused: 2 };
 
 const students = groupStudents(store, ANNA, 'g1', marks);
 assert.equal(students.length, 2, `в группе ${students.length} детей, ожидалось 2`);
 
-const allowedFields = ['profileId', 'name', 'age', 'attended', 'missed', 'showcases'];
+const allowedFields = ['profileId', 'name', 'age', 'attended', 'missed', 'showcases', 'refused'];
 for (const student of students) {
   assert.deepEqual(
     Object.keys(student).sort(),
@@ -102,7 +102,8 @@ assert.ok(first, 'ребёнок p1 пропал из списка');
 assert.equal(first.attended, 8, 'посещения не переданы');
 assert.equal(first.missed, 1, 'пропуски не переданы');
 assert.equal(first.showcases, 3, 'показы не переданы');
-console.log('  ok в карточке только имя, возраст и три счётчика');
+assert.equal(first.refused, 1, 'отказы не переданы');
+console.log('  ok в карточке только имя, возраст и четыре счётчика');
 
 /* ---- 5. Чужая группа в списке не появляется ---- */
 

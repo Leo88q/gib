@@ -22,7 +22,9 @@ import {
   attendanceSummary,
   buildSchedule,
   markAttendance,
+  markShowcase,
   nextLesson,
+  showcaseSummary,
   type ScheduledLesson,
 } from '../lib/year/lessons.ts';
 
@@ -129,3 +131,34 @@ rejects([{ lesson: 0, date: '2026-09-01' }], /Invalid lesson number/);
 console.log('  ok валидатор не принимает причину отсутствия, оценку и кривые даты');
 
 console.log('\nПосещаемость и календарь: 36 дат, валидатор, крайние случаи.');
+
+/* ---- Показ: шкала выхода 0–2 ---- */
+
+const showcase = YEAR.lessons.find((lesson) => lesson.isShowcase);
+const ordinary = YEAR.lessons.find((lesson) => !lesson.isShowcase);
+assert.ok(showcase && ordinary, 'в году нет показов или обычных занятий');
+
+// Отметка на обычном занятии — ошибка вызывающего, а не данные.
+assert.throws(() => markShowcase(schedule, YEAR, ordinary.number, 2), /не показ/, 'показ отмечен на обычном занятии');
+assert.throws(() => markShowcase(schedule, YEAR, 999, 1), /нет в расписании/, 'отмечено несуществующее занятие');
+assert.throws(() => markShowcase(schedule, YEAR, showcase.number, 3 as never), /вне шкалы/, 'принят уровень 3');
+
+// Не мутирует исходное расписание.
+const beforeShowcase = JSON.stringify(schedule);
+const withShowcase = markShowcase(schedule, YEAR, showcase.number, 0);
+assert.equal(JSON.stringify(schedule), beforeShowcase, 'отметка показа изменила исходное расписание');
+assert.equal(withShowcase.find((entry) => entry.lesson === showcase.number)?.showcase, 0);
+
+// Отказ считается отдельно, а не растворяется в среднем.
+let year = markShowcase(schedule, YEAR, showcase.number, 0);
+const second = YEAR.lessons.filter((lesson) => lesson.isShowcase)[1];
+year = markShowcase(year, YEAR, second.number, 2);
+const showcaseBox = showcaseSummary(year, YEAR);
+assert.equal(showcaseBox.refused, 1, `отказов ${showcaseBox.refused}, ожидался 1`);
+assert.equal(showcaseBox.shows, 1, `выходов ${showcaseBox.shows}, ожидался 1`);
+assert.equal(showcaseBox.marked, 2, `отмечено ${showcaseBox.marked}, ожидалось 2`);
+
+// Пустая сводка не врёт нулём: ноль отмеченных — это «не отмечено».
+assert.equal(showcaseSummary(schedule, YEAR).marked, 0);
+assert.equal(showcaseSummary(schedule, YEAR).refused, 0);
+console.log('  ok показ: шкала 0–2, отказ отдельным счётчиком, обычное занятие отвергается');

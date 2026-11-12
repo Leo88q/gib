@@ -123,7 +123,7 @@ async function main() {
   const card = mine.students[0] as Record<string, unknown>;
   assert.deepEqual(
     Object.keys(card).sort(),
-    ['age', 'attended', 'missed', 'name', 'profileId', 'showcases'],
+    ['age', 'attended', 'missed', 'name', 'profileId', 'refused', 'showcases'],
     `в карточке лишние поля: ${Object.keys(card).join(', ')}`,
   );
   console.log('  ok педагог видит одного ребёнка, в карточке только разрешённые поля');
@@ -151,6 +151,28 @@ async function main() {
   assert.ok(!/Не ждите от него/.test(closing), 'в план попал совет родителю');
 
   console.log('  ok план на 36 занятий отдан, закрывающая фраза — для детей');
+
+  /* ---- 3.6. Показ: шкала выхода ---- */
+
+  // Занятие 4 в году — показ (первая тема: 4 занятия, последнее — показ).
+  res = await json(await POST(req('POST', { action: 'showcase', profileId: child.id, lesson: 4, level: 1 })));
+  assert.equal(res.status, 200, `отметка показа не прошла: ${JSON.stringify(res.body)}`);
+  assert.equal(res.body.level, 1);
+
+  res = await json(await POST(req('POST', { action: 'showcase', profileId: child.id, lesson: 4, level: 3 })));
+  assert.equal(res.body.error, 'invalid_showcase_level', 'уровень вне шкалы принят');
+  assert.equal(res.body.anchors[0], 'Отказался после двух приглашений', 'якоря шкалы не отдаются');
+
+  // Показ нельзя отметить на обычном занятии: это ошибка вызывающего, а не данные.
+  res = await json(await POST(req('POST', { action: 'showcase', profileId: child.id, lesson: 2, level: 2 })));
+  assert.equal(res.body.error, 'not_a_showcase', 'показ отмечен на обычном занятии');
+
+  // Отказ принимается наравне с выходом.
+  res = await json(await POST(req('POST', { action: 'showcase', profileId: child.id, lesson: 4, level: 0 })));
+  assert.equal(res.status, 200, 'отказ не принят: отказ — это данные, а не ошибка ввода');
+  assert.equal(res.body.showcase.refused, 1, 'отказ не попал в отдельный счётчик');
+  assert.equal(res.body.showcase.shows, 0, 'отказ посчитан как выход');
+  console.log('  ok показ: 0–2, якоря отдаются, отказ отдельным счётчиком, обычное занятие отвергается');
 
   /* ---- 4. Отметки ---- */
 

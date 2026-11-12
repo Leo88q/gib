@@ -3,7 +3,7 @@ import { requestParent } from '@/lib/auth';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { YEAR } from '@/lib/content/year/index.ts';
-import { attendanceSummary, nextLesson } from '@/lib/year/lessons.ts';
+import { attendanceSummary, nextLesson, markShowcase, showcaseSummary, SHOWCASE_ANCHORS, type ShowcaseLevel } from '@/lib/year/lessons.ts';
 import { groupStudents, teacherCanMark, type Membership, type Store as AccessStore } from '@/lib/teacher/access.ts';
 import { newJoinCode, normalizeJoinCode } from '@/lib/teacher/invites.ts';
 import { MEETING_MINUTES, meetingPlan } from '@/lib/year/meeting.ts';
@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic';
  *  - POST action=leave     — родитель забирает ребёнка из группы.
  */
 
-type Action = 'mark' | 'join' | 'leave';
+type Action = 'mark' | 'join' | 'leave' | 'showcase';
 
 const MAX_LESSONS = 60;
 
@@ -50,12 +50,10 @@ function marksOf(profileId: string) {
   const schedule = store.programState(profileId)?.lessons ?? [];
   const today = new Date().toISOString().slice(0, 10);
   const summary = attendanceSummary(schedule, today);
-  const showcases = schedule.filter(
-    (entry) =>
-      entry.attended === true &&
-      (YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.isShowcase ?? false),
-  ).length;
-  return { attended: summary.attended, missed: summary.missed, showcases };
+  // Показы считаются по шкале выхода, а не по посещению: ребёнок мог прийти,
+  // но отказаться выходить, и это ровно то, что важно педагогу.
+  const shows = showcaseSummary(schedule, YEAR);
+  return { attended: summary.attended, missed: summary.missed, showcases: shows.shows, refused: shows.refused };
 }
 
 /**
@@ -127,13 +125,14 @@ export async function POST(req: Request) {
   }
   if (!body || typeof body !== 'object') return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
 
-  const { action, profileId, lesson, attended, code, groupId, reason, ...rest } = body as Record<string, unknown>;
+  const { action, profileId, lesson, attended, level, code, groupId, reason, ...rest } = body as Record<string, unknown>;
 
   // Причина отсутствия не собирается: чувствительное поле. Отказ явный, чтобы
   // не оставить уверенности, что данные сохранились.
   if (reason !== undefined) return NextResponse.json({ error: 'reason_not_collected' }, { status: 400 });
   if (Object.keys(rest).length > 0) return NextResponse.json({ error: 'unexpected_fields' }, { status: 400 });
 
+  if (action === 'showcase') return markShowcaseRoute(parentId, profileId, lesson, level);
   if (action === 'join') return joinGroup(parentId, code, profileId);
   if (action === 'leave') return leaveGroup(parentId, groupId, profileId);
   if (action === 'mark') return markLesson(parentId, profileId, lesson, attended);
@@ -170,6 +169,47 @@ function markLesson(parentId: string, profileId: unknown, lesson: unknown, atten
       profileId,
       attendance: attendanceSummary(updated, new Date().toISOString().slice(0, 10)),
     });
+  });
+}
+
+/**
+ * Отметка показа: 0, 1 или 2 по шкале выхода.
+ *
+ * Почему отдельный код, а не поле в отметке посещения. Показ — это момент, ради
+ * которого существует актёрская методика: ребёнок выходит на публику и
+ * преодолевает страх. Смешать это с «был / не был» значит потерять главное.
+ *
+ * Уровень 0 (отказался) принимается наравне с 2: отказ — это данные, а не
+ * ошибка ввода. Именно он показывает педагогу, кому нужна поддержка.
+ */
+function markShowcaseRoute(parentId: string, profileId: unknown, lesson: unknown, level: unknown) {
+  if (typeof profileId !== 'string' || !profileId) return NextResponse.json({ error: 'profileId_required' }, { status: 400 });
+  if (typeof lesson !== 'number' || !Number.isInteger(lesson) || lesson < 1 || lesson > MAX_LESSONS) {
+    return NextResponse.json({ error: 'invalid_lesson' }, { status: 400 });
+  }
+  if (level !== 0 && level !== 1 && level !== 2) {
+    return NextResponse.json({ error: 'invalid_showcase_level', anchors: SHOWCASE_ANCHORS }, { status: 400 });
+  }
+
+  return store.transaction(() => {
+    if (!teacherCanMark(accessStore(), parentId, profileId)) {
+      return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    }
+    const state = store.programState(profileId);
+    let updated;
+    try {
+      updated = markShowcase(state.lessons ?? [], YEAR, lesson, level as ShowcaseLevel);
+    } catch (error) {
+      // «Не показ» и «нет такого занятия» — разные ошибки, и педагогу нужно
+      // понимать, какая из них: вторая значит, что он открыл не то занятие.
+      const message = error instanceof Error ? error.message : '';
+      return NextResponse.json(
+        { error: message.includes('не показ') ? 'not_a_showcase' : 'lesson_not_found' },
+        { status: message.includes('не показ') ? 409 : 404 },
+      );
+    }
+    store.setProgramState({ ...state, lessons: updated });
+    return NextResponse.json({ lesson, level, profileId, showcase: showcaseSummary(updated, YEAR) });
   });
 }
 

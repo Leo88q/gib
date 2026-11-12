@@ -27,6 +27,7 @@ type Student = {
   attended: number;
   missed: number;
   showcases: number;
+  refused: number;
 };
 
 type Group = {
@@ -47,7 +48,7 @@ type MeetingPlan = {
 };
 
 type Lessons = {
-  lessons: { lesson: number; date: string; attended: boolean | null; title: string }[];
+  lessons: { lesson: number; date: string; attended: boolean | null; title: string; isShowcase?: boolean }[];
   next: { lesson: number; date: string } | null;
 };
 
@@ -112,6 +113,47 @@ export default function TeacherCabinet() {
       } else {
         setError(`Группа не создана: ${data.error ?? 'неизвестная ошибка'}`);
       }
+    } finally {
+      setBusy('');
+    }
+  };
+
+  /**
+   * Отметка показа: 0, 1, 2.
+   *
+   * Три кнопки вместо «выступил / не выступил», потому что движение от отказа к
+   * самостоятельности — и есть результат актёрской методики. Две кнопки этого
+   * не различают: «вышел после приглашения» и «вышел сам» — разные вещи.
+   */
+  const markShowcaseLevel = async (profileId: string, level: 0 | 1 | 2) => {
+    const target = lessons[profileId]?.next?.lesson;
+    if (!target) {
+      setMarked((prev) => ({ ...prev, [profileId]: 'Нет расписания занятий' }));
+      return;
+    }
+    setBusy(`${profileId}:showcase`);
+    try {
+      const res = await apiFetch('/api/teacher', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'showcase', profileId, lesson: target, level }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        const reason =
+          data.error === 'not_a_showcase'
+            ? 'Это занятие не показ'
+            : data.error === 'profile_not_found'
+              ? 'Этот ребёнок не в вашей группе'
+              : 'Не сохранилось';
+        setMarked((prev) => ({ ...prev, [profileId]: reason }));
+        return;
+      }
+      // Отказ — не «минус», а результат: подпись говорит это прямо, чтобы
+      // педагог не считал его провалом ребёнка.
+      const label = level === 0 ? 'отказался выходить' : level === 1 ? 'вышел по приглашению' : 'вышел сам';
+      setMarked((prev) => ({ ...prev, [profileId]: `Показ ${target}: ${label}` }));
+      await load();
     } finally {
       setBusy('');
     }
@@ -187,6 +229,13 @@ export default function TeacherCabinet() {
     );
   }
 
+  /** Ближайшее занятие — показ? Тогда вместо «был / не был» три кнопки выхода. */
+  const isNextShowcase = (profileId: string) => {
+    const next = lessons[profileId]?.next;
+    if (!next) return false;
+    return lessons[profileId]?.lessons.find((item) => item.lesson === next.lesson)?.isShowcase === true;
+  };
+
   // Ближайшее занятие и его план: педагог открывает кабинет перед встречей.
   const nextPlan = plan?.next ? plan.lessons.find((item) => item.lesson === plan.next) : undefined;
 
@@ -243,6 +292,7 @@ export default function TeacherCabinet() {
                 <strong>{student.name}</strong>
                 <span className="muted">
                   {student.age} лет · {student.attended} был · {student.missed} не был · {student.showcases} показов
+                  {student.refused > 0 ? ` · ${student.refused} отказался` : ''}
                 </span>
                 <button
                   type="button"
@@ -263,22 +313,38 @@ export default function TeacherCabinet() {
                       ? `Ближайшее занятие ${lessons[student.profileId]?.next?.lesson} · ${lessons[student.profileId]?.next?.date}`
                       : 'Расписание загружается…'}
                   </span>
-                  <button
-                    type="button"
-                    className="btn small"
-                    disabled={busy === `${student.profileId}:${lessons[student.profileId]?.next?.lesson}`}
-                    onClick={() => void mark(student.profileId, true)}
-                  >
-                    Был
-                  </button>
-                  <button
-                    type="button"
-                    className="btn small"
-                    disabled={busy === `${student.profileId}:${lessons[student.profileId]?.next?.lesson}`}
-                    onClick={() => void mark(student.profileId, false)}
-                  >
-                    Не был
-                  </button>
+                  {isNextShowcase(student.profileId) ? (
+                    <>
+                      <button type="button" className="btn small" onClick={() => void markShowcaseLevel(student.profileId, 0)}>
+                        Отказался
+                      </button>
+                      <button type="button" className="btn small" onClick={() => void markShowcaseLevel(student.profileId, 1)}>
+                        Вышел после приглашения
+                      </button>
+                      <button type="button" className="btn small" onClick={() => void markShowcaseLevel(student.profileId, 2)}>
+                        Вышел сам
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="btn small"
+                        disabled={busy === `${student.profileId}:${lessons[student.profileId]?.next?.lesson}`}
+                        onClick={() => void mark(student.profileId, true)}
+                      >
+                        Был
+                      </button>
+                      <button
+                        type="button"
+                        className="btn small"
+                        disabled={busy === `${student.profileId}:${lessons[student.profileId]?.next?.lesson}`}
+                        onClick={() => void mark(student.profileId, false)}
+                      >
+                        Не был
+                      </button>
+                    </>
+                  )}
                   {marked[student.profileId] && <span className="muted">{marked[student.profileId]}</span>}
                 </div>
               )}

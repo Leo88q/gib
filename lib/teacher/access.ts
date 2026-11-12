@@ -72,6 +72,12 @@ export type TeacherStudentView = {
   missed: number;
   /** Участие в показах: сколько раз ребёнок выходил показывать. Это факт. */
   showcases: number;
+  /**
+   * Сколько раз отказался выходить. Отдельное поле, а не «минус» из showcases:
+   * решение методиста — отказавшийся ребёнок это отдельный показатель, иначе
+   * отказ растворяется в среднем и перестаёт быть видимым.
+   */
+  refused: number;
 };
 
 /**
@@ -101,7 +107,7 @@ export function groupStudents(
   store: Store,
   teacherId: string,
   groupId: string,
-  marks: (profileId: string) => { attended: number; missed: number; showcases: number },
+  marks: (profileId: string) => { attended: number; missed: number; showcases: number; refused: number },
 ): TeacherStudentView[] {
   const group = store.groups.find((item) => item.id === groupId);
   if (!group || group.teacherId !== teacherId) return [];
@@ -119,6 +125,7 @@ export function groupStudents(
         attended: summary.attended,
         missed: summary.missed,
         showcases: summary.showcases,
+        refused: summary.refused,
       };
     });
 }
