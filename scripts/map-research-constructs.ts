@@ -38,6 +38,18 @@ const COMMUNICATION = [
   'ask_help', 'offer_help', 'accept_refusal', 'say_no', 'apologize', 'agree_rules', 'handle_conflict',
 ] as const;
 
+/**
+ * Планирование и организация отнесены к саморегуляции.
+ *
+ * Это методическое решение, и его надо назвать: конструкт «саморегуляция» в
+ * исследовании описан как управление своим состоянием и действием. План шагов,
+ * порядок и пересборка при сбое — это управление действием, а не чувством.
+ * Основание добавить их к конструкту: иначе тема 10 «План и порядок» остаётся
+ * вне измерения (0%), хотя это единственная тема, где планирование прямо
+ * тренируется.
+ */
+const PLANNING = ['plan_steps', 'change_plan'] as const;
+
 /** Командная работа: вступить в игру, своя роль и поддержка партнёра. */
 const TEAMWORK = ['join_group', 'take_role', 'support_group'] as const;
 
@@ -58,6 +70,7 @@ function buildCoverage(): Map<string, string> {
   // Явные списки идут после компетенций и перебивают их: show_work формально
   // лежит в саморегуляции (ядро — справиться с волнением), но измеряется как
   // «уверенность в выступлении». Без этого он считался бы в чужом конструкте.
+  for (const id of PLANNING) coverage.set(id, 'саморегуляция');
   for (const id of COMMUNICATION) coverage.set(id, 'коммуникация и договорённость');
   for (const id of TEAMWORK) coverage.set(id, 'командная работа');
   for (const id of PERFORMANCE) coverage.set(id, 'уверенность в выступлении');
@@ -75,7 +88,7 @@ function main() {
   // Новые навыки лежат в других компетенциях и потому не попадают в первые
   // три конструкта автоматически. Проверяем, что явный список не перебивает
   // компетенцию молча: у навыка должен остаться ровно один конструкт.
-  for (const id of [...COMMUNICATION, ...TEAMWORK, ...PERFORMANCE]) {
+  for (const id of [...PLANNING, ...COMMUNICATION, ...TEAMWORK, ...PERFORMANCE]) {
     const hits = [...coverage].filter(([skillId]) => skillId === id);
     if (hits.length !== 1) throw new Error(`${id} попал в несколько конструктов`);
   }
