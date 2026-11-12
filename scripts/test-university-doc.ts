@@ -73,7 +73,7 @@ console.log('  ok числа программы совпадают с кодом
 const testFiles = readdirSync(new URL('../scripts/', import.meta.url)).filter(
   (name) => /^test-.*\.tsx?$/.test(name),
 );
-assert.equal(testFiles.length, 233, `в scripts/ ${testFiles.length} файлов тестов, документ говорит 231`);
+assert.equal(testFiles.length, 235, `в scripts/ ${testFiles.length} файлов тестов, документ говорит 231`);
 assert.ok(doc.includes(String(testFiles.length)), 'число файлов тестов в документе не совпадает');
 
 // Проверок в прогоне — не «одна на файл». Считаем по факту.

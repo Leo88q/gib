@@ -7,6 +7,12 @@ import { attendanceSummary, nextLesson, markShowcase, showcaseSummary, SHOWCASE_
 import { groupStudents, teacherCanMark, type Membership, type Store as AccessStore } from '@/lib/teacher/access.ts';
 import { newJoinCode, normalizeJoinCode } from '@/lib/teacher/invites.ts';
 import { MEETING_MINUTES, meetingPlan } from '@/lib/year/meeting.ts';
+import { alignYear, fgosCoverage } from '@/lib/year/fgos.ts';
+import { lessonPage } from '@/lib/year/valued.ts';
+import { DEMOS, totalSeconds } from '@/lib/year/demos.ts';
+import { BACKUP_EXERCISES, SITUATION_LABEL } from '@/lib/year/backup-exercises.ts';
+import { REFUSAL_ALERT, refusalsInRow, stageFor } from '@/lib/year/stage.ts';
+import { hintFor } from '@/lib/year/anxious.ts';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,7 +96,26 @@ export async function GET(req: Request) {
       name: group.name,
       year: group.year,
       joinCode: group.joinCode,
-      students: groupStudents(storeValue, parentId, group.id, marksOf),
+      /**
+       * Подсказка по ребёнку: с какой ступени начинать и какой приём применить.
+       *
+       * Педагог видит не «0, 0, 0», а «три показа подряд без выхода: нужен
+       * разговор, а не уговоры». Без этого шкала фиксирует факт и не помогает.
+       */
+      students: groupStudents(storeValue, parentId, group.id, marksOf).map((student) => {
+        const schedule = store.programState(student.profileId)?.lessons ?? [];
+        const showcaseLevels = schedule
+          .filter((entry) => YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.isShowcase)
+          .map((entry) => entry.showcase);
+        const last = showcaseLevels.filter((level) => level !== undefined).at(-1);
+        const row = refusalsInRow(showcaseLevels);
+        return {
+          ...student,
+          stage: stageFor(last),
+          hint: hintFor(last, row),
+          refusalsInRow: row,
+        };
+      }),
     })),
     canMark: groups.length > 0,
     /**
@@ -100,6 +125,34 @@ export async function GET(req: Request) {
      * План отдаётся целиком на все занятия сразу: список общий, не зависит от
      * ребёнка, и грузить его по одному значило бы тридцать шесть запросов.
      */
+    /**
+     * Методическая подложка педагога: три вещи, которых не было.
+     *
+     * 1. `alignments` — 36 строк под ФГОС: язык, на котором школа слышит.
+     * 2. `pages` — страница занятия для родителя и завуча: что тренировали и
+     *    как это видно в жизни.
+     * 3. `demos` — сценарии съёмки 12 роликов: как вести, а не что делать.
+     *
+     * Всё это отдаётся вместе с планом, потому что педагог открывает один экран
+     * перед занятием, а не пять.
+     */
+    method: (() => {
+      const alignments = alignYear(YEAR);
+      return {
+        alignments,
+        coverage: fgosCoverage(alignments),
+        pages: YEAR.lessons.map((lesson) => {
+          const alignment = alignments.find((item) => item.lesson === lesson.number);
+          return lessonPage(lesson, alignment?.wording ?? '');
+        }),
+        demos: { items: DEMOS, totalMinutes: Math.round(totalSeconds() / 60) },
+        backup: {
+          items: BACKUP_EXERCISES,
+          labels: SITUATION_LABEL,
+        },
+        refusalAlert: REFUSAL_ALERT,
+      };
+    })(),
     plan: {
       minutes: MEETING_MINUTES,
       // Ближайшее занятие по календарю первой группы: у групп годы могут

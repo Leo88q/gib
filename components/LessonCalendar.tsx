@@ -42,6 +42,12 @@ type LessonsResponse = {
   lessons: LessonEntry[];
   attendance: Attendance;
   next: { lesson: number; date: string; readyFor: number; gap: 'calendar' | 'ahead' | 'behind'; attended: boolean | null } | null;
+  page?: {
+    lesson: number;
+    trained: string;
+    examples: { where: string; what: string }[];
+    noticeAtHome: string;
+  } | null;
   total: number;
 };
 
@@ -139,6 +145,29 @@ export default function LessonCalendar({ profileId }: { profileId: string }) {
           </span>
         )}
       </div>
+
+      {/*
+        Что тренировали и как это видно в жизни. Родитель видит отчёт «прошли
+        сцену про поделку» — это действие, а не ценность. Здесь ценность
+        названа и показана в бытовых ситуациях, которые можно узнать.
+      */}
+      {data.page && (
+        <div className="lesson-page">
+          <h3>К занятию {data.page.lesson}</h3>
+          <p className="muted">
+            Тренируем: {data.page.trained}
+          </p>
+          <p className="muted">Как это видно в жизни:</p>
+          <ul className="muted">
+            {data.page.examples.map((example) => (
+              <li key={example.where}>
+                {example.where} — {example.what}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">{data.page.noticeAtHome}</p>
+        </div>
+      )}
 
       <div className="stat">
         <span>Прошло занятий</span>

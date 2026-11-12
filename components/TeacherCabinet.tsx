@@ -20,6 +20,14 @@ import { apiFetch } from '@/lib/telegramClient';
  * был» и сам решает, с кем поговорить. Процент превращает факт в оценку.
  */
 
+type Stage = { step: number; title: string; next: string; avoid: string };
+type Hint = {
+  headline: string;
+  technique: { id: string; title: string; when: string; do: string; why: string };
+  avoid: { phrase: string; effect: string; instead: string };
+  needsTalk: boolean;
+};
+
 type Student = {
   profileId: string;
   name: string;
@@ -28,6 +36,12 @@ type Student = {
   missed: number;
   showcases: number;
   refused: number;
+  /** С какой ступени начинать и что делать дальше. */
+  stage: Stage;
+  /** Приём под текущую ситуацию и фраза, которую нельзя говорить. */
+  hint: Hint;
+  /** Сколько показов подряд без выхода. */
+  refusalsInRow: number;
 };
 
 type Group = {
@@ -36,6 +50,15 @@ type Group = {
   year: number;
   joinCode: string;
   students: Student[];
+};
+
+type Method = {
+  alignments: { lesson: number; wording: string; groups: string[] }[];
+  coverage: { byGroup: Record<string, number>; byArea: Record<string, number>; lessonsByArea: Record<string, number[]> };
+  pages: { lesson: number; trained: string; examples: { where: string; what: string }[]; noticeAtHome: string; fgosWording: string }[];
+  demos: { items: { id: string; title: string; seconds: number; shot: string; says: string; mustSee: string }[]; totalMinutes: number };
+  backup: { items: { id: string; title: string; situation: string; minutes: number; lead: string; why: string }[]; labels: Record<string, string> };
+  refusalAlert: number;
 };
 
 type MeetingPlan = {
@@ -59,6 +82,7 @@ type Lessons = {
 export default function TeacherCabinet() {
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [plan, setPlan] = useState<{ minutes: number; next: number | null; lessons: MeetingPlan[] } | null>(null);
+  const [method, setMethod] = useState<Method | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [newName, setNewName] = useState('');
@@ -70,9 +94,14 @@ export default function TeacherCabinet() {
     try {
       const res = await apiFetch('/api/teacher');
       if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { groups: Group[]; plan?: { minutes: number; next: number | null; lessons: MeetingPlan[] } };
+      const data = (await res.json()) as {
+        groups: Group[];
+        plan?: { minutes: number; next: number | null; lessons: MeetingPlan[] };
+        method?: Method;
+      };
       setGroups(data.groups);
       setPlan(data.plan ?? null);
+      setMethod(data.method ?? null);
       setError('');
     } catch {
       // Сбой загрузки — это не «группа пустая». Разница важна: иначе педагог
@@ -271,6 +300,75 @@ export default function TeacherCabinet() {
         </div>
       )}
 
+      {method && (
+        <details className="teacher-method">
+          <summary>
+            <strong>Методическая подложка</strong> — ФГОС, страницы занятий, как вести
+          </summary>
+
+          <h3>Как показывать занятие школе</h3>
+          <p className="muted">
+            Формулировки для рабочей программы: {method.alignments.length} занятий, результаты ФГОС.
+            Их можно показать завучу — это язык, на котором школа слышит.
+          </p>
+          <p className="muted">
+            Коммуникация — в {method.coverage.byArea.communication ?? 0} занятиях, саморегуляция —{' '}
+            {method.coverage.byArea.self_regulation ?? 0}, рефлексия — {method.coverage.byArea.reflection ?? 0}.
+          </p>
+
+          <h3>Как вести: что показать, а не рассказать</h3>
+          <p className="muted">
+            {method.demos.items.length} роликов, {method.demos.totalMinutes} минут на все. Смотреть по блоку,
+            к которому готовитесь.
+          </p>
+          {method.demos.items.map((demo) => (
+            <details key={demo.id}>
+              <summary className="muted">
+                {demo.title} · {Math.round(demo.seconds / 60)} мин
+              </summary>
+              <p className="muted">В кадре: {demo.shot}</p>
+              <p className="muted">Говорит: {demo.says}</p>
+              <p className="muted">Должно быть видно: {demo.mustSee}</p>
+            </details>
+          ))}
+
+          <h3>Если группа не готова к плану</h3>
+          <p className="muted">
+            Запас не отменяет занятие: сохраняется форма — круг, этюд, итог.
+          </p>
+          {Object.entries(method.backup.labels).map(([situation, label]) => {
+            const items = method.backup.items.filter((item) => item.situation === situation).slice(0, 2);
+            if (items.length === 0) return null;
+            return (
+              <details key={situation}>
+                <summary className="muted">{label}</summary>
+                {items.map((item) => (
+                  <p key={item.id} className="muted">
+                    <strong>{item.title}</strong> ({item.minutes} мин): {item.lead}
+                  </p>
+                ))}
+              </details>
+            );
+          })}
+
+          <h3>Что тренировали: страница для родителя</h3>
+          {method.pages.slice(0, 3).map((page) => (
+            <details key={page.lesson}>
+              <summary className="muted">
+                Занятие {page.lesson}: {page.trained}
+              </summary>
+              {page.examples.map((example) => (
+                <p key={example.where} className="muted">
+                  {example.where}: {example.what}
+                </p>
+              ))}
+              <p className="muted">Дома: {page.noticeAtHome}</p>
+              <p className="muted">{page.fgosWording}</p>
+            </details>
+          ))}
+        </details>
+      )}
+
       <h2>Моя группа</h2>
       {groups.map((group) => (
         <div key={group.id} className="teacher-group">
@@ -305,6 +403,35 @@ export default function TeacherCabinet() {
                   Отметить
                 </button>
               </div>
+
+              {/*
+                Подсказка видна без клика. Педагог открывает кабинет на две
+                минуты перед занятием, и ему нужно не «что-то нажать», а сразу
+                знать, с чего начинать с этим ребёнком.
+
+                Три отказа подряд выделены отдельно: это уже не случайность, и
+                разговор важнее уговоров.
+              */}
+              {student.hint.needsTalk ? (
+                <div className="teacher-hint teacher-hint-alert">
+                  <strong>{student.hint.headline}</strong>
+                  <p className="muted">
+                    {student.refusalsInRow} показа подряд без выхода. Ступень: {student.stage.title}.
+                  </p>
+                  <p className="muted">Что сделать: {student.hint.technique.do}</p>
+                  <p className="muted">Не говорить: {student.hint.avoid.phrase}</p>
+                </div>
+              ) : (
+                <details className="teacher-hint">
+                  <summary className="muted">
+                    Ступень {student.stage.step}: {student.stage.title}
+                  </summary>
+                  <p className="muted">Дальше: {student.stage.next}</p>
+                  <p className="muted">Избегать: {student.stage.avoid}</p>
+                  <p className="muted">Приём: {student.hint.technique.title} — {student.hint.technique.do}</p>
+                  <p className="muted">Не говорить: {student.hint.avoid.phrase}. Лучше: {student.hint.avoid.instead}</p>
+                </details>
+              )}
 
               {openGroup === student.profileId && (
                 <div className="row">

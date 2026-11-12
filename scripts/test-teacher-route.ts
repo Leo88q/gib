@@ -123,7 +123,9 @@ async function main() {
   const card = mine.students[0] as Record<string, unknown>;
   assert.deepEqual(
     Object.keys(card).sort(),
-    ['age', 'attended', 'missed', 'name', 'profileId', 'refused', 'showcases'],
+    // Новые поля — методические подсказки, не данные о ребёнке: ступень выхода,
+  // приём и число отказов подряд. Ничего о содержании ответов и чувствах.
+  ['age', 'attended', 'hint', 'missed', 'name', 'profileId', 'refusalsInRow', 'refused', 'showcases', 'stage'],
     `в карточке лишние поля: ${Object.keys(card).join(', ')}`,
   );
   console.log('  ok педагог видит одного ребёнка, в карточке только разрешённые поля');

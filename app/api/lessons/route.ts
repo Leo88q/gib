@@ -4,6 +4,8 @@ import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { YEAR } from '@/lib/content/year/index.ts';
 import { yearProgress } from '@/lib/content/year/types.ts';
+import { alignYear } from '@/lib/year/fgos.ts';
+import { lessonPage } from '@/lib/year/valued.ts';
 import {
   attendanceSummary,
   buildSchedule,
@@ -96,6 +98,32 @@ export async function GET(req: Request) {
         return { ...shown, attended: entry?.attended ?? null };
       })(),
       progress: yearProgress(YEAR, Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i)),
+      /**
+       * Страница занятия для родителя: что тренировали и как это видно в жизни.
+       *
+       * Отдаётся на ближайшее занятие, а не на все 36: родителю нужен один
+       * экран перед четвергом, а не таблица за год. Полная таблица есть у
+       * педагога — ему она нужна для школы.
+       */
+      page: (() => {
+        const nextNumber = (() => {
+          const completed = Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i);
+          return lessonToShow({ year: YEAR, schedule, completedDayIndexes: completed, today });
+        })();
+        if (!nextNumber) return null;
+        const lesson = YEAR.lessons.find((item) => item.number === nextNumber.readyFor);
+        if (!lesson) return null;
+        const alignment = alignYear(YEAR).find((item) => item.lesson === lesson.number);
+        const page = lessonPage(lesson, alignment?.wording ?? '');
+        // Результат ФГОС родителю не показывается: он написан для школы и в
+        // отчёте родителю читался бы как оценка. Отдаём без него.
+        return {
+          lesson: page.lesson,
+          trained: page.trained,
+          examples: page.examples,
+          noticeAtHome: page.noticeAtHome,
+        };
+      })(),
       total: YEAR.total,
     });
   });
