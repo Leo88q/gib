@@ -98,6 +98,32 @@ async function main() {
     assert.deepEqual(second.lessons.map((l: { date: string }) => l.date), storedDates, 'расписание пересчиталось при повторном открытии');
     console.log('  ok расписание из 36 дат создаётся один раз и не пересчитывается');
 
+    /* ---- 2b. Страница занятия для родителя ---- */
+
+    /**
+     * Родителю уходит «что тренируем, как это видно в жизни». Проверяется
+     * граница: результат ФГОС остаётся у педагога и завуча. В родительском
+     * ответе он читался бы как оценка ребёнка — это ровно то, чего в продукте
+     * быть не должно.
+     */
+    const page = firstBody.page;
+    assert.ok(page, 'к расписанию не приложена страница занятия');
+    assert.equal(page.lesson, firstBody.next.lesson, 'страница не про ближайшее занятие');
+    assert.ok(page.trained.length > 10, 'не сказано, что тренируем');
+    assert.ok(Array.isArray(page.examples) && page.examples.length >= 2, 'меньше двух примеров из жизни');
+    for (const example of page.examples) {
+      assert.ok(example.where && example.what, 'пример без места или действия');
+    }
+    assert.ok(page.noticeAtHome.length > 30, 'нет наблюдения для дома');
+    assert.deepEqual(
+      Object.keys(page).sort(),
+      ['examples', 'lesson', 'noticeAtHome', 'trained'],
+      `родителю уходит лишнее поле: ${Object.keys(page).join(', ')}`,
+    );
+    assert.equal(page.fgosWording, undefined, 'формулировка ФГОС не должна уходить родителю');
+    assert.equal(page.seconds, undefined, 'служебные поля не должны уходить родителю');
+    console.log('  ok страница занятия: 4 поля, ФГОС и служебное родителю не уходят');
+
     /* ---- 3. Права на отметку ---- */
     const foreign = await POST(post(other, { profileId: profile.id, lesson: 1, attended: true }));
     assert.equal(foreign.status, 404, 'чужой не должен отмечать занятия');

@@ -159,8 +159,13 @@ export default function LessonCalendar({ profileId }: { profileId: string }) {
           </p>
           <p className="muted">Как это видно в жизни:</p>
           <ul className="muted">
+            {/*
+              Ключ по паре «место + действие»: сегодня места не повторяются
+              (это проверено тестом), но если для компетенции добавится два
+              примера про «Дома», React молча схлопнет их в один пункт.
+            */}
             {data.page.examples.map((example) => (
-              <li key={example.where}>
+              <li key={`${example.where}|${example.what}`}>
                 {example.where} — {example.what}
               </li>
             ))}
