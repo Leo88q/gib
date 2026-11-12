@@ -37,6 +37,15 @@ type Group = {
   students: Student[];
 };
 
+type MeetingPlan = {
+  lesson: number;
+  unitTitle: string;
+  skills: string[];
+  blocks: { title: string; minutes: number; lead: string; children: string }[];
+  materials: string[];
+  closing: string;
+};
+
 type Lessons = {
   lessons: { lesson: number; date: string; attended: boolean | null; title: string }[];
   next: { lesson: number; date: string } | null;
@@ -48,6 +57,7 @@ type Lessons = {
  */
 export default function TeacherCabinet() {
   const [groups, setGroups] = useState<Group[] | null>(null);
+  const [plan, setPlan] = useState<{ minutes: number; next: number | null; lessons: MeetingPlan[] } | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [newName, setNewName] = useState('');
@@ -59,8 +69,9 @@ export default function TeacherCabinet() {
     try {
       const res = await apiFetch('/api/teacher');
       if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { groups: Group[] };
+      const data = (await res.json()) as { groups: Group[]; plan?: { minutes: number; next: number | null; lessons: MeetingPlan[] } };
       setGroups(data.groups);
+      setPlan(data.plan ?? null);
       setError('');
     } catch {
       // Сбой загрузки — это не «группа пустая». Разница важна: иначе педагог
@@ -176,8 +187,41 @@ export default function TeacherCabinet() {
     );
   }
 
+  // Ближайшее занятие и его план: педагог открывает кабинет перед встречей.
+  const nextPlan = plan?.next ? plan.lessons.find((item) => item.lesson === plan.next) : undefined;
+
   return (
     <section className="panel">
+      {nextPlan && (
+        <div className="teacher-plan">
+          <h2>Встреча {nextPlan.lesson}: {nextPlan.unitTitle}</h2>
+          <p className="muted">
+            {plan?.minutes ?? 40} минут · навыки: {nextPlan.skills.join(', ')}
+          </p>
+          {nextPlan.blocks.map((block) => (
+            <div key={block.title} className="teacher-block">
+              <strong>
+                {block.minutes} мин · {block.title}
+              </strong>
+              <p className="muted">{block.lead}</p>
+              {block.children && <p className="muted">{block.children}</p>}
+            </div>
+          ))}
+          <p className="muted">Взять с собой: {nextPlan.materials.join('; ')}</p>
+          <p className="muted">{nextPlan.closing}</p>
+          {plan && plan.lessons.length > 1 && (
+            <details>
+              <summary className="muted">Все 36 планов</summary>
+              {plan.lessons.map((item) => (
+                <p key={item.lesson} className="muted">
+                  {item.lesson}. {item.unitTitle} — {item.blocks.map((block) => `${block.minutes} мин ${block.title.split(':')[0]}`).join(', ')}
+                </p>
+              ))}
+            </details>
+          )}
+        </div>
+      )}
+
       <h2>Моя группа</h2>
       {groups.map((group) => (
         <div key={group.id} className="teacher-group">

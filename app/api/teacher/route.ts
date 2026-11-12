@@ -6,6 +6,7 @@ import { YEAR } from '@/lib/content/year/index.ts';
 import { attendanceSummary, nextLesson } from '@/lib/year/lessons.ts';
 import { groupStudents, teacherCanMark, type Membership, type Store as AccessStore } from '@/lib/teacher/access.ts';
 import { newJoinCode, normalizeJoinCode } from '@/lib/teacher/invites.ts';
+import { MEETING_MINUTES, meetingPlan } from '@/lib/year/meeting.ts';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,6 +58,22 @@ function marksOf(profileId: string) {
   return { attended: summary.attended, missed: summary.missed, showcases };
 }
 
+/**
+ * Номер следующего занятия для группы: по расписанию её первого ребёнка.
+ *
+ * Если в группе пока никого нет, расписания нет и «следующего» занятия тоже:
+ * выдумывать первое занятие было бы враньём о дате.
+ */
+function nextLessonNumber(groupId: string | undefined): number | null {
+  if (!groupId) return null;
+  const membership = store.memberships().find((row) => row.groupId === groupId);
+  if (!membership) return null;
+  const schedule = store.programState(membership.profileId)?.lessons ?? [];
+  const today = new Date().toISOString().slice(0, 10);
+  const next = nextLesson(schedule, today);
+  return next?.lesson ?? null;
+}
+
 export async function GET(req: Request) {
   const parentId = requestParent(req);
   if (!parentId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -78,6 +95,20 @@ export async function GET(req: Request) {
       students: groupStudents(storeValue, parentId, group.id, marksOf),
     })),
     canMark: groups.length > 0,
+    /**
+     * План следующей встречи. Педагог открывает кабинет перед занятием и видит,
+     * что делать 40 минут: без этого расписание есть, а занятия нет.
+     *
+     * План отдаётся целиком на все занятия сразу: список общий, не зависит от
+     * ребёнка, и грузить его по одному значило бы тридцать шесть запросов.
+     */
+    plan: {
+      minutes: MEETING_MINUTES,
+      // Ближайшее занятие по календарю первой группы: у групп годы могут
+      // начинаться в разные даты, и «следующее» у каждой своё.
+      next: nextLessonNumber(groups[0]?.id),
+      lessons: YEAR.lessons.map((lesson) => meetingPlan(lesson)),
+    },
   });
 }
 

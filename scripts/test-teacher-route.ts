@@ -61,6 +61,17 @@ const withSchedule = (id: string, parent: string) => {
 };
 
 async function main() {
+  /**
+   * Чистое хранилище на каждый запуск. В общем прогоне до этого теста другие
+   * тесты уже пишут в свой файл, а здесь проверяются права — им нужен известный
+   * набор профилей, а не то, что осталось от соседей.
+   */
+  const { rmSync } = await import('node:fs');
+  const dataFile = process.env.GIB_DATA_FILE;
+  if (!dataFile || !dataFile.startsWith('/tmp/')) {
+    throw new Error('GIB_DATA_FILE должен указывать в /tmp: тест не должен трогать рабочую базу');
+  }
+  rmSync(dataFile, { force: true });
   /* ---- 1. Создание группы ---- */
 
   let res = await json(await PUT(req('PUT', { name: '4Б' })));
@@ -122,6 +133,24 @@ async function main() {
   res = await json(await GET(req('GET', undefined, 'olga')));
   assert.deepEqual(res.body.groups, [], 'родитель увидел группы педагога');
   console.log('  ok чужие группы не видны никому');
+
+  /* ---- 3.5. План встречи отдаётся педагогу ---- */
+
+  res = await json(await GET(req('GET')));
+  const plan = res.body.plan as { minutes: number; next: number | null; lessons: { lesson: number; blocks: unknown[]; closing: string }[] };
+  assert.ok(plan, 'в ответе нет плана встречи: педагог не знает, что делать 40 минут');
+  assert.equal(plan.minutes, 40, 'длина встречи не 40 минут');
+  assert.equal(plan.lessons.length, 36, `в плане ${plan.lessons.length} занятий, ожидалось 36`);
+  // Старт программы в тесте — 70 дней назад, то есть десять занятий уже прошли.
+  // Ожидание «1» здесь было бы проверкой моей арифметики, а не кода.
+  assert.equal(plan.next, 11, `следующее занятие ${plan.next}, ожидалось 11`);
+  // Закрывающая фраза — та, которую можно сказать вслух. Родительский совет в
+  // план не попадает: его прочитают группе.
+  const closing = plan.lessons[0].closing;
+  assert.ok(/Скажите вслух/.test(closing), `закрывающая фраза не для детей: ${closing.slice(0, 60)}`);
+  assert.ok(!/Не ждите от него/.test(closing), 'в план попал совет родителю');
+
+  console.log('  ok план на 36 занятий отдан, закрывающая фраза — для детей');
 
   /* ---- 4. Отметки ---- */
 
