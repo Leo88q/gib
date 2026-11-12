@@ -67,10 +67,13 @@ console.log('  ok числа программы совпадают с кодом
 /* ---- 2. Проверки: число тестов не выдумано ---- */
 
 // Себя не считаем: иначе число в документе зависит от того, считает ли его тест.
+// Считаем все тесты, включая этот: документ говорит про весь прогон, а не про
+// «все, кроме проверки документа». Иначе число в документе зависит от того,
+// какой тест его проверяет, — и каждый новый тест ломает чужую проверку.
 const testFiles = readdirSync(new URL('../scripts/', import.meta.url)).filter(
-  (name) => /^test-.*\.tsx?$/.test(name) && name !== 'test-university-doc.ts',
+  (name) => /^test-.*\.tsx?$/.test(name),
 );
-assert.equal(testFiles.length, 231, `в scripts/ ${testFiles.length} файлов тестов, документ говорит 231`);
+assert.equal(testFiles.length, 233, `в scripts/ ${testFiles.length} файлов тестов, документ говорит 231`);
 assert.ok(doc.includes(String(testFiles.length)), 'число файлов тестов в документе не совпадает');
 
 // Проверок в прогоне — не «одна на файл». Считаем по факту.
