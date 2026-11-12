@@ -5,6 +5,7 @@ import { validFamilyState } from './engine/family.ts';
 import { validateEvent } from './events/journal.ts';
 import { validCheckIn, validPreferences, MAX_CHECKINS } from './feelings/state.ts';
 import { validParentPin } from './family/roles.ts';
+import { validJoinCode } from './teacher/invites.ts';
 /** Partial structural validation. It intentionally does not claim full data integrity. */
 export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments', 'events'] as const;
 /**
@@ -50,6 +51,35 @@ export function validateStore(value: unknown): void {
       if (seen.has(unique as string)) throw new Error(`Duplicate store identity: ${key}`);
       seen.add(unique as string);
       validateRecord(key, row);
+    }
+  }
+  // Группы и членство: отдельные коллекции, отдельные правила.
+  const groups = (value as { groups?: unknown }).groups;
+  if (groups !== undefined) {
+    if (!Array.isArray(groups)) throw new Error('Invalid store collection: groups');
+    const ids = new Set<string>();
+    for (const row of groups) {
+      if (!object(row) || !text(row.id) || !text(row.teacherId) || !text(row.name)) throw new Error('Invalid group record');
+      if (typeof row.year !== 'number' || !Number.isInteger(row.year) || row.year < 2000 || row.year > 2100) throw new Error('Invalid group year');
+      // Код группы — право войти. Без проверки формата в хранилище может
+      // оказаться «12345», и тогда ввод кода перестаёт что-либо защищать.
+      if (!validJoinCode(row.joinCode)) throw new Error('Invalid group join code');
+      if (ids.has(String(row.id))) throw new Error('Duplicate store identity: groups');
+      ids.add(String(row.id));
+    }
+  }
+  const memberships = (value as { memberships?: unknown }).memberships;
+  if (memberships !== undefined) {
+    if (!Array.isArray(memberships)) throw new Error('Invalid store collection: memberships');
+    const pairs = new Set<string>();
+    for (const row of memberships) {
+      if (!object(row) || !text(row.groupId) || !text(row.profileId)) throw new Error('Invalid membership record');
+      if (typeof row.joinedAt !== 'number' || !Number.isFinite(row.joinedAt) || row.joinedAt <= 0) throw new Error('Invalid membership joinedAt');
+      // Один ребёнок в одной группе дважды — это не «на всякий случай», а
+      // двойная отметка посещаемости в отчёте. Поэтому запрет.
+      const pair = `${row.groupId}:${row.profileId}`;
+      if (pairs.has(pair)) throw new Error('Duplicate store identity: memberships');
+      pairs.add(pair);
     }
   }
   // PIN взрослого: только владелец и корректная запись, без повторов.

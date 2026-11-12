@@ -41,8 +41,8 @@ const profile = (id: string, parentId: string): Profile => ({
 
 const makeStore = (): Store => {
   const groups: Group[] = [
-    { id: 'g1', teacherId: 'demo:teacher-anna', name: '4Б', year: 2026 },
-    { id: 'g2', teacherId: 'demo:teacher-boris', name: '4В', year: 2026 },
+    { id: 'g1', teacherId: 'demo:teacher-anna', name: '4Б', year: 2026, joinCode: 'ABCD2345' },
+    { id: 'g2', teacherId: 'demo:teacher-boris', name: '4В', year: 2026, joinCode: 'WXYZ6789' },
   ];
   const memberships: Membership[] = [
     { groupId: 'g1', profileId: 'p1', joinedAt: 1 },

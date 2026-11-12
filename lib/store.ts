@@ -25,6 +25,14 @@ type DB = {
   familySettings: { parentId: string; goalTarget: number }[];
   /** Настройки уведомлений взрослому: по умолчанию их нет. */
   notificationSettings: { parentId: string; settings: import('./family/notifications.ts').NotificationSettings }[];
+  /**
+   * Группы педагога и членство детей. Третья роль продукта: педагог ведёт
+   * группу, ребёнок попадает в неё только через членство, а не по списку
+   * идентификаторов. Отдельная коллекция, а не поле профиля: у одного ребёнка
+   * может быть группа и в этом году, и в следующем, а профиль остаётся один.
+   */
+  groups: import('./teacher/access.ts').Group[];
+  memberships: import('./teacher/access.ts').Membership[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
@@ -97,6 +105,8 @@ function empty(): DB {
     parentPins: [],
     familySettings: [],
     notificationSettings: [],
+    groups: [],
+    memberships: [],
   };
 }
 
@@ -251,6 +261,26 @@ const implementation = {
     const existing = list.find((row) => row.parentId === parentId);
     if (existing) existing.goalTarget = goalTarget;
     else list.push({ parentId, goalTarget });
+    persist();
+  },
+  groups: () => load().groups,
+  group: (id: string) => load().groups.find((row) => row.id === id),
+  /** Группы, которые ведёт этот педагог. */
+  groupsByTeacher: (teacherId: string) => load().groups.filter((row) => row.teacherId === teacherId),
+  memberships: () => load().memberships,
+  /** Дети группы — через членство, а не по прямому списку. */
+  membersOfGroup: (groupId: string) => load().memberships.filter((row) => row.groupId === groupId),
+  addGroup(group: import('./teacher/access.ts').Group) {
+    load().groups.push(group);
+    persist();
+  },
+  addMembership(membership: import('./teacher/access.ts').Membership) {
+    load().memberships.push(membership);
+    persist();
+  },
+  removeMembership(groupId: string, profileId: string) {
+    const db = load();
+    db.memberships = db.memberships.filter((row) => !(row.groupId === groupId && row.profileId === profileId));
     persist();
   },
   setParentPin(parentId: string, pin: import('./family/roles.ts').ParentPin) {
