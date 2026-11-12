@@ -152,6 +152,25 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
       seenTopics.add(String(state.topicId));
     }
   }
+  if (key === 'programStates' && row.lessons !== undefined) {
+    // Расписание занятий: только номер, дата и отметка. Ни причин отсутствия,
+    // ни оценок — их сбор требует отдельного решения и согласия.
+    if (!Array.isArray(row.lessons)) throw new Error('Invalid lessons');
+    if (row.lessons.length > 60) throw new Error('Too many lessons');
+    const seenLessons = new Set<number>();
+    let previousDate = '';
+    for (const entry of row.lessons) {
+      if (!object(entry)) throw new Error('Invalid lesson entry');
+      if (!Number.isInteger(entry.lesson) || (entry.lesson as number) < 1) throw new Error('Invalid lesson number');
+      if (seenLessons.has(entry.lesson as number)) throw new Error('Duplicate lesson number');
+      seenLessons.add(entry.lesson as number);
+      if (!text(entry.date) || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date as string)) throw new Error('Invalid lesson date');
+      if (previousDate && (entry.date as string) < previousDate) throw new Error('Lesson dates out of order');
+      previousDate = entry.date as string;
+      if (entry.attended !== undefined && typeof entry.attended !== 'boolean') throw new Error('Invalid attendance');
+      if (Object.keys(entry).some(f => !['lesson', 'date', 'attended'].includes(f))) throw new Error('Invalid lesson fields');
+    }
+  }
   if (key === 'events') {
     // Журнал хранит только разрешённые технические поля; свободный текст и отметки чувств здесь недопустимы.
     if (!text(row.profileId) || !text(row.ownerId) || !Number.isFinite(row.at) || !text(row.dedupeKey) || !object(row.event)) throw new Error('Invalid event record');
