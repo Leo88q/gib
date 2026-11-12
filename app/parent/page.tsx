@@ -12,6 +12,7 @@ import ParentPinSettings from '@/components/ParentPinSettings';
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
 import { removeProfileExerciseDrafts } from '@/lib/exercise-draft';
+import { YEAR, yearProgress } from '@/lib/content/year/index.ts';
 import { removeProfileJourneyResumes } from '@/components/useJourneyResume';
 import { PENDING_ANSWER_KEY, parsePendingAnswer } from '@/lib/pending-answer';
 
@@ -68,6 +69,8 @@ type EventsReport = {
 
 type ProgramDay = {
   day: number;
+  /** Сквозной номер дня в программе — по нему считается прогресс года. */
+  index: number;
   theme: string;
   title: string;
   focus: string;
@@ -314,6 +317,21 @@ function ParentPage() {
       {program && (
         <div className="card">
           <h2>Программа: {program.weeks.length} недель</h2>
+          {/* Год — вид сверху: единица программы занятие раз в неделю, дни
+              симулятора идут домашней практикой между занятиями. Считается из
+              тех же 60 дней, поэтому не расходится с прогрессом ниже. */}
+          {(() => {
+            const year = yearProgress(YEAR, program.weeks.flatMap(w => w.days.filter(d => d.done).map(d => d.index)));
+            return (
+              <div className="stat">
+                <span>Занятий пройдено</span>
+                <b>
+                  {year.lessonsDone} из {year.lessonsTotal}
+                  {year.currentLesson ? ` · сейчас тема ${year.currentLesson.unit}` : ''}
+                </b>
+              </div>
+            );
+          })()}
           <div className="stat">
             <span>Пройдено дней</span>
             <b>
