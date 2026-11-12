@@ -129,6 +129,35 @@ assert.ok(
 );
 console.log(`  ok ${measuredDays} из ${days} дней (${daysShare}%) в измеряемой зоне, названо в карте`);
 
+/* ---- 5b. docs/testing.md называет настоящие числа прогона ---- */
+
+/**
+ * Документ про проверки обязан считать проверки так же, как их считает
+ * test-university-doc: файлы `scripts/test-*.{ts,tsx}`, вхождения
+ * `assert.<метод>(`. Иначе он разойдётся на первой же новой проверке — и
+ * разойдётся молча, потому что за ним никто не следит.
+ */
+import { readdirSync } from 'node:fs';
+import { readFileSync as readFile } from 'node:fs';
+
+const testingDoc = readFile(join(root, 'docs', 'testing.md'), 'utf8');
+const testFiles = readdirSync(join(root, 'scripts')).filter((name) => /^test-.*\.tsx?$/.test(name));
+
+let assertCount = 0;
+for (const name of testFiles) {
+  assertCount += (readFile(join(root, 'scripts', name), 'utf8').match(/assert\.[a-z]+\(/g) ?? []).length;
+}
+
+assert.ok(
+  testingDoc.includes(String(testFiles.length)),
+  `docs/testing.md не называет ${testFiles.length} файлов тестов`,
+);
+assert.ok(
+  testingDoc.includes(String(assertCount)),
+  `docs/testing.md не называет ${assertCount} проверок`,
+);
+console.log(`  ok docs/testing.md называет ${testFiles.length} файлов и ${assertCount} проверок`);
+
 /* ---- 6. Медицинских формулировок нет и в research-документах ---- */
 
 for (const [name, text] of [['паспорт', passport], ['карта', map]] as const) {
