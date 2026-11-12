@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import PracticeMap from '@/components/PracticeMap';
+import LessonCalendar from '@/components/LessonCalendar';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import FamilyGoal from '@/components/FamilyGoal';
 import DataControls from '@/components/DataControls';
@@ -371,6 +372,7 @@ function ParentPage() {
         </div>
       )}
 
+      <LessonCalendar profileId={profileId} />
       <PracticeMap profileId={profileId} />
       <FamilyGoal profileId={profileId} />
       <FamilyIdeas profileId={profileId} parentView />
