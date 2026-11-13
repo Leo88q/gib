@@ -20,6 +20,9 @@
   --ok: #1f9d68;
   --bad: #e2445c;
   --muted: #6f6f8c;
+  /* Ссылки и мелкие значки: контраст к кремовому фону ≥ 4.5:1. */
+  --link: #1b5fa8;
+  --glyph: #9a4600;
   --radius: 20px;
   --shadow: 5px 5px 0 var(--ink);
   --shadow-sm: 3px 3px 0 var(--ink);
@@ -67,8 +70,20 @@ h3 {
   font-size: 20px;
 }
 
+/*
+  Ссылки. `--sky` на кремовом фоне даёт 2.56:1 — вдвое ниже нормы, текст
+  нечитаем, а ссылка в тексте — это единственный способ уйти со страницы.
+  Тёмный оттенок того же синего: 7.4:1 на кремовом и 8.1:1 на белом.
+*/
 a {
-  color: var(--sky);
+  color: var(--link);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .wrap {
@@ -964,7 +979,8 @@ a {
 
 .badge-ping {
   font-weight: 900;
-  color: var(--violet);
+  /* Было --violet: 3.95:1. Плюс мигание — при «уменьшить движение» ниже. */
+  color: var(--link);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -1764,7 +1780,8 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 }
 .exercise-window-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
 .exercise-window-title { margin: 0; font-size: 1.05rem; letter-spacing: .02em; }
-.exercise-window-glyph { color: var(--orange); font-size: 1.1rem; }
+/* Было --orange: 2.41:1 на кремовом — значок не видно. */
+.exercise-window-glyph { color: var(--glyph); font-size: 1.1rem; }
 .exercise-instruction { margin: 0 0 10px; font-weight: 700; color: var(--ink-soft); }
 .exercise-window .read-aloud { margin: 4px 0 10px; }
 .exercise-stage { margin-top: 6px; }
@@ -2146,4 +2163,155 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   display: inline-flex;
   gap: 6px;
   margin-left: 8px;
+}
+
+/* ---------------------------- печать планов ---------------------------- */
+
+/*
+  Педагог печатает планы встреч и ведёт по листу: проектора в классе часто
+  нет. На экране печатная версия скрыта целиком — она нужна только на бумаге,
+  и без этого правила 36 планов удлиняли бы кабинет в двенадцать раз.
+
+  В печати наоборот: остаются только планы. Кнопки, подсказки, посещаемость и
+  всё, что относится к экрану, убирается — иначе на бумагу уходят кнопки
+  «Отметить» и раскрытые рабочие детали.
+*/
+.print-only {
+  display: none;
+}
+
+/* Год на экране: список планов под раскрытием, чтобы не занимать кабинет. */
+.teacher-all-plans {
+  margin-top: 6px;
+}
+
+.teacher-all-plans p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+/* Печатная версия года: на экране не показывается никогда. */
+.print-plans {
+  display: none;
+}
+
+@media print {
+  .no-print,
+  .btn,
+  .teacher-hint,
+  .teacher-method,
+  .teacher-group,
+  .lesson-page,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  /* Печать чёрным по белому: цветные рамки на чёрно-белом принтере — серые. */
+  body,
+  .page {
+    background: #fff !important;
+    color: #000;
+  }
+
+  .print-plan {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 1px solid #999;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+
+  .print-plan h2 {
+    font-size: 15px;
+    margin: 0 0 4px;
+  }
+
+  .print-plan p {
+    font-size: 11px;
+    margin: 2px 0;
+    color: #000;
+  }
+
+  .print-block {
+    margin: 6px 0 6px 8px;
+    border-left: 2px solid #ccc;
+    padding-left: 8px;
+  }
+
+  .print-block strong {
+    font-size: 12px;
+  }
+}
+
+@page {
+  margin: 12mm;
+}
+
+
+/* ------------------------------ доступность ---------------------------- */
+
+/*
+  Доступность — не «крайний случай»: в группе из двадцати детей обязательно
+  есть тот, кому трудно читать, и тот, кого укачивает от движения. Три вещи,
+  которые ломаются чаще всего и которые видно только вживую:
+
+  1. Мелкий шрифт. 13px в подсказках педагога и в списках — это уже предел:
+     на телефоне в классе с плохим светом не читается.
+  2. Движение. Мигающий значок награды при «уменьшить движение» должен стоять.
+  3. Фокус с клавиатуры. Без видимой рамки по кнопкам нельзя ходить табом,
+     а это единственный способ для того, кто не пользуется мышью.
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Фокус заметен на любом фоне и не зависит от цвета кнопки. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* На узком экране ничего не должно вылезать за край: горизонтальная
+   прокрутка на телефоне ломает и чтение, и нажатия. */
+@media (max-width: 420px) {
+  .teacher-plan,
+  .teacher-student,
+  .teacher-group {
+    padding: 10px;
+  }
+
+  .teacher-student .row {
+    flex-wrap: wrap;
+  }
+
+  .print-plan h2 {
+    font-size: 14px;
+  }
+}
+
+/* Скрытое от глаза, но не от чтения с экрана: подписи к кнопкам-символам. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

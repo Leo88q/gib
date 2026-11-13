@@ -73,6 +73,35 @@ assert.ok(lastClose > lastOpen, 'тревожный сигнал завёрну�
 assert.ok(/refusalsInRow/.test(alertBlock.slice(0, 900)), 'в сигнале нет числа отказов подряд');
 console.log('  ok сигнал виден без клика и называет число отказов');
 
+/* ---- Печать планов: на бумаге только планы ---- */
+
+/**
+ * Печать — единственный экран, который уходит из приложения физически. Если
+ * правило забыть, педагог получает лист с кнопками «Отметить» и раскрытыми
+ * подсказками вместо плана встречи.
+ */
+const printBlock = css.slice(css.indexOf('@media print'));
+assert.ok(printBlock.length > 100, 'в globals.css нет правил печати: кнопка «распечатать» печатает кабинет целиком');
+
+for (const hidden of ['.no-print', '.btn', '.teacher-hint', '.teacher-group']) {
+  assert.ok(
+    new RegExp(`\\${hidden}[^{]*\\{[^}]*display:\\s*none`, 's').test(printBlock),
+    `в печати остаётся ${hidden}: на бумагу уйдёт то, что нужно только на экране`,
+  );
+}
+assert.ok(/\.print-only[^{]*\{[^}]*display:\s*block/s.test(printBlock), 'печатная версия планов не показывается при печати');
+
+// План не должен разрываться между страницами: блок из пяти пунктов,
+// разрезанный пополам, на бумаге не читается.
+assert.ok(/break-inside:\s*avoid/.test(printBlock), 'план встречи может разорваться между страницами');
+
+// На экране печатная версия скрыта, иначе кабинет удлиняется в 12 раз.
+assert.ok(
+  /\.print-plans[^{]*\{[^}]*display:\s*none/s.test(css.split('@media print')[0]),
+  'печатная версия планов видна на экране',
+);
+console.log('  ok печать: только планы, без кнопок и подсказок, без разрывов');
+
 /* ---- В оформлении нет шкал ---- */
 
 for (const name of ['score', 'ball', 'rating', 'grade', 'level-bar', 'percent']) {

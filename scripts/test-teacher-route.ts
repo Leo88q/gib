@@ -152,6 +152,23 @@ async function main() {
   assert.ok(coverage.personal > 0 && coverage.meta > 0, 'покрытие ФГОС пустое');
   console.log('  ok подложка: 36 занятий, 36 страниц, 36 разборов, 12 роликов, 18 запасных');
 
+  /* ---- 3c. Планы встреч: печатать есть что ---- */
+
+  /**
+   * Кнопка «Распечатать все 36 планов» печатает то, что пришло в plan.lessons.
+   * Если маршрут отдаст один план или пустые блоки, кнопка напечатает оглавление
+   * без содержания — и это выяснится уже на занятии.
+   */
+  const printPlans = res.body.plan as { minutes: number; lessons: { lesson: number; blocks: unknown[]; materials: string[] }[] };
+  assert.ok(printPlans, 'маршрут не отдаёт планы встреч');
+  assert.equal(printPlans.lessons.length, 36, `планов ${printPlans.lessons.length}, печатать нечего`);
+  assert.equal(printPlans.minutes, 40, 'длина встречи не 40 минут');
+  for (const item of printPlans.lessons) {
+    assert.equal(item.blocks.length, 5, `занятие ${item.lesson}: ${item.blocks.length} блоков вместо 5`);
+    assert.ok(item.materials.length > 0, `занятие ${item.lesson}: не сказано, что взять с собой`);
+  }
+  console.log('  ok планы для печати: 36 занятий по 5 блоков, 40 минут');
+
   res = await json(await GET(req('GET', undefined, 'boris')));
   assert.deepEqual(res.body.groups, [], 'педагог без групп видит чужие группы');
   res = await json(await GET(req('GET', undefined, 'olga')));

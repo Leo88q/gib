@@ -302,8 +302,18 @@ export default function TeacherCabinet() {
           ))}
           <p className="muted">Взять с собой: {nextPlan.materials.join('; ')}</p>
           <p className="muted">{nextPlan.closing}</p>
+          {/*
+            Печать. Проектора в классе часто нет, а вести встречу надо: педагог
+            открывает это на телефоне и распечатывает нужное. Печатается весь
+            год, а не один план — бумага стоит дешевле, чем простой из-за
+            «а я не сохранил на прошлой неделе».
+          */}
+          <button type="button" className="btn small no-print" onClick={() => window.print()}>
+            Распечатать все 36 планов
+          </button>
+
           {plan && plan.lessons.length > 1 && (
-            <details>
+            <details className="teacher-all-plans no-print">
               <summary className="muted">Все 36 планов</summary>
               {plan.lessons.map((item) => (
                 <p key={item.lesson} className="muted">
@@ -312,6 +322,41 @@ export default function TeacherCabinet() {
               ))}
             </details>
           )}
+        </div>
+      )}
+
+      {/*
+        Тот же год, но для печати: каждый план целиком, один за другим.
+        На экране скрыт — он нужен только на бумаге, а прокручивать 36 планов
+        на телефоне незачем.
+      */}
+      {plan && (
+        <div className="print-only print-plans">
+          <h1>Планы встреч: 36 занятий по 40 минут</h1>
+          <p>
+            Педагог ведёт по этому листу. Отмечать посещаемость и выход на показ — в кабинете.
+          </p>
+          {plan.lessons.map((item) => (
+            <div key={item.lesson} className="print-plan">
+              <h2>
+                {item.lesson}. {item.unitTitle}
+              </h2>
+              <p>
+                {plan.minutes} минут · навыки: {item.skills.join(', ')}
+              </p>
+              {item.blocks.map((block) => (
+                <div key={block.title} className="print-block">
+                  <strong>
+                    {block.minutes} мин · {block.title}
+                  </strong>
+                  <p>{block.lead}</p>
+                  {block.children && <p>{block.children}</p>}
+                </div>
+              ))}
+              <p>Взять с собой: {item.materials.join('; ')}</p>
+              <p>{item.closing}</p>
+            </div>
+          ))}
         </div>
       )}
 
