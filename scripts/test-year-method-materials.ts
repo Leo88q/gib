@@ -59,6 +59,43 @@ const competencies = competenciesOfLesson(first);
 assert.ok(competencies.length > 0, 'компетенции занятия пусты: разметка снова идёт по когнитивным навыкам');
 console.log('  ok компетенции из темы и сценариев, а не из когнитивных навыков');
 
+/* ---- 2b. Формулировки различимы между занятиями ---- */
+
+/**
+ * Первая версия разметки давала 14 формулировок на 36 занятий: семь занятий
+ * подряд описывались одинаково («умение возвращаться к задаче после сбоя»).
+ * Для школы это выглядит как скопированная строка, и справедливый вопрос
+ * завуча — «чем эти семь занятий отличаются».
+ *
+ * Требование: у каждого занятия своя формулировка, и в ней названо, на каком
+ * материале идёт работа.
+ */
+const wordings = alignments.map((item) => item.wording);
+const uniqueWordings = new Set(wordings);
+assert.equal(
+  uniqueWordings.size,
+  alignments.length,
+  `формулировок ${uniqueWordings.size} на ${alignments.length} занятий: у части занятий строки совпадают`,
+);
+// Длина: строка идёт в таблицу рабочей программы одной ячейкой. 234 символа
+// (три компетенции и два материала) — предел, дальше ячейку не читают.
+const wordLengths = wordings.map((wording) => wording.length);
+assert.ok(
+  Math.max(...wordLengths) <= 240,
+  `самая длинная формулировка — ${Math.max(...wordLengths)} символов, ячейку не прочитают`,
+);
+for (const alignment of alignments) {
+  assert.ok(
+    /на материале ситуаций/.test(alignment.wording),
+    `занятие ${alignment.lesson}: в формулировке не сказано, на каком материале идёт работа`,
+  );
+  assert.ok(
+    /«[^»]+»/.test(alignment.wording),
+    `занятие ${alignment.lesson}: материал назван без названия ситуации`,
+  );
+}
+console.log(`  ok ${uniqueWordings.size} разные формулировки на 36 занятий, у каждой — свой материал`);
+
 /* ---- 3. Формулировки не оценивают ребёнка ---- */
 
 const allWording = alignments.map((item) => item.wording).join(' ');
@@ -121,10 +158,27 @@ for (const lesson of YEAR.lessons) {
     // Абстракции вроде «в общении со сверстниками» нельзя узнать в понедельник.
     assert.ok(!/со сверстниками|в общении/i.test(example.where), `занятие ${lesson.number}: пример абстрактный`);
   }
+  assert.ok(page.scenes.length > 0, `занятие ${lesson.number}: не названы истории занятия`);
   assert.ok(page.noticeAtHome.length > 30, `занятие ${lesson.number}: нет наблюдения для дома`);
   assert.ok(page.fgosWording.length > 20, `занятие ${lesson.number}: страница без результата ФГОС`);
 }
-console.log('  ok 36 страниц: что тренировали, два-три примера из жизни, наблюдение, ФГОС');
+/**
+ * Страница должна быть про конкретное занятие, а не про тему.
+ *
+ * Первая версия давала 13 разных страниц на 36 занятий: четыре недели подряд
+ * «замечать, что чувствуешь» с одними и теми же примерами. Родитель читает это
+ * на четвёртый четверг и перестаёт открывать.
+ */
+const pageTexts = new Set(
+  YEAR.lessons.map((lesson) => {
+    const alignment = alignments.find((item) => item.lesson === lesson.number);
+    const page = lessonPage(lesson, alignment?.wording ?? '');
+    return `${page.trained}|${page.scenes.join(',')}|${page.examples.map((e) => e.where).join(',')}`;
+  }),
+);
+assert.equal(pageTexts.size, YEAR.lessons.length, `разных страниц ${pageTexts.size} на 36 занятий: часть занятий выглядит одинаково`);
+
+console.log('  ok 36 страниц: что тренировали, истории занятия, примеры, наблюдение, ФГОС');
 
 /* ---- 7. Видео: есть что снимать ---- */
 

@@ -120,6 +120,8 @@ export async function GET(req: Request) {
         return {
           lesson: page.lesson,
           trained: page.trained,
+          // Истории занятия: без них страница одна и та же три недели подряд.
+          scenes: page.scenes.slice(0, 2),
           examples: page.examples,
           noticeAtHome: page.noticeAtHome,
         };

@@ -45,6 +45,8 @@ export type QuickBrief = {
   askYourself: string;
   /** Сколько секунд читать. Считается по тексту, а не назначается. */
   seconds: number;
+  /** Истории занятия: то, что отличает один четверг от другого. */
+  scenes: string[];
 };
 
 /**
@@ -118,6 +120,7 @@ export function quickBrief(lesson: Lesson): QuickBrief {
   const brief: Omit<QuickBrief, 'seconds'> = {
     lesson: lesson.number,
     unitTitle: lesson.isShowcase ? `${unitTitle}: показ` : unitTitle,
+    scenes: lessonScenes(lesson),
     about,
     whatChildrenDo: whatChildrenDo(taskId, lesson.isShowcase),
     why,
@@ -127,6 +130,23 @@ export function quickBrief(lesson: Lesson): QuickBrief {
   };
 
   return { ...brief, seconds: readingSeconds(brief) };
+}
+
+/**
+ * Названия историй занятия.
+ *
+ * Разбор без них одинаков у всех занятий одной компетенции: у семи уроков
+ * саморегуляции был один текст. Педагог, открыв разбор седьмой раз, не находит
+ * в нём ничего про своё занятие — и перестаёт открывать.
+ */
+function lessonScenes(lesson: Lesson): string[] {
+  const titles: string[] = [];
+  for (const dayIndex of lesson.dayIndexes) {
+    const scenario = SCENARIO_BY_ID[PROGRAM_DAY_ID(dayIndex)];
+    const title = scenario?.variants?.['8-10']?.title;
+    if (title && !titles.includes(title)) titles.push(title);
+  }
+  return titles.slice(0, 2);
 }
 
 /** Идентификатор дня для сценария: индекс дня 0 → `w1d1`. */
@@ -144,7 +164,15 @@ function PROGRAM_DAY_ID(dayIndex: number): string {
  * обещание «разбор на минуту» можно было проверить, а не заявить.
  */
 function readingSeconds(brief: Omit<QuickBrief, 'seconds'>): number {
-  const text = [brief.about, brief.whatChildrenDo, brief.why, brief.watchFor, brief.keep, brief.askYourself].join(' ');
+  const text = [
+    brief.about,
+    brief.scenes.join(' '),
+    brief.whatChildrenDo,
+    brief.why,
+    brief.watchFor,
+    brief.keep,
+    brief.askYourself,
+  ].join(' ');
   const words = text.split(/\s+/).filter(Boolean).length;
   return Math.max(20, Math.round((words / 160) * 60));
 }

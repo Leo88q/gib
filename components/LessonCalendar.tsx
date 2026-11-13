@@ -45,6 +45,8 @@ type LessonsResponse = {
   page?: {
     lesson: number;
     trained: string;
+    /** Истории занятия: по ним родитель узнаёт, о чём был разговор. */
+    scenes?: string[];
     examples: { where: string; what: string }[];
     noticeAtHome: string;
   } | null;
@@ -157,6 +159,11 @@ export default function LessonCalendar({ profileId }: { profileId: string }) {
           <p className="muted">
             Тренируем: {data.page.trained}
           </p>
+          {data.page.scenes && data.page.scenes.length > 0 && (
+            <p className="muted">
+              История занятия: {data.page.scenes.map((scene) => `«${scene}»`).join(', ')}
+            </p>
+          )}
           <p className="muted">Как это видно в жизни:</p>
           <ul className="muted">
             {/*

@@ -70,6 +70,7 @@ type Method = {
       keep: string;
       askYourself: string;
       seconds: number;
+      scenes: string[];
     }[];
     totalMinutes: number;
   };
@@ -331,6 +332,11 @@ export default function TeacherCabinet() {
                 Занятие {brief.lesson}: {brief.unitTitle} · {brief.seconds} сек
               </summary>
               <p className="muted">О чём: {brief.about}</p>
+              {brief.scenes.length > 0 && (
+                <p className="muted">
+                  Истории: {brief.scenes.map((scene) => `«${scene}»`).join(', ')}
+                </p>
+              )}
               <p className="muted">Что делают: {brief.whatChildrenDo}</p>
               <p className="muted">Зачем: {brief.why}</p>
               <p className="muted">На что смотреть: {brief.watchFor}</p>

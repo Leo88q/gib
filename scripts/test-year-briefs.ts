@@ -58,6 +58,36 @@ for (const brief of briefs) {
 }
 console.log('  ok в каждом: что делают, зачем, на что смотреть, что не потерять, вопрос');
 
+/* ---- 3b. Разборы различимы между занятиями ---- */
+
+/**
+ * Первая версия давала одинаковый разбор у всех занятий одной компетенции:
+ * у семи уроков саморегуляции текст совпадал слово в слово. Педагог,
+ * открывший разбор седьмой раз, не находил в нём ничего про своё занятие.
+ */
+const byContent = new Map<string, number[]>();
+for (const brief of briefs) {
+  const key = `${brief.about}|${brief.whatChildrenDo}|${brief.scenes.join(',')}`;
+  byContent.set(key, [...(byContent.get(key) ?? []), brief.lesson]);
+}
+const collisions = [...byContent.entries()].filter(([, lessons]) => lessons.length > 1);
+assert.deepEqual(
+  collisions.map(([, lessons]) => lessons.join(',')),
+  [],
+  `разборы совпадают у занятий: ${collisions.map(([, l]) => l.join(',')).join(' / ')}`,
+);
+
+for (const brief of briefs) {
+  assert.ok(brief.scenes.length > 0, `занятие ${brief.lesson}: в разборе нет историй занятия`);
+  // История — из контента, а не выдуманная: она должна быть короткой строкой
+  // без точки в конце, как названия сцен в программе.
+  for (const scene of brief.scenes) {
+    assert.ok(scene.length > 3 && scene.length < 60, `занятие ${brief.lesson}: странное название истории «${scene}»`);
+    assert.ok(!scene.endsWith('.'), `занятие ${brief.lesson}: в названии истории точка: «${scene}»`);
+  }
+}
+console.log(`  ok ${byContent.size} разных разборов на 36 занятий, у каждого — свои истории`);
+
 /* ---- 4. Показ не рассказывает про упражнение ---- */
 
 const showcases = showcaseBriefs(YEAR);

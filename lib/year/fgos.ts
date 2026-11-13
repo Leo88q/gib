@@ -199,9 +199,47 @@ function wordingFor(lesson: Lesson, competencies: CompetencyId[], groups: readon
     growth_mindset: 'умение относиться к ошибке как к части работы',
   };
 
+  /**
+   * Уточнение из содержания занятия.
+   *
+   * Без него на 36 занятий приходилось 14 формулировок: семь занятий подряд
+   * описывались словами «умение возвращаться к задаче после сбоя». Формально
+   * верно — саморегуляция одна, — но в рабочей программе это выглядит как
+   * скопированная строка, и завуч спрашивает, чем занятия отличаются.
+   *
+   * Отвечаем его же языком: «на материале ситуаций „Время подумать“,
+   * „Передышка по выбору“». Названия сцен — из контента, а не придуманные:
+   * если сценарий переименуют, строка поедет за ним.
+   */
+  const materials = lessonMaterials(lesson);
   const extra = competencies.slice(1).map((competency) => outcomes[competency]).join('; ');
-  const base = `На занятии формируется ${outcomes[first]}`;
+  const base = materials
+    ? `На занятии формируется ${outcomes[first]} — на материале ситуаций ${materials}`
+    : `На занятии формируется ${outcomes[first]}`;
   return extra ? `${base}; сопутствующее — ${extra}.` : `${base}.`;
+}
+
+/**
+ * Названия ситуаций занятия для формулировки.
+ *
+ * Берутся названия сценариев дней занятия: «Приглашение Миры», «Шум на
+ * репетиции». Это то, что видит ребёнок и что узнаёт учитель, если откроет
+ * программу.
+ *
+ * Максимум две: в строке рабочей программы больше — уже перечисление, и его
+ * не читают. Порядок — как в занятии, чтобы номер занятия и текст сходились.
+ */
+function lessonMaterials(lesson: Lesson): string {
+  const titles: string[] = [];
+  for (const dayIndex of lesson.dayIndexes) {
+    const week = Math.floor(dayIndex / 5) + 1;
+    const day = (dayIndex % 5) + 1;
+    const scenario = SCENARIO_BY_ID[`w${week}d${day}`];
+    const title = scenario?.variants?.['8-10']?.title;
+    if (title && !titles.includes(title)) titles.push(title);
+    if (titles.length === 2) break;
+  }
+  return titles.map((title) => `«${title}»`).join(', ');
 }
 
 /**

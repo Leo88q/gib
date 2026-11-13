@@ -117,12 +117,16 @@ async function main() {
     assert.ok(page.noticeAtHome.length > 30, 'нет наблюдения для дома');
     assert.deepEqual(
       Object.keys(page).sort(),
-      ['examples', 'lesson', 'noticeAtHome', 'trained'],
+      // `scenes` — названия историй занятия. Без них страница одинакова три
+      // недели подряд: у 36 занятий было 13 разных текстов. Сцена ребёнку
+      // известна, она и делает страницу про этот четверг, а не про тему.
+      ['examples', 'lesson', 'noticeAtHome', 'scenes', 'trained'],
       `родителю уходит лишнее поле: ${Object.keys(page).join(', ')}`,
     );
+    assert.ok(Array.isArray(page.scenes) && page.scenes.length > 0, 'у страницы нет историй занятия');
     assert.equal(page.fgosWording, undefined, 'формулировка ФГОС не должна уходить родителю');
     assert.equal(page.seconds, undefined, 'служебные поля не должны уходить родителю');
-    console.log('  ok страница занятия: 4 поля, ФГОС и служебное родителю не уходят');
+    console.log('  ok страница занятия: 5 полей со сценами, ФГОС и служебное родителю не уходят');
 
     /* ---- 3. Права на отметку ---- */
     const foreign = await POST(post(other, { profileId: profile.id, lesson: 1, attended: true }));
