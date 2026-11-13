@@ -212,7 +212,24 @@ function wordingFor(lesson: Lesson, competencies: CompetencyId[], groups: readon
    * если сценарий переименуют, строка поедет за ним.
    */
   const materials = lessonMaterials(lesson);
-  const extra = competencies.slice(1).map((competency) => outcomes[competency]).join('; ');
+  /**
+   * Сопутствующие результаты — короткой формой.
+   *
+   * Полная строка «умение предлагать, договариваться и принимать отказ» хороша,
+   * когда она одна. Второй и третий результат в той же ячейке растягивают её
+   * до 245 символов, и строку перестают читать. Здесь у них сжатая форма;
+   * полная остаётся в основной части, где она одна.
+   */
+  const short: Record<CompetencyId, string> = {
+    self_awareness: 'называть своё состояние',
+    self_regulation: 'возвращаться к задаче после сбоя',
+    empathy: 'замечать состояние другого',
+    relationships: 'договариваться и принимать отказ',
+    decision_making: 'называть варианты и последствия',
+    creative_thinking: 'создавать и дорабатывать своё',
+    growth_mindset: 'относиться к ошибке как к части работы',
+  };
+  const extra = competencies.slice(1).map((competency) => short[competency]).join('; ');
   const base = materials
     ? `На занятии формируется ${outcomes[first]} — на материале ситуаций ${materials}`
     : `На занятии формируется ${outcomes[first]}`;

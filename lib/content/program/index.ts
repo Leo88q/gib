@@ -54,7 +54,9 @@ export const PROGRAM_SCENARIOS: Scenario[] = RAW_SCENARIOS.map(original => {
   if (!day) return original;
   const adapted = WEEKS_FOUR_FIVE_STORY_OPTIONS[original.id] ?? WEEKS_SIX_EIGHT_STORY_OPTIONS[original.id] ?? WEEKS_NINE_TWELVE_STORY_OPTIONS[original.id];
   const variants = Object.fromEntries(bands.map((band, i) => [band, {
-    title: day.title,
+    // Название под возраст: у 5-летнего не должно быть заголовка сцены,
+    // написанного для 12-летнего. Если своего названия нет — общее.
+    title: day.titles?.[i] ?? day.title,
     text: `${day.situation[i]} Что можно выбрать?`,
     // Порядок вариантов не означает оценки: метки сняты из всего контента.
     options: (adapted?.[band] ?? day.actions).map((text) => ({ text, note: 'Это один из возможных вариантов. Выбор можно обсудить, а можно не обсуждать.' })),
