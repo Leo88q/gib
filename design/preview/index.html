@@ -244,6 +244,31 @@
     border:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--ink-soft);
   }
 
+
+  /* ---------- предметы ---------- */
+  .item-block + .item-block{margin-top:34px}
+  .item-block-head{display:flex;justify-content:space-between;align-items:baseline;gap:18px;margin-bottom:14px;flex-wrap:wrap}
+  .item-block-head h3{font-size:20px}
+  .item-block-head span{font-size:12.5px;color:var(--ink-faint);font-weight:700;max-width:52ch;text-align:right}
+  .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:14px}
+  .item{
+    background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:9px;
+    display:flex;flex-direction:column;gap:9px;box-shadow:0 18px 30px -26px rgba(36,29,49,.55);
+  }
+  .item-art{position:relative;border-radius:15px;overflow:hidden;background:#fdf3e6}
+  .item-art img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+  .item-meta{display:flex;flex-direction:column;gap:2px;padding:0 5px 4px}
+  .item-meta b{font-size:14px;letter-spacing:-.01em;line-height:1.2}
+  .price,.tag-worn{
+    position:absolute;top:7px;right:7px;display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;font-weight:900;border-radius:var(--radius-pill);padding:3px 8px;
+    background:rgba(255,255,255,.93);color:#8a5a12;box-shadow:0 6px 14px -8px rgba(36,29,49,.6);
+  }
+  .price::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--gold)}
+  .tag-worn{background:var(--gold);color:#483008;box-shadow:none}
+  .where{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase}
+  .item.worn{border-color:#efd39a;box-shadow:inset 0 0 0 2px var(--gold), 0 18px 30px -26px rgba(36,29,49,.55)}
+  .items-rules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
   /* ---------- родительский регистр ---------- */
   .parent-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
   .panel{
@@ -297,12 +322,14 @@
     .creatures{grid-template-columns:repeat(2,1fr)}
     .pet-card{grid-template-columns:1fr}
     .pet-card img{min-height:220px;max-height:280px}
+    .items-rules{grid-template-columns:1fr}
     .parent-grid,.tokens{grid-template-columns:1fr}
   }
   @media (max-width:420px){
     .wrap{padding:0 16px 80px}
     .phone{width:100%;border-radius:38px}
     .creatures{grid-template-columns:1fr}
+    .items{grid-template-columns:repeat(2,1fr)}
     .screen{border-radius:30px;min-height:660px}
   }
   @media (prefers-reduced-motion:reduce){
@@ -563,10 +590,133 @@
     </div>
   </section>
 
+  <section id="items">
+    <div class="sec-head">
+      <div>
+        <span class="num">04 · вещи</span>
+        <h2>Предметы и карточки</h2>
+      </div>
+      <p>
+        Девятнадцать предметов: девять носимых, четыре в комнату и шесть для упражнений.
+        Карточка — рамка из кода и одна картинка: название, цену и «надето» ставит интерфейс,
+        поэтому цену можно поменять, не перерисовывая арт.
+      </p>
+    </div>
+
+    <div class="item-block">
+      <div class="item-block-head">
+        <h3>Гардероб · 9 предметов</h3>
+        <span>id совпадают с <code>lib/gamification.ts</code>; наушники — состояние «надето»</span>
+      </div>
+      <div class="items">
+        <article class="item">
+          <div class="item-art"><span class="price">40</span><img src="img/items/cap.png" alt=""></div>
+          <div class="item-meta"><b>Кепка</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">35</span><img src="img/items/bandana.png" alt=""></div>
+          <div class="item-meta"><b>Бандана</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">60</span><img src="img/items/glasses.png" alt=""></div>
+          <div class="item-meta"><b>Очки</b></div>
+        </article>
+        <article class="item worn">
+          <div class="item-art"><span class="tag-worn">надето</span><img src="img/items/headphones.png" alt=""></div>
+          <div class="item-meta"><b>Наушники</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">140</span><img src="img/items/crown.png" alt=""></div>
+          <div class="item-meta"><b>Корона</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">30</span><img src="img/items/scarf.png" alt=""></div>
+          <div class="item-meta"><b>Шарф</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">55</span><img src="img/items/backpack.png" alt=""></div>
+          <div class="item-meta"><b>Рюкзак</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">70</span><img src="img/items/vest.png" alt=""></div>
+          <div class="item-meta"><b>Жилет</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">110</span><img src="img/items/super.png" alt=""></div>
+          <div class="item-meta"><b>Суперкостюм</b></div>
+        </article>
+      </div>
+    </div>
+
+    <div class="item-block">
+      <div class="item-block-head">
+        <h3>Комната · 4 предмета</h3>
+        <span>самая недорогая покупка, поэтому её ребёнок видит первой</span>
+      </div>
+      <div class="items">
+        <article class="item">
+          <div class="item-art"><span class="price">35</span><img src="img/items/rug.png" alt=""></div>
+          <div class="item-meta"><b>Ковёр</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">45</span><img src="img/items/lamp.png" alt=""></div>
+          <div class="item-meta"><b>Лампа</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">25</span><img src="img/items/poster.png" alt=""></div>
+          <div class="item-meta"><b>Плакат</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><span class="price">50</span><img src="img/items/plant.png" alt=""></div>
+          <div class="item-meta"><b>Растение</b></div>
+        </article>
+      </div>
+    </div>
+
+    <div class="item-block">
+      <div class="item-block-head">
+        <h3>Урок · 6 предметов</h3>
+        <span>то, чем ребёнок действует в упражнении</span>
+      </div>
+      <div class="items">
+        <article class="item">
+          <div class="item-art"><img src="img/items/block.png" alt=""></div>
+          <div class="item-meta"><b>Блок</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><img src="img/items/bubble.png" alt=""></div>
+          <div class="item-meta"><b>Пузырь</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><img src="img/items/shapes.png" alt=""></div>
+          <div class="item-meta"><b>Фигуры</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><img src="img/items/cards.png" alt=""></div>
+          <div class="item-meta"><b>Пара карточек</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><img src="img/items/hourglass.png" alt=""></div>
+          <div class="item-meta"><b>Песочные часы</b></div>
+        </article>
+        <article class="item">
+          <div class="item-art"><img src="img/items/notebook.png" alt=""></div>
+          <div class="item-meta"><b>Блокнот</b></div>
+        </article>
+      </div>
+    </div>
+
+    <div class="items-rules">
+      <div class="rule yes"><b>Предмет не оценивает</b>Монетки дают за практику, а не за «правильный» ответ. Реальными деньгами ребёнок здесь не платит.</div>
+      <div class="rule yes"><b>Состояние — в интерфейсе</b>«Надето», цена и замок нарисованы кодом: баланс можно менять без новой картинки.</div>
+      <div class="rule no"><b>Не рисуем карточку целиком</b>Картинка-карточка теряет текст, доступность и адаптив. Арт — только содержимое.</div>
+    </div>
+  </section>
+
   <section id="parent">
     <div class="sec-head">
       <div>
-        <span class="num">04 · кабинет</span>
+        <span class="num">05 · кабинет</span>
         <h2>Взрослый регистр того же языка</h2>
       </div>
       <p>
@@ -623,7 +773,7 @@
   <section id="tokens">
     <div class="sec-head">
       <div>
-        <span class="num">05 · система</span>
+        <span class="num">06 · система</span>
         <h2>Что делает стиль единым</h2>
       </div>
       <p>
@@ -663,7 +813,7 @@
 
   <footer>
     <p><b>Это концепт, а не продукт.</b> Три персонажа нарисованы как пробы стиля; тексты и числа в макете взяты из
-    репозитория (день 2 «Задание Миры», 36 встреч по 40 минут, 60 дней, 12 тем). Дальше — паспорт стиля и три стадии питомца.</p>
+    репозитория (день 2 «Задание Миры», 36 встреч по 40 минут, 60 дней, 12 тем). Дальше — паспорт стиля, две старшие стадии питомца и перенос токенов в код.</p>
   </footer>
 
 </div>
