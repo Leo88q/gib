@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import TeacherCabinet from '@/components/TeacherCabinet';
 
 /**
@@ -20,6 +21,15 @@ export default function TeacherPage() {
       <p className="muted">
         Здесь видно, кто был на занятии. Годовая программа — 36 встреч; отметки нужны, чтобы видеть
         посещаемость группы, а не успеваемость отдельного ребёнка.
+      </p>
+      {/*
+        Ссылка на сводку для школы. Педагог чаще всего первый, кого спрашивает
+        завуч «а что это за курс», и ему нужен не PDF, а страница, которая
+        совпадает с тем, что он ведёт.
+      */}
+      <p className="muted small">
+        Для завуча и директора: <Link href="/school">что получает школа</Link> — те же числа, что
+        в плане встречи.
       </p>
       <TeacherCabinet />
     </main>
