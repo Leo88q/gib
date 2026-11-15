@@ -2090,6 +2090,39 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   font-size: 13px;
 }
 
+/*
+  Присловье встречи и правила телесных упражнений.
+
+  Оба блока читаются перед занятием, а не после, поэтому стоят выше блоков
+  плана и отличаются от них цветом: присловье — рамка для группы, правила —
+  то, что проверяют руками. Без отдельного оформления они сливаются с текстом
+  плана, и педагог их пропускает.
+*/
+.teacher-frame {
+  border-left: 3px solid var(--link);
+  background: #f4f8fd;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.teacher-safety {
+  border-left: 3px solid var(--glyph);
+  background: #fff8f0;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.teacher-safety ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.teacher-safety li {
+  margin: 3px 0;
+}
+
 /* Строка ученика: имя слева, кнопка справа, даже на узком экране. */
 .teacher-student {
   padding: 10px 12px;
@@ -2314,4 +2347,86 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/*
+  Страница для школы (/school).
+
+  Её читают на большом экране и на бумаге: завуч открывает ссылку и решает, звать
+  ли методиста. Поэтому таблицы, а не карточки, и перенос строк по словам —
+  иначе «Чего это не значит» уезжает за край.
+*/
+.school-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.school-table th,
+.school-table td {
+  border-top: 1px solid rgba(27, 27, 47, 0.18);
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.school-table thead th {
+  border-top: none;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.school-table th[scope='row'] {
+  font-weight: 700;
+  width: 38%;
+}
+
+.school-outline {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.school-outline li {
+  margin: 4px 0;
+}
+
+.school-stage {
+  border-left: 3px solid var(--mint);
+  padding: 4px 0 4px 10px;
+  margin: 10px 0;
+}
+
+.school-stage p {
+  margin: 2px 0;
+}
+
+@media (max-width: 520px) {
+  .school-table,
+  .school-table th[scope='row'] {
+    font-size: 13px;
+  }
+  .school-table th[scope='row'] {
+    width: 45%;
+  }
+}
+
+/*
+  Этап года в отчёте родителю.
+
+  Этап — не прогресс и не оценка: он отвечает на вопрос «что сейчас происходит
+  с группой». Поэтому это отдельная карточка с меткой, а не полоска
+  заполнения — полоску читают как «пройдено на 40%».
+*/
+.stage-card .tag {
+  background: var(--mint);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.stage-card p {
+  margin: 4px 0;
 }

@@ -83,6 +83,9 @@ type MeetingPlan = {
   blocks: { title: string; minutes: number; lead: string; children: string }[];
   materials: string[];
   closing: string;
+  stage: { id: 'opening' | 'middle' | 'closing'; title: string; task: string; question: string };
+  frame?: string;
+  safety?: { what: string; rules: { id: string; title: string; do: string; why: string }[] };
 };
 
 type Lessons = {
@@ -289,8 +292,36 @@ export default function TeacherCabinet() {
         <div className="teacher-plan">
           <h2>Встреча {nextPlan.lesson}: {nextPlan.unitTitle}</h2>
           <p className="muted">
-            {plan?.minutes ?? 40} минут · навыки: {nextPlan.skills.join(', ')}
+            {plan?.minutes ?? 40} минут · навыки: {nextPlan.skills.join(', ')} · {nextPlan.stage.title}
           </p>
+          {/*
+            Присловье встречи. Не цель и не правило для ребёнка, а рамка,
+            которую педагог говорит вслух перед практикой. Нужна потому, что
+            без неё группа слышит «сделайте правильно», а методика начинается
+            с «здесь можно ошибиться».
+          */}
+          {nextPlan.frame && (
+            <p className="teacher-frame">
+              <strong>Скажите в начале:</strong> «{nextPlan.frame}»
+            </p>
+          )}
+          {/*
+            Телесные упражнения: то, чего в документе программы не было.
+            Показываем правила в том занятии, где упражнение есть, и молчим в
+            остальных — список правил на каждом занятии перестают читать.
+          */}
+          {nextPlan.safety && (
+            <div className="teacher-safety">
+              <strong>Проверить перед занятием: {nextPlan.safety.what}</strong>
+              <ul>
+                {nextPlan.safety.rules.map((rule) => (
+                  <li key={rule.id}>
+                    <strong>{rule.title}.</strong> {rule.do}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {nextPlan.blocks.map((block) => (
             <div key={block.title} className="teacher-block">
               <strong>
@@ -342,8 +373,14 @@ export default function TeacherCabinet() {
                 {item.lesson}. {item.unitTitle}
               </h2>
               <p>
-                {plan.minutes} минут · навыки: {item.skills.join(', ')}
+                {plan.minutes} минут · навыки: {item.skills.join(', ')} · {item.stage.title}
               </p>
+              {item.frame && <p>Скажите в начале: «{item.frame}»</p>}
+              {item.safety && (
+                <p>
+                  Проверить: {item.safety.what} — {item.safety.rules.map((rule) => `${rule.title}: ${rule.do}`).join(' ')}
+                </p>
+              )}
               {item.blocks.map((block) => (
                 <div key={block.title} className="print-block">
                   <strong>

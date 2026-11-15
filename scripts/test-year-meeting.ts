@@ -140,4 +140,60 @@ for (const lesson of YEAR.lessons) {
 }
 console.log('  ok задания названы по-человечески');
 
+/* ---- 8. Этап года: вопрос круга меняется, а не повторяется ---- */
+
+const opening = meetingPlan(YEAR.lessons[0]);
+const middle = meetingPlan(YEAR.lessons[Math.ceil(YEAR.lessons.length / 2) - 1]);
+const closing = meetingPlan(YEAR.lessons[YEAR.lessons.length - 1]);
+
+assert.equal(opening.stage.id, 'opening', 'первое занятие года не помечено входом');
+assert.equal(closing.stage.id, 'closing', 'последнее занятие года не помечено итогом');
+assert.equal(middle.stage.id, 'middle', 'середина года не помечена серединой');
+
+// Первый и последний круг года обязаны отличаться от обычного: иначе этап
+// существует только в данных, а дети слышат одну и ту же фразу 36 раз.
+assert.notEqual(opening.blocks[0].lead, middle.blocks[0].lead, 'вход года спросил то же, что и обычная встреча');
+assert.notEqual(closing.blocks[0].lead, middle.blocks[0].lead, 'итог года спросил то же, что и обычная встреча');
+assert.ok(opening.blocks[0].lead.includes(opening.stage.question), 'в круге входа нет вопроса этапа');
+assert.ok(closing.blocks[0].lead.includes(closing.stage.question), 'в круге итога нет вопроса этапа');
+
+// Этап не выдумывает новых минут и блоков.
+assert.equal(opening.blocks.reduce((sum, block) => sum + block.minutes, 0), MEETING_MINUTES);
+console.log('  ok этап года меняет вопрос круга на входе и итоге');
+
+/* ---- 9. Присловье встречи: есть, где есть, и не подменяется выдумкой ---- */
+
+const framed = YEAR.lessons.map((lesson) => ({ lesson, plan: meetingPlan(lesson) })).filter((item) => item.plan.frame);
+assert.equal(framed.length, 12, `присловье есть у ${framed.length} занятий, ожидалось 12 (по одному на тему)`);
+for (const { lesson, plan } of framed) {
+  const text = plan.frame!;
+  assert.ok(text.length > 15, `занятие ${lesson.number}: присловье короче фразы`);
+  assert.ok(text.length < 130, `занятие ${lesson.number}: присловье не помещается на лист`);
+  // Присловье — разрешение, а не требование и не обещание результата.
+  assert.ok(!/должен|обязан|нужно обязательно|молодец|\bправильн/i.test(text),
+    `занятие ${lesson.number}: присловье требует или оценивает`);
+}
+// На каждой теме ровно один вход в тему — и у него есть присловье.
+const firsts = YEAR.lessons.filter((lesson) => lesson.inUnit === 1);
+assert.equal(firsts.filter((lesson) => meetingPlan(lesson).frame).length, firsts.length,
+  'у какой-то темы нет присловья на первом занятии');
+console.log('  ok присловье: 12 тем, без требований и оценок');
+
+/* ---- 10. Телесные упражнения: правила там, где они нужны ---- */
+
+for (const lesson of YEAR.lessons) {
+  const plan = meetingPlan(lesson);
+  if (plan.safety) {
+    assert.ok(plan.safety.rules.length >= 2, `занятие ${lesson.number}: одно правило — это не протокол`);
+    for (const rule of plan.safety.rules) {
+      assert.ok(rule.do.length > 30, `занятие ${lesson.number}: правило «${rule.title}» без действия`);
+      assert.ok(rule.why.length > 20, `занятие ${lesson.number}: правило «${rule.title}» без объяснения`);
+    }
+  }
+}
+// Правила безопасности не должны превратиться в медицинский текст.
+const safetyText = JSON.stringify(YEAR.lessons.map((lesson) => meetingPlan(lesson).safety ?? null));
+assert.ok(!/терапи|коррекц|диагноз|тревожност[ьи] ребёнка/i.test(safetyText), 'в правилах безопасности появилась медицина');
+console.log('  ok правила телесных упражнений: действие и причина в каждом');
+
 console.log('\nПлан встречи: 40 минут, из готового контента, без родительских текстов.');

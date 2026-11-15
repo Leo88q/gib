@@ -25,7 +25,9 @@ import { join } from 'node:path';
 const root = process.cwd();
 const css = readFileSync(join(root, 'app', 'globals.css'), 'utf8');
 
-const screens = ['components/TeacherCabinet.tsx', 'components/LessonCalendar.tsx'];
+// Страница для школы добавляет таблицы и этапы: её классы тоже обязаны быть
+// описаны, иначе сводка для завуча выглядит как сплошной текст.
+const screens = ['components/TeacherCabinet.tsx', 'components/LessonCalendar.tsx', 'app/school/page.tsx'];
 const used = new Set<string>();
 
 for (const file of screens) {

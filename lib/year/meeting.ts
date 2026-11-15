@@ -30,6 +30,9 @@
 import { PROGRAM_DAYS, SCENARIO_BY_ID, weekByNumber } from '../content/program/index.ts';
 import { SKILL_LABEL } from '../content/program/types.ts';
 import { TASK_BY_ID } from '../content/cognitive.ts';
+import { YEAR } from '../content/year/index.ts';
+import { STAGE_INFO, type StageInfo, stageOfNumber } from './stages.ts';
+import { safetyForUnit, type SafetyCheck } from './safety-body.ts';
 import type { Lesson } from '../content/year/types.ts';
 
 /** Один блок встречи: что делаем, сколько минут, зачем. */
@@ -54,6 +57,23 @@ export type MeetingPlan = {
   blocks: MeetingBlock[];
   /** Что взять с собой. Ничего покупать не нужно — так и написано. */
   materials: string[];
+  /** Этап года: вход, середина или итог. Меняет вопрос круга, а не сценарий. */
+  stage: StageInfo;
+  /**
+   * Присловье встречи: фраза-рамка перед практикой.
+   *
+   * Не цель и не правило для ребёнка. `undefined`, если у сценариев занятия
+   * такой фразы нет: план не выдумывает текст, который педагог скажет детям.
+   */
+  frame?: string;
+  /**
+   * Что проверить, если в теме есть телесное упражнение.
+   *
+   * `undefined` значит «телесных упражнений в этой теме нет», а не «всё
+   * безопасно». Педагог должен видеть разницу: пустой список читается как
+   * «проверено и чисто».
+   */
+  safety?: SafetyCheck;
   /** Одна фраза, которой заканчивается встреча. */
   closing: string;
 };
@@ -162,13 +182,26 @@ export function meetingPlan(lesson: Lesson): MeetingPlan {
 
   const scenarioCount = scenariosOf(lesson).length;
   const practice = practiceOf(lesson);
+  const stage = STAGE_INFO[stageOfNumber(lesson.number, YEAR.lessons.length)];
+  // Присловье берём у первого сценария занятия, где оно есть. На показе оно
+  // тоже уместно: рамка «ошибиться не страшно» нужнее всего именно там.
+  const frame = scenariosOf(lesson).find((item) => item.scenario.frame)?.scenario.frame;
 
   const blocks: MeetingBlock[] = [
     {
       title: titles[0],
       minutes: BLOCKS[0],
-      lead: 'Спросите каждого по кругу одним словом: как дела. Без «почему» и без разбора ответа.',
-      children: 'Отвечают одним словом. Можно промолчать — это тоже ответ.',
+      // На входе и на итоге круг спрашивает не «как дела», а вопрос этапа:
+      // иначе первый и последний разговор года ничем не отличаются от
+      // тридцать четвёртого.
+      lead:
+        stage.id === 'middle'
+          ? 'Спросите каждого по кругу одним словом: как дела. Без «почему» и без разбора ответа.'
+          : `Спросите по кругу: «${stage.question}» Один ответ, без обсуждения и без вывода.`,
+      children:
+        stage.id === 'middle'
+          ? 'Отвечают одним словом. Можно промолчать — это тоже ответ.'
+          : 'Отвечают коротко. Можно сказать «не знаю» — это тоже ответ.',
     },
     {
       title: titles[1],
@@ -221,6 +254,12 @@ export function meetingPlan(lesson: Lesson): MeetingPlan {
       'Проектор или планшет с открытым приложением: задания там, бумажных карточек нет',
       'Лист и ручка для каждого ребёнка',
     ],
+    stage,
+    // Поля с `undefined` не попадают в JSON, а кабинет читает именно JSON:
+    // без явного условия у темы без правил просто не будет ключа, и это
+    // правильно — но собирать объект с undefined ради этого не нужно.
+    ...(frame ? { frame } : {}),
+    ...(safetyForUnit(lesson.unit) ? { safety: safetyForUnit(lesson.unit) } : {}),
     // Закрывающая фраза — та, которую можно сказать вслух. Родительских текстов
     // в плане нет вообще: поле, адресованное семье, рано или поздно прочитают
     // группе. Поэтому здесь только `growth` сценария — он написан ребёнку.
