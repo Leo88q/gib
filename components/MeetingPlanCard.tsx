@@ -19,9 +19,12 @@ import type { MeetingPlan } from '@/lib/year/meeting';
 export default function MeetingPlanCard({ plan }: { plan: MeetingPlan }) {
   return (
     <section className="card meeting-card">
-      <h2>Встреча {plan.lesson}: {plan.unitTitle}</h2>
+      {/* Название встречи, а не только темы: в расписании и в плане должно быть
+          одно и то же имя, иначе педагог ищет «Замечать сигналы» в списке,
+          где три встречи подряд названы темой. */}
+      <h2>Встреча {plan.lesson}: {plan.title}</h2>
       <p className="muted">
-        {plan.blocks.reduce((sum, block) => sum + block.minutes, 0)} минут · {plan.stage.title} · навыки: {plan.skills.join(', ')}
+        Тема «{plan.unitTitle}» · {plan.blocks.reduce((sum, block) => sum + block.minutes, 0)} минут · {plan.stage.title} · навыки: {plan.skills.join(', ')}
       </p>
       {plan.audience?.household && <p className="muted small">{plan.audience.household}</p>}
       {plan.frame && <blockquote className="meeting-frame">{plan.frame}</blockquote>}

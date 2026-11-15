@@ -20,13 +20,24 @@
  */
 import { OPERATOR, legalMissing, legalReady } from './legal/documents.ts';
 import { receiptConfig } from './billing/receipt.ts';
+import { storeModeProblem } from './store-mode.ts';
 
-/** Что мешает открыть продакшен. Пустой список — можно открывать. */
+/**
+ * Что мешает открыть продакшен. Пустой список — можно открывать.
+ *
+ * Причины — только те, что действительно нужны покупателю и данным: правовой
+ * минимум, оплата с чеком и место, где эти данные лежат. Файловое хранилище
+ * (`GIB_STORE=json` по умолчанию или `sqlite`) здесь блокер, потому что
+ * продакшен на файле теряет прогресс семьи при пересборке контейнера и
+ * расходится между экземплярами. Подробно — `lib/store-mode.ts`.
+ */
 export function launchBlockers(env: NodeJS.ProcessEnv = process.env): string[] {
   const blockers: string[] = [];
   if (!legalReady(OPERATOR)) blockers.push(`правовые документы: ${legalMissing(OPERATOR).join(', ')}`);
   if (!(env.YOOKASSA_SHOP_ID && env.YOOKASSA_SECRET_KEY)) blockers.push('оплата: нет ключей ЮKassa');
   if (receiptConfig(env) === null) blockers.push('чек: не задана ставка НДС');
+  const store = storeModeProblem('production', env);
+  if (store) blockers.push(store);
   return blockers;
 }
 

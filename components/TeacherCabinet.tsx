@@ -78,6 +78,8 @@ type Method = {
 
 type MeetingPlan = {
   lesson: number;
+  /** Название этой встречи: у каждой из 36 своё, а не только у темы. */
+  title: string;
   unitTitle: string;
   skills: string[];
   blocks: { title: string; minutes: number; lead: string; children: string }[];
@@ -291,9 +293,11 @@ export default function TeacherCabinet() {
     <section className="panel">
       {nextPlan && (
         <div className="teacher-plan">
-          <h2>Встреча {nextPlan.lesson}: {nextPlan.unitTitle}</h2>
+          {/* Название этой встречи, а не только темы: иначе три встречи
+              недели выглядят одинаково и в кабинете, и на печати. */}
+          <h2>Встреча {nextPlan.lesson}: {nextPlan.title}</h2>
           <p className="muted">
-            {plan?.minutes ?? 40} минут · навыки: {nextPlan.skills.join(', ')} · {nextPlan.stage.title}
+            Тема «{nextPlan.unitTitle}» · {plan?.minutes ?? 40} минут · навыки: {nextPlan.skills.join(', ')} · {nextPlan.stage.title}
           </p>
           {/*
             Присловье встречи. Не цель и не правило для ребёнка, а рамка,
@@ -362,7 +366,7 @@ export default function TeacherCabinet() {
               <summary className="muted">Все 36 планов</summary>
               {plan.lessons.map((item) => (
                 <p key={item.lesson} className="muted">
-                  {item.lesson}. {item.unitTitle} — {item.blocks.map((block) => `${block.minutes} мин ${block.title.split(':')[0]}`).join(', ')}
+                  {item.lesson}. {item.title} — {item.blocks.map((block) => `${block.minutes} мин ${block.title.split(':')[0]}`).join(', ')}
                 </p>
               ))}
             </details>
@@ -384,7 +388,7 @@ export default function TeacherCabinet() {
           {plan.lessons.map((item) => (
             <div key={item.lesson} className="print-plan">
               <h2>
-                {item.lesson}. {item.unitTitle}
+                {item.lesson}. {item.title}
               </h2>
               <p>
                 {plan.minutes} минут · навыки: {item.skills.join(', ')} · {item.stage.title}

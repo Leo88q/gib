@@ -164,7 +164,12 @@ console.log('  ok этап года меняет вопрос круга на в
 /* ---- 9. Присловье встречи: есть, где есть, и не подменяется выдумкой ---- */
 
 const framed = YEAR.lessons.map((lesson) => ({ lesson, plan: meetingPlan(lesson) })).filter((item) => item.plan.frame);
-assert.equal(framed.length, 12, `присловье есть у ${framed.length} занятий, ожидалось 12 (по одному на тему)`);
+// Присловье теперь у каждой встречи: раньше рамка была одна на тему, и на
+// второй и третьей встрече педагог повторял фразу, написанную к первому дню.
+assert.equal(framed.length, YEAR.lessons.length,
+  `присловье есть у ${framed.length} занятий, ожидалось ${YEAR.lessons.length} — по одному на встречу`);
+assert.equal(new Set(framed.map(({ plan }) => plan.frame)).size, YEAR.lessons.length,
+  'присловья повторяются: у двух встреч одна и та же фраза');
 for (const { lesson, plan } of framed) {
   const text = plan.frame!;
   assert.ok(text.length > 15, `занятие ${lesson.number}: присловье короче фразы`);
@@ -173,11 +178,36 @@ for (const { lesson, plan } of framed) {
   assert.ok(!/должен|обязан|нужно обязательно|молодец|\bправильн/i.test(text),
     `занятие ${lesson.number}: присловье требует или оценивает`);
 }
-// На каждой теме ровно один вход в тему — и у него есть присловье.
-const firsts = YEAR.lessons.filter((lesson) => lesson.inUnit === 1);
-assert.equal(firsts.filter((lesson) => meetingPlan(lesson).frame).length, firsts.length,
-  'у какой-то темы нет присловья на первом занятии');
-console.log('  ok присловье: 12 тем, без требований и оценок');
+// На каждом занятии темы своя рамка: вход в тему не повторяется на второй
+// встрече, иначе третья встреча года не отличается от первой.
+const byUnit = new Map<number, string[]>();
+for (const lesson of YEAR.lessons) {
+  const frame = meetingPlan(lesson).frame!;
+  byUnit.set(lesson.unit, [...(byUnit.get(lesson.unit) ?? []), frame]);
+}
+for (const [unit, frames] of byUnit) {
+  assert.equal(new Set(frames).size, frames.length, `тема ${unit}: у встреч темы одинаковое присловье`);
+}
+console.log(`  ok присловье: ${framed.length} встреч, без повторов, требований и оценок`);
+
+/* ---- 9a. Названия встреч: у каждой своё, без «тема + показываем» ---- */
+
+const titles = YEAR.lessons.map((lesson) => lesson.title);
+assert.equal(titles.length, 36, 'в году не 36 занятий');
+assert.equal(new Set(titles).size, titles.length,
+  `названия повторяются (${titles.length - new Set(titles).size} повторов): в расписании это выглядит как 12 уроков, повторённых трижды`);
+for (const lesson of YEAR.lessons) {
+  assert.ok(lesson.title.length > 3, `занятие ${lesson.number}: название короче слова`);
+  assert.ok(lesson.title.length < 50, `занятие ${lesson.number}: название не помещается в строку расписания`);
+  assert.ok(!/^Тема\s*\d/i.test(lesson.title), `занятие ${lesson.number}: название — служебное`);
+}
+// Последняя встреча темы — показ, и это видно по названию, а не по коду.
+for (const lesson of YEAR.lessons.filter((item) => item.isShowcase)) {
+  assert.ok(/показываем/i.test(lesson.title), `занятие ${lesson.number}: показ не назван показом`);
+}
+assert.ok(!YEAR.lessons.filter((item) => !item.isShowcase).some((item) => /показываем/i.test(item.title)),
+  'обычная встреча названа показом');
+console.log('  ok названия встреч: 36 своих, показ отличён словом');
 
 /* ---- 10. Телесные упражнения: правила там, где они нужны ---- */
 

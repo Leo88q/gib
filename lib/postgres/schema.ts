@@ -146,3 +146,31 @@ ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_household_adult_chec
 ALTER TABLE gib.profiles ADD CONSTRAINT profiles_household_adult_check
   CHECK (household_adult IS NULL OR household_adult IN ('parent','other','none'));
 `;
+
+/**
+ * Таблица событий воронки запуска.
+ *
+ * Не входит в `SCHEMA_VERSION`: воронка — не состояние ребёнка, у неё свой
+ * срок хранения (400 дней) и своё правило «переживает удаление профиля».
+ * Поэтому таблица поднимается отдельно и идемпотентно
+ * (`lib/events/funnel-store.ts`), а версия схемы состояния от неё не зависит.
+ *
+ * Первичный ключ и есть дедупликация: шаг считается один раз на владельца, а
+ * отказ у оплаты — один раз на владельца и встречу. `lesson_number = 0`
+ * означает «у шага нет встречи», а не «встреча номер ноль».
+ *
+ * Внешнего ключа на `gib.profiles` нет намеренно: иначе удаление ребёнка
+ * стирало бы статистику продаж, и решение о запуске принималось бы по
+ * испорченным числам.
+ */
+export const FUNNEL_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.funnel_events (
+  step TEXT NOT NULL,
+  owner_id TEXT NOT NULL CHECK (char_length(owner_id) BETWEEN 1 AND 200),
+  at BIGINT NOT NULL CHECK (at >= 0),
+  lesson_number INTEGER NOT NULL DEFAULT 0 CHECK (lesson_number >= 0),
+  PRIMARY KEY (step, owner_id, lesson_number)
+);
+CREATE INDEX IF NOT EXISTS funnel_events_at ON gib.funnel_events(at);
+`;

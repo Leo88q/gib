@@ -1,5 +1,6 @@
 import type { DayPlan, WeekPlan } from '../program/types';
 import type { SkillId } from '../../types';
+import { lessonTitle } from './meeting-names.ts';
 
 /**
  * Годовая сетка: 36 занятий вместо 60 дней как единицы программы.
@@ -105,7 +106,10 @@ function buildYear(weeks: WeekPlan[], days: readonly { week: WeekPlan; day: DayP
         unit,
         inUnit: i + 1,
         ofUnit: lessonCount,
-        title: i === lessonCount - 1 ? `${week.title}: показываем` : week.title,
+        // Своё название у каждой встречи (`meeting-names.ts`). Запасной вариант
+        // оставлен только на случай новой темы, для которой названий ещё нет:
+        // лучше тема с пометкой показа, чем занятие без названия.
+        title: lessonTitle(number) ?? (i === lessonCount - 1 ? `${week.title}: показываем` : week.title),
         skills,
         dayIndexes: chunk.map((d) => d.index),
         isShowcase: i === lessonCount - 1,

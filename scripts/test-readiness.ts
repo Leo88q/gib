@@ -76,6 +76,35 @@ async function main() {
   assert.equal(liveness().alive, true, 'живость при этом не страдает');
   console.log('  ok пропажа базы: готовность not_ready, живость жива');
 
+  // 5a. Продакшен на файле — это not_ready, а не «работает, но медленнее».
+  //
+  // Проверка важна тем, что видна дежурному в /api/ready до первой потери
+  // данных: забытый GIB_STORE в production даёт 503 и названную причину.
+  // NODE_ENV объявлен в типах Node только для чтения, поэтому меняем через
+  // запись по ключу: тест проверяет поведение в production-окружении.
+  const env = process.env as Record<string, string | undefined>;
+  const previousEnv = env.NODE_ENV;
+  const previousStore = env.GIB_STORE;
+  env.NODE_ENV = 'production';
+  process.env.GIB_STORE = 'json';
+  process.env.GIB_DATA_FILE = path.join(dir, 'elsewhere.json');
+  const fileProd = readiness();
+  assert.equal(fileProd.ready, false, 'продакшен на json не готов принимать запросы');
+  assert.equal(fileProd.status, 'not_ready');
+  const fileStorage = fileProd.checks.find(c => c.id === 'storage')!;
+  assert.equal(fileStorage.ok, false, 'проверка хранилища честно падает');
+  assert.equal(fileStorage.level, 'ready', 'это обязательная проверка, а не предупреждение');
+  assert.ok(fileStorage.detail.includes('postgres'), `причина названа: ${fileStorage.detail}`);
+  process.env.GIB_STORE = 'sqlite';
+  const sqliteProd = readiness();
+  assert.equal(sqliteProd.ready, false, 'продакшен на sqlite тоже не готов');
+  assert.ok(sqliteProd.checks.find(c => c.id === 'storage')!.detail.includes('SQLite'), 'и называет SQLite');
+  if (previousEnv === undefined) delete env.NODE_ENV; else env.NODE_ENV = previousEnv;
+  if (previousStore === undefined) delete env.GIB_STORE; else env.GIB_STORE = previousStore;
+  delete process.env.GIB_DATA_FILE;
+  assert.equal(readiness().ready, false, 'файла базы после проверки по-прежнему нет — подготовка к пункту 6');
+  console.log('  ok продакшен на файле: not_ready с названной причиной');
+
   // 6. Служебные пути открыты даже при заблокированном production API.
   assert.ok(OPS_PATHS.length >= 3, 'служебные пути объявлены');
   for (const p of ['/api/health', '/api/ready', '/api/metrics']) {

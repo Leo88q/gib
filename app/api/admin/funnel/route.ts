@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { funnelEvents, funnelSize, pruneFunnel } from '@/lib/events/funnel-store';
+import { funnelBackend, funnelEvents, funnelSize, pruneFunnel } from '@/lib/events/funnel-store';
 import { FUNNEL_STEPS, FUNNEL_RETENTION_DAYS, funnelReport, funnelVerdict, paywallStops } from '@/lib/events/funnel';
 import { store } from '@/lib/store';
 import { YEAR } from '@/lib/content/year';
@@ -49,7 +49,12 @@ export async function GET(req: Request) {
       withConsent: profiles.filter((profile) => Boolean(profile.guardianConsent)).length,
       lessonsInYear: YEAR.lessons.length,
     },
-    storage: { events: funnelSize(), retentionDays: FUNNEL_RETENTION_DAYS },
+    /**
+     * Где живёт воронка. Это не украшение отчёта: в файловом режиме числа
+     * исчезают при пересборке контейнера, и дежурный должен видеть разницу
+     * между «нет трафика» и «файла больше нет».
+     */
+    storage: { events: funnelSize(), retentionDays: FUNNEL_RETENTION_DAYS, backend: funnelBackend() },
     generatedAt: Date.now(),
   }, { headers: { 'Cache-Control': 'no-store' } });
 }

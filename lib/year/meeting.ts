@@ -32,6 +32,7 @@ import { SKILL_LABEL } from '../content/program/types.ts';
 import { TASK_BY_ID } from '../content/cognitive.ts';
 import { YEAR } from '../content/year/index.ts';
 import { STAGE_INFO, type StageInfo, stageOfNumber } from './stages.ts';
+import { meetingFrame } from '../content/year/meeting-names.ts';
 import { householdNote, type MeetingLead } from '../onboarding.ts';
 import type { HouseholdAdult } from '../types.ts';
 import { safetyForUnit, type SafetyCheck } from './safety-body.ts';
@@ -51,6 +52,8 @@ export type MeetingBlock = {
 
 export type MeetingPlan = {
   lesson: number;
+  /** Название именно этой встречи: у каждой из 36 своё (`meeting-names.ts`). */
+  title: string;
   /** Тема и её название: педагогу нужно понимать, о чём неделя. */
   unit: number;
   unitTitle: string;
@@ -214,9 +217,13 @@ export function meetingPlan(lesson: Lesson, audience: MeetingAudience = {}): Mee
   const scenarioCount = scenariosOf(lesson).length;
   const practice = practiceOf(lesson);
   const stage = STAGE_INFO[stageOfNumber(lesson.number, YEAR.lessons.length)];
-  // Присловье берём у первого сценария занятия, где оно есть. На показе оно
-  // тоже уместно: рамка «ошибиться не страшно» нужнее всего именно там.
-  const frame = scenariosOf(lesson).find((item) => item.scenario.frame)?.scenario.frame;
+  // Присловье своё у каждой из 36 встреч (`lib/content/year/meeting-names.ts`).
+  // Раньше рамка была одна на тему: на второй и третьей встрече педагог
+  // повторял фразу, написанную к первому дню недели, а не к тому, что дети
+  // проходили между занятиями. Если у встречи своей фразы нет (новая тема,
+  // которую ещё не описали), берём рамку сценария — но не выдумываем текст.
+  const frame = meetingFrame(lesson.number)
+    ?? scenariosOf(lesson).find((item) => item.scenario.frame)?.scenario.frame;
   // Начало сцены берём у сценария дня, где оно написано. Возраст фиксируем
   // 11–13: план встречи — для педагога, а не для ребёнка, и на занятии группа
   // одна. Пересказать первую фразу младшим — работа педагога, а не наша.
@@ -296,6 +303,7 @@ export function meetingPlan(lesson: Lesson, audience: MeetingAudience = {}): Mee
 
   return {
     lesson: lesson.number,
+    title: lesson.title,
     unit: lesson.unit,
     unitTitle: week.title,
     skills,

@@ -7,6 +7,7 @@ import { validateStore } from './store-validation.ts';
 import type { StoredEvent } from './events/journal.ts';
 import { pruneExpired } from './events/journal.ts';
 import { WRITE_LOCK, ensureSchemaSync, openBridge, readState, writeState, type StateShape } from './postgres/state-backend.ts';
+import { storeModeOf } from './store-mode.ts';
 import { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from './postgres/schema.ts';
 
 type DB = {
@@ -39,8 +40,10 @@ const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.j
 
 let cache: DB | null = null;
 let transactionDepth = 0;
-const storeMode = process.env.GIB_STORE || 'json';
-if (storeMode !== 'json' && storeMode !== 'sqlite' && storeMode !== 'postgres') throw new Error('Unsupported GIB_STORE mode');
+// Режим читается общим правилом (`lib/store-mode.ts`): то же самое значение
+// проверяет готовность и заглушка запуска, поэтому «store думает одно, а
+// /api/ready другое» больше невозможно.
+const storeMode = storeModeOf();
 const sqliteEnabled = storeMode === 'sqlite';
 /**
  * PostgreSQL — полноценный режим хранилища, а не эксперимент.

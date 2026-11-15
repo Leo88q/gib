@@ -2688,3 +2688,18 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
     break-after: page;
   }
 }
+
+/* ------------------------- служебный экран: воронка -------------------------
+   Не раздел продукта: экран читает дежурный, поэтому плотная таблица вместо
+   карточек. Ошибка и предупреждение отличаются цветом и подписью, а не только
+   оттенком: различать их придётся и без цвета.
+--------------------------------------------------------------------------- */
+.funnel-token { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 6px; }
+.funnel-token label { flex: 0 0 100%; font-weight: 800; }
+.funnel-token input { flex: 1 1 220px; min-width: 0; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 12px; font: inherit; }
+.funnel-steps { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.funnel-steps caption { text-align: left; font-weight: 700; padding-bottom: 6px; }
+.funnel-steps th, .funnel-steps td { border-bottom: 2px solid var(--ink-soft); padding: 6px 8px; text-align: left; }
+.funnel-steps th:last-child, .funnel-steps td:last-child { text-align: right; }
+.funnel-drop td { background: #fff0e7; font-weight: 800; }
+.funnel-warning { padding: 12px; background: #fff7d6; color: #5a3d00; border: 2px solid #5a3d00; border-radius: 12px; }

@@ -27,6 +27,9 @@
 | Ротация навыков по дням | `pickSkills(..., dayIndex)` — за неделю покрываются все шесть навыков |
 | Свой биллинг | `app/api/subscribe/route.ts` + `lib/content/plans.ts` (планы и цены) |
 | Отчёт родителю | `lib/engine/session.ts` → `buildReport()`, страница `app/parent/page.tsx`, отправка в Telegram — `app/api/telegram/report/route.ts` |
+| Где живут данные | `lib/store-mode.ts` — одно правило для `lib/store.ts`, проверки `storage` в `/api/ready` и заглушки запуска: в продакшене допустим только `postgres`, файловые `json`/`sqlite` дают `not_ready` и 503 с названной причиной |
+| Воронка запуска | `lib/events/funnel-store.ts`: таблица `gib.funnel_events` в режиме PostgreSQL (ключ `(step, owner_id, lesson_number)` вместо файла), закрытый `/api/admin/funnel` и служебный экран `app/admin/funnel/page.tsx` |
+| Названия и присловья встреч | `lib/content/year/meeting-names.ts`: 36 своих названий и 36 присловий вместо одного названия темы и одной рамки на три встречи; `test:year-meeting` проверяет отсутствие повторов |
 | Telegram Mini App | `app/layout.tsx` подключает `telegram-web-app.js`, `app/page.tsx` использует `Telegram.WebApp` (haptics, тема) с фолбэком на браузер |
 
 ## Сознательно отложено

@@ -18,6 +18,7 @@ import { auditSecrets, clientLeaks, secretsReady, strictBlockers } from '../secr
 import { openBridge, pingDatabase } from '../postgres/state-backend.ts';
 import { receiptConfig } from '../billing/receipt.ts';
 import { OPERATOR, legalMissing, legalReady } from '../legal/documents.ts';
+import { storeModeProblem } from '../store-mode.ts';
 
 export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'secrets' | 'billing' | 'notifications';
 
@@ -101,6 +102,13 @@ function checkState(): Check {
  * показывал бы посторонний файл как источник данных.
  */
 function checkStorage(): Check {
+  // Сначала режим: в продакшене файл — не «медленнее», а недопустим.
+  // Проверка обязательная (`ready`), иначе сервис на `data/db.json`
+  // рапортовал бы «готово» и терял данные при первой пересборке.
+  const problem = storeModeProblem(process.env.NODE_ENV, process.env);
+  if (problem) {
+    return { id: 'storage', level: 'ready', ok: false, detail: problem, durationMs: 0 };
+  }
   const sqlite = process.env.GIB_STORE === 'sqlite';
   if (process.env.GIB_STORE === 'postgres') {
     try {

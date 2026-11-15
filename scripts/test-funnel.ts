@@ -113,8 +113,11 @@ async function storage() {
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-funnel-'));
 const file = path.join(dir, 'funnel.json');
 process.env.GIB_FUNNEL_FILE = file;
-const { recordFunnel, funnelEvents, funnelSize, pruneFunnel, resetFunnelCache } = await import('../lib/events/funnel-store.ts');
+const { recordFunnel, funnelEvents, funnelSize, pruneFunnel, resetFunnelCache, funnelBackend } = await import('../lib/events/funnel-store.ts');
 resetFunnelCache();
+// В режиме `json` (по умолчанию) воронка — файл. Режим PostgreSQL проверяется
+// отдельно (`test:funnel-postgres`): там дедупликацию держит первичный ключ.
+check(funnelBackend() === 'file', 'в файловом режиме воронка не ищет таблицу в базе');
 recordFunnel({ step: 'consent', ownerId: 'a', at: NOW });
 recordFunnel({ step: 'consent', ownerId: 'a', at: NOW + 1 });
 recordFunnel({ step: 'paywall_seen', ownerId: 'a', at: NOW, lessonNumber: 2 });
@@ -159,6 +162,8 @@ check(allowed.status === 200, 'с верным токеном отчёт отк�
 check(allowed.headers.get('cache-control') === 'no-store', 'отчёт не кэшируется: иначе вчерашний день выглядит как сегодняшний');
 check(Array.isArray(reportBody.steps) && (reportBody.steps as unknown[]).length === 6, 'в отчёте шесть шагов');
 check(typeof reportBody.verdict === 'string', 'отчёт называет вердикт, а не только числа');
+const storageInfo = reportBody.storage as Record<string, unknown>;
+check(storageInfo.backend === 'file', 'отчёт говорит, где лежат события: файл или база');
 const accounts = reportBody.accounts as Record<string, number>;
 check(typeof accounts.profiles === 'number' && accounts.lessonsInYear === 36, 'счётчики профилей и уроков на месте');
 const serialized = JSON.stringify(reportBody);
