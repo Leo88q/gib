@@ -114,7 +114,7 @@
   /* ---------- секции ---------- */
   section{padding:64px 0;border-top:1px solid rgba(36,29,49,.07)}
   .sec-head{display:flex;justify-content:space-between;gap:32px;align-items:flex-end;margin-bottom:36px;flex-wrap:wrap}
-  .sec-head p{max-width:52ch;color:var(--ink-soft);font-size:16.5px}
+  .sec-head p{max-width:52ch;flex:1 1 320px;color:var(--ink-soft);font-size:16.5px}
   .num{font-size:13px;font-weight:900;letter-spacing:.16em;color:var(--ink-faint)}
 
   /* ---------- телефон ---------- */
@@ -269,6 +269,34 @@
   .where{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase}
   .item.worn{border-color:#efd39a;box-shadow:inset 0 0 0 2px var(--gold), 0 18px 30px -26px rgba(36,29,49,.55)}
   .items-rules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+  /* ---------- район ---------- */
+  .map-card{
+    display:grid;grid-template-columns:1.12fr .88fr;background:var(--paper);
+    border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:var(--shadow-card);margin-bottom:28px;
+  }
+  .map-art{background:#f3e2cc}
+  .map-art img{display:block;width:100%;height:100%;object-fit:cover;min-height:300px}
+  .map-copy{padding:30px 34px;display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .map-copy h3{font-size:25px}
+  .map-copy p{font-size:15.5px;color:var(--ink-soft)}
+  .places{display:grid;grid-template-columns:repeat(auto-fill,minmax(242px,1fr));gap:18px}
+  .place{
+    background:var(--paper);border:1px solid var(--line);border-radius:22px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 18px 30px -26px rgba(36,29,49,.55);
+  }
+  .place-art{aspect-ratio:16/9;background:#f3e2cc}
+  .place-art img{display:block;width:100%;height:100%;object-fit:cover}
+  .place-meta{padding:13px 15px 15px;display:flex;flex-direction:column;gap:5px}
+  .place-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .place h4{margin:0;font-size:17px;font-weight:900;letter-spacing:-.012em}
+  .place-week{
+    font-size:11px;font-weight:900;padding:2px 8px;border-radius:var(--radius-pill);
+    background:#fdf1de;color:#8a5a12;flex:0 0 auto;
+  }
+  .place-comp{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
+  .place p{font-size:13.5px;color:var(--ink-soft);line-height:1.38}
+
   /* ---------- родительский регистр ---------- */
   .parent-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
   .panel{
@@ -323,7 +351,8 @@
     .pet-card{grid-template-columns:1fr}
     .pet-card img{min-height:220px;max-height:280px}
     .items-rules{grid-template-columns:1fr}
-    .parent-grid,.tokens{grid-template-columns:1fr}
+    .parent-grid,.tokens,.map-card{grid-template-columns:1fr}
+    .map-art img{min-height:240px;max-height:320px}
   }
   @media (max-width:420px){
     .wrap{padding:0 16px 80px}
@@ -713,10 +742,103 @@
     </div>
   </section>
 
+  <section id="places">
+    <div class="sec-head">
+      <div>
+        <span class="num">05 · район</span>
+        <h2>Семь мест вместо семи зверей</h2>
+      </div>
+      <p>
+        Семь компетенций программы — это не семь новых персонажей, а семь мест. Ребёнок ходит по району,
+        и место само объясняет, о чём неделя: в библиотеке — чужие истории, на площадке — правила игры.
+        Место рисуется один раз и работает все 60 дней.
+      </p>
+    </div>
+
+    <div class="map-card">
+      <div class="map-art"><img src="img/places/map.png" alt="Карта района из семи мест"></div>
+      <div class="map-copy">
+        <span class="num">навигация</span>
+        <h3>Карта района — экран выбора</h3>
+        <p>
+          Один экран вместо списка из 60 дней: ребёнок видит, куда идти и где он уже был.
+          Картинка — только фон и здания; точки, подписи и прогресс ставит код, поэтому место
+          можно добавить или переставить, не перерисовывая карту.
+        </p>
+        <div class="pet-stages"><span>7 мест</span><span>60 дней</span><span>12 тем</span></div>
+      </div>
+    </div>
+
+    <div class="places">
+        <article class="place">
+          <div class="place-art"><img src="img/places/home.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Дом</h4><span class="place-week">тема 1</span></div>
+            <span class="place-comp">Самопознание</span>
+            <p>Зеркало в прихожей и полка с твоими вещами: место, где ребёнок смотрит на себя.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/yard.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Двор</h4><span class="place-week">тема 2</span></div>
+            <span class="place-comp">Саморегуляция</span>
+            <p>Скамейка и качели: место, где можно остановиться и не отвечать сразу.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/library.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Библиотека</h4><span class="place-week">тема 3</span></div>
+            <span class="place-comp">Эмпатия</span>
+            <p>Чужие истории на полках: о том, что чувствует другой, говорить проще.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/playground.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Площадка</h4><span class="place-week">тема 4</span></div>
+            <span class="place-comp">Навыки отношений</span>
+            <p>Правила игры придумывают вместе — и их можно пересобрать, если не подошли.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/market.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Рынок</h4><span class="place-week">тема 5</span></div>
+            <span class="place-comp">Ответственные решения</span>
+            <p>Выбор с ценой: взять сейчас или подождать, и что будет потом.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/greenhouse.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Теплица</h4><span class="place-week">тема 6</span></div>
+            <span class="place-comp">Мышление роста</span>
+            <p>Растёт то, что поливают. Ошибка здесь не приговор, а данные.</p>
+          </div>
+        </article>
+        <article class="place">
+          <div class="place-art"><img src="img/places/workshop.png" alt=""></div>
+          <div class="place-meta">
+            <div class="place-top"><h4>Мастерская</h4><span class="place-week">тема 11</span></div>
+            <span class="place-comp">Творческое мышление</span>
+            <p>Инструменты и пробы: вещь всегда можно переделать иначе.</p>
+          </div>
+        </article>
+    </div>
+
+    <div class="items-rules">
+      <div class="rule yes"><b>Место — не персонаж</b>У места нет лица и реплик: говорит проводник. Иначе седьмой зверь появляется сам.</div>
+      <div class="rule yes"><b>Сцена без людей</b>Пустая площадка — это фон для героя и текста, а не картинка с чужим ребёнком.</div>
+      <div class="rule no"><b>Не рисуем 60 сцен</b>60 картинок устареют быстрее текстов; семь мест закрывают все истории и переиспользуются.</div>
+    </div>
+  </section>
+
   <section id="parent">
     <div class="sec-head">
       <div>
-        <span class="num">05 · кабинет</span>
+        <span class="num">06 · кабинет</span>
         <h2>Взрослый регистр того же языка</h2>
       </div>
       <p>
@@ -773,7 +895,7 @@
   <section id="tokens">
     <div class="sec-head">
       <div>
-        <span class="num">06 · система</span>
+        <span class="num">07 · система</span>
         <h2>Что делает стиль единым</h2>
       </div>
       <p>
