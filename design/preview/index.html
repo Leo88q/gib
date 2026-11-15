@@ -215,6 +215,35 @@
   /* Портретный кроп от макушки: лица не должны обрезаться, даже если кадр узкий. */
   .band .band-art img{object-position:50% 5%}
 
+  /* ---------- существа навыков ---------- */
+  .creatures{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .creature{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);
+    overflow:hidden;box-shadow:var(--shadow-card);display:flex;flex-direction:column;
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .creature:hover{transform:translateY(-3px);box-shadow:0 36px 64px -40px rgba(36,29,49,.5)}
+  .creature img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:50% 42%}
+  .creature .body{padding:16px 18px 20px;display:flex;flex-direction:column;gap:6px}
+  .creature h4{margin:0;font-size:19px;font-weight:900;letter-spacing:-.01em}
+  .creature .kind{font-size:11.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .creature p{font-size:14.5px;color:var(--ink-soft)}
+
+  .pet-card{
+    margin-top:22px;display:grid;grid-template-columns:.8fr 1.2fr;gap:0;align-items:stretch;
+    background:linear-gradient(120deg,#fffaf3,#ffeede);border:1px solid var(--line);
+    border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-card);
+  }
+  .pet-card img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 40%;min-height:260px}
+  .pet-copy{padding:30px 34px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+  .pet-copy h3{font-size:26px}
+  .pet-copy p{font-size:15.5px;color:var(--ink-soft)}
+  .pet-stages{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .pet-stages span{
+    padding:7px 13px;border-radius:var(--radius-pill);background:rgba(255,255,255,.85);
+    border:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--ink-soft);
+  }
+
   /* ---------- родительский регистр ---------- */
   .parent-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
   .panel{
@@ -265,11 +294,15 @@
     .phone-row{grid-template-columns:1fr;justify-items:center}
     .phone-notes{max-width:520px}
     .bands{grid-template-columns:1fr}
+    .creatures{grid-template-columns:repeat(2,1fr)}
+    .pet-card{grid-template-columns:1fr}
+    .pet-card img{min-height:220px;max-height:280px}
     .parent-grid,.tokens{grid-template-columns:1fr}
   }
   @media (max-width:420px){
     .wrap{padding:0 16px 80px}
     .phone{width:100%;border-radius:38px}
+    .creatures{grid-template-columns:1fr}
     .screen{border-radius:30px;min-height:660px}
   }
   @media (prefers-reduced-motion:reduce){
@@ -444,10 +477,96 @@
     </div>
   </section>
 
+  <section id="creatures">
+    <div class="sec-head">
+      <div>
+        <span class="num">03 · система навыков</span>
+        <h2>Шесть существ, шесть навыков</h2>
+      </div>
+      <p>
+        По одному существу на когнитивный навык — ровно шесть, не больше. Они не украшают экран:
+        существо и есть маркер навыка на карте, а его предмет-подпись показывает, что тренировали.
+      </p>
+    </div>
+
+    <div class="creatures">
+      <article class="creature">
+        <img src="img/skill-attention.png" alt="Светлячок с фонарём — существо навыка внимания">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Внимание · Светлячок</h4>
+          <p>Светит туда, куда смотрит ребёнок. Чем больше практики — тем ярче брюшко и фонарь.</p>
+        </div>
+      </article>
+
+      <article class="creature">
+        <img src="img/skill-memory.png" alt="Белка с карточками в карманах — существо памяти">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Память · Белка-архив</h4>
+          <p>Держит карточки в карманах и в хвосте. Карманы полнеют от практики, а не от оценок.</p>
+        </div>
+      </article>
+
+      <article class="creature">
+        <img src="img/skill-flexibility.png" alt="Осьминог с инструментами в щупальцах — существо гибкости">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Гибкость · Осьминог</h4>
+          <p>Меняет инструмент на ходу: кисть, ключ, карандаш. Это и есть гибкость — не упрямство.</p>
+        </div>
+      </article>
+
+      <article class="creature">
+        <img src="img/skill-inhibition.png" alt="Соня с колокольчиком — существо торможения">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Торможение · Соня</h4>
+          <p>Умеет остановиться на середине шага. Не сила воли, а приём: пауза — тоже ответ.</p>
+        </div>
+      </article>
+
+      <article class="creature">
+        <img src="img/skill-planning.png" alt="Бобёр с чертежом и линейкой — существо планирования">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Планирование · Бобёр</h4>
+          <p>Чертёж, линейка и терпение. План можно менять — это не провал, а часть работы.</p>
+        </div>
+      </article>
+
+      <article class="creature">
+        <img src="img/skill-logic.png" alt="Ворон с абаком и моноклем — существо логики">
+        <div class="body">
+          <span class="kind">существо навыка</span>
+          <h4>Логика · Ворон</h4>
+          <p>Считает на абаке и не верит на слово. Проверяет, а не спорит.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="pet-card">
+      <img src="img/pet.png" alt="Питомец — круглый плюшевый спутник со светящимся пятном на груди">
+      <div class="pet-copy">
+        <span class="num">личное, а не общее</span>
+        <h3>Питомец — спутник, а не награда</h3>
+        <p>
+          Он не оценивает и не сравнивает: растёт вместе с ребёнком и остаётся рядом, даже если неделя
+          была трудной. Цвет нейтральный — ребёнок сам решает, кто это, и может назвать его как хочет.
+        </p>
+        <p class="muted small" style="font-size:13.5px">
+          Три стадии в коде уже есть (<code>petStage</code>), арт пока одна — младшая. Среднюю и взрослую
+          надо нарисовать в той же фактуре, иначе «рост» останется масштабом картинки.
+        </p>
+        <div class="pet-stages"><span>малыш</span><span>подросток</span><span>взрослый</span></div>
+      </div>
+    </div>
+  </section>
+
   <section id="parent">
     <div class="sec-head">
       <div>
-        <span class="num">03 · кабинет</span>
+        <span class="num">04 · кабинет</span>
         <h2>Взрослый регистр того же языка</h2>
       </div>
       <p>
@@ -504,7 +623,7 @@
   <section id="tokens">
     <div class="sec-head">
       <div>
-        <span class="num">04 · система</span>
+        <span class="num">05 · система</span>
         <h2>Что делает стиль единым</h2>
       </div>
       <p>
@@ -534,6 +653,7 @@
       <div class="rules">
         <div class="rule yes"><b>Делаем</b>Мягкий свет сверху, тонкая тёплая обводка, один акцент на героя и на экран.</div>
         <div class="rule yes"><b>Делаем</b>Фактуру: ткань фартука, фетр, потёртые ботинки. Из неё и берётся «дорого».</div>
+        <div class="rule yes"><b>Делаем</b>Проводники цветные, существа навыков — тёплые нейтральные с одним светящимся элементом.</div>
         <div class="rule no"><b>Не делаем</b>Глянцевый пластик и белые перчатки — это читается как чужая франшиза.</div>
         <div class="rule no"><b>Не делаем</b>Больше двух акцентов на экране и тени-наклейки в кабинете и документах.</div>
         <div class="rule no"><b>Не делаем</b>Новых зверей на каждый пункт программы: 6 существ навыков и 7 мест района — предел.</div>
@@ -543,8 +663,7 @@
 
   <footer>
     <p><b>Это концепт, а не продукт.</b> Три персонажа нарисованы как пробы стиля; тексты и числа в макете взяты из
-    репозитория (день 2 «Задание Миры», 36 встреч по 40 минут, 60 дней, 12 тем). Дальше — паспорт стиля,
-    6 существ навыков и питомец в той же фактуре.</p>
+    репозитория (день 2 «Задание Миры», 36 встреч по 40 минут, 60 дней, 12 тем). Дальше — паспорт стиля и три стадии питомца.</p>
   </footer>
 
 </div>
