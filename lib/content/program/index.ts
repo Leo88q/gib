@@ -58,6 +58,9 @@ export const PROGRAM_SCENARIOS: Scenario[] = RAW_SCENARIOS.map(original => {
     // написанного для 12-летнего. Если своего названия нет — общее.
     title: day.titles?.[i] ?? day.title,
     text: `${day.situation[i]} Что можно выбрать?`,
+    // Первое действие сцены для этюда: без него педагог говорит «покажите
+    // ссору», и группа стоит. Возраст тот же, что и у текста ситуации.
+    ...(day.begin ? { start: day.begin[i] } : {}),
     // Порядок вариантов не означает оценки: метки сняты из всего контента.
     options: (adapted?.[band] ?? day.actions).map((text) => ({ text, note: 'Это один из возможных вариантов. Выбор можно обсудить, а можно не обсуждать.' })),
   }])) as Scenario['variants'];

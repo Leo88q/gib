@@ -196,4 +196,33 @@ const safetyText = JSON.stringify(YEAR.lessons.map((lesson) => meetingPlan(lesso
 assert.ok(!/терапи|коррекц|диагноз|тревожност[ьи] ребёнка/i.test(safetyText), 'в правилах безопасности появилась медицина');
 console.log('  ok правила телесных упражнений: действие и причина в каждом');
 
+/* ---- 11. «Замри на пике»: начало сцены и место остановки ---- */
+
+const withFreeze = YEAR.lessons.filter((lesson) => meetingPlan(lesson).freeze);
+assert.ok(withFreeze.length >= 15, `приём есть у ${withFreeze.length} занятий — это единичный случай, а не метод`);
+assert.ok(withFreeze.length < YEAR.lessons.length, 'приём обещан на всех занятиях, хотя начало сцены есть не везде');
+
+for (const lesson of withFreeze) {
+  const plan = meetingPlan(lesson);
+  const freeze = plan.freeze!;
+  // Начало сцены — действие, а не вопрос и не название.
+  assert.ok(!freeze.start.trim().endsWith('?'), `занятие ${lesson.number}: начало сцены — вопрос`);
+  assert.ok(freeze.start.length > 15 && freeze.start.length < 130, `занятие ${lesson.number}: начало сцены длиной ${freeze.start.length}`);
+  // Про остановку сказано, где именно, и что делать после.
+  assert.ok(/стоп/i.test(freeze.stop), `занятие ${lesson.number}: не сказано, чем останавливать`);
+  assert.ok(/до того|не раньше|раньше/i.test(freeze.stop), `занятие ${lesson.number}: не сказано, когда останавливать`);
+  assert.ok(freeze.after.includes('?'), `занятие ${lesson.number}: после остановки нет вопроса к играющим`);
+  // Приём встроен в блок практики, а не висит отдельным полем.
+  assert.ok(plan.blocks[3].lead.includes(freeze.start), `занятие ${lesson.number}: начало сцены не попало в блок практики`);
+  assert.ok(/стоп/i.test(plan.blocks[3].lead), `занятие ${lesson.number}: в блоке практики нет остановки`);
+}
+
+// Где начала нет — приём не выдумывается и блок остаётся прежним.
+const withoutFreeze = YEAR.lessons.filter((lesson) => !meetingPlan(lesson).freeze);
+assert.ok(withoutFreeze.length > 0, 'приём есть у всех — значит, начало сцены где-то выдумано');
+for (const lesson of withoutFreeze) {
+  assert.ok(!/стоп-кадр|замирает/i.test(meetingPlan(lesson).blocks[3].lead), `занятие ${lesson.number}: обещан приём без начала сцены`);
+}
+console.log(`  ok «замри на пике»: ${withFreeze.length} занятий с началом сцены, остальные без обещания`);
+
 console.log('\nПлан встречи: 40 минут, из готового контента, без родительских текстов.');

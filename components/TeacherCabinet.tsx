@@ -85,6 +85,7 @@ type MeetingPlan = {
   closing: string;
   stage: { id: 'opening' | 'middle' | 'closing'; title: string; task: string; question: string };
   frame?: string;
+  freeze?: { start: string; stop: string; after: string };
   safety?: { what: string; rules: { id: string; title: string; do: string; why: string }[] };
 };
 
@@ -306,6 +307,19 @@ export default function TeacherCabinet() {
             </p>
           )}
           {/*
+            «Замри на пике»: сцена начинается с готовой фразы и замирает до
+            развязки. Педагогу нужны три вещи — с чего начать, где остановить и
+            что спросить в паузе; по отдельности они не работают.
+          */}
+          {nextPlan.freeze && (
+            <div className="teacher-freeze">
+              <strong>Начало сцены:</strong> «{nextPlan.freeze.start}»
+              <div className="muted small">
+                {nextPlan.freeze.stop} {nextPlan.freeze.after}
+              </div>
+            </div>
+          )}
+          {/*
             Телесные упражнения: то, чего в документе программы не было.
             Показываем правила в том занятии, где упражнение есть, и молчим в
             остальных — список правил на каждом занятии перестают читать.
@@ -376,6 +390,11 @@ export default function TeacherCabinet() {
                 {plan.minutes} минут · навыки: {item.skills.join(', ')} · {item.stage.title}
               </p>
               {item.frame && <p>Скажите в начале: «{item.frame}»</p>}
+              {item.freeze && (
+                <p>
+                  Начало сцены: «{item.freeze.start}» — {item.freeze.stop} {item.freeze.after}
+                </p>
+              )}
               {item.safety && (
                 <p>
                   Проверить: {item.safety.what} — {item.safety.rules.map((rule) => `${rule.title}: ${rule.do}`).join(' ')}

@@ -2106,6 +2106,14 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   font-size: 14px;
 }
 
+.teacher-freeze {
+  border-left: 3px solid var(--violet);
+  background: #f7f4fe;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
 .teacher-safety {
   border-left: 3px solid var(--glyph);
   background: #fff8f0;

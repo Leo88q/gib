@@ -138,6 +138,11 @@ export function schoolStages(): { title: string; task: string; question: string 
  */
 export const SCHOOL_MEASURES: readonly { what: string; how: string; limit: string }[] = [
   {
+    what: 'Качество дружбы',
+    how: 'Опросник про одного конкретного друга: сколько времени вместе, ссоры, помощь, близость, надёжность (FQS).',
+    limit: 'Ребёнок описывает отношения, а не себя; перевод и надёжность на своей выборке — до заявлений.',
+  },
+  {
     what: 'Выход на показ',
     how: `Три отметки: «${SHOWCASE_ANCHORS[0].toLowerCase()}», «${SHOWCASE_ANCHORS[1].toLowerCase()}», «${SHOWCASE_ANCHORS[2].toLowerCase()}».`,
     limit: 'Качество выступления не оценивается: оценка превращает показ в экзамен.',

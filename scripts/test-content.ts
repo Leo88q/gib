@@ -159,6 +159,43 @@ for (const sc of PROGRAM_SCENARIOS) {
 }
 check('варианты ответа различимы по первым двум словам', sameOptionStarts.length === 0, sameOptionStarts.slice(0, 2).join(' | '));
 
+
+/**
+ * Начало сцены (`start`) — то, с чего педагог запускает этюд.
+ *
+ * Зачем проверка. Название и текст ситуации — это разбор, а не игра. Если
+ * `start` есть у одного возраста и нет у другого, то на занятии с младшими
+ * приём «замри на пике» просто не начнётся, и никто этого не заметит: план
+ * встречи отработает как обычно.
+ *
+ * Требования: там, где начало есть, оно есть у всех трёх возрастов и
+ * начинается по-разному; тексты не копируют друг друга; две трети дней
+ * (30 из 45 переписанных) имеют начало, чтобы приём был не единичным.
+ */
+const missingStarts: string[] = [];
+const sameStarts: string[] = [];
+let startsTotal = 0;
+for (const sc of PROGRAM_SCENARIOS) {
+  const values = BANDS.map((band) => sc.variants[band]?.start?.trim()).filter(Boolean) as string[];
+  if (values.length === 0) continue;
+  startsTotal += 1;
+  if (values.length !== 3) {
+    missingStarts.push(`${sc.id}: начало есть у ${values.length} из 3 возрастов`);
+    continue;
+  }
+  if (new Set(values.map((value) => value.toLowerCase())).size !== 3) {
+    sameStarts.push(sc.id);
+  }
+  for (const value of values) {
+    // Начало — действие, а не вопрос и не вывод.
+    if (value.endsWith('?')) sameStarts.push(`${sc.id}: начало сцены — вопрос`);
+    if (value.length < 15 || value.length > 120) sameStarts.push(`${sc.id}: начало длиной ${value.length}`);
+  }
+}
+check('начало сцены есть у всех трёх возрастов, если оно есть вообще', missingStarts.length === 0, missingStarts.slice(0, 3).join(' | '));
+check('начало сцены разное у возрастов, это действие, не вопрос', sameStarts.length === 0, sameStarts.slice(0, 3).join(' | '));
+check('начало сцены есть не у единичного дня', startsTotal >= 30, `дней с началом: ${startsTotal}`);
+
 const competencyUse = new Set(PROGRAM_SCENARIOS.map((s) => s.competency));
 check('использованы все 7 компетенций', competencyUse.size === 7, `компетенций=${competencyUse.size}`);
 

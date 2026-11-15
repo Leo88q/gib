@@ -30,6 +30,15 @@ export type ScenarioOption = {
 export type ScenarioVariant = {
   title: string;
   text: string;
+  /**
+   * Первое действие сцены для этюда: с чего начать.
+   *
+   * `text` — ситуация для разбора («Мира не успевает…»). На занятии нужна
+   * первая реплика или действие, после которых сцена уже идёт: иначе педагог
+   * говорит «покажите ссору» и получает детей, которые смотрят друг на друга.
+   * Своё начало у каждого возраста: пятилетнему не дают реплику про проект.
+   */
+  start?: string;
   options: ScenarioOption[];
   /** Optional frozen Ink program for newly created story-choice sessions. */
   ink?: { version: 1; json: string };

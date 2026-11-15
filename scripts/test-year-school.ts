@@ -94,7 +94,7 @@ console.log('  ok три этапа с разными вопросами');
 
 /* ---- 6. Что измеряется: границы названы ---- */
 
-assert.ok(SCHOOL_MEASURES.length >= 4, 'меньше четырёх пунктов о том, что измеряется');
+assert.ok(SCHOOL_MEASURES.length >= 5, 'меньше пяти пунктов о том, что измеряется');
 for (const measure of SCHOOL_MEASURES) {
   assert.ok(measure.what.length > 5, 'пункт без названия');
   assert.ok(measure.how.length > 20, `«${measure.what}»: не сказано, как`);
