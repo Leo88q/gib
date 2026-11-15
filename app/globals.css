@@ -2438,3 +2438,253 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .stage-card p {
   margin: 4px 0;
 }
+
+/*
+  Документы, согласие и оффер.
+
+  Здесь всё намеренно скучно: это то, что читают, а не то, чем пользуются.
+  Читаемость важнее украшений — крупный межстрочный интервал, ширина строки
+  около 70 символов, никаких фонов под текстом.
+*/
+.legal-page,
+.offer-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.legal-page h2,
+.offer-page h2 {
+  margin-top: 28px;
+}
+
+.legal-document {
+  line-height: 1.65;
+}
+
+.legal-section p,
+.legal-operator p {
+  line-height: 1.65;
+  max-width: 68ch;
+}
+
+.legal-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.legal-list-item {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 14px 0;
+}
+
+.legal-list-item a {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.legal-operator {
+  margin-top: 32px;
+  border-left: 4px solid var(--yellow);
+  padding: 4px 0 4px 14px;
+}
+
+.legal-operator [role='status'] {
+  max-width: 68ch;
+}
+
+.offer-lead {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.offer-card {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 8px;
+  margin-top: 20px;
+}
+
+.offer-card p,
+.offer-card li {
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.offer-blocks {
+  padding-left: 20px;
+}
+
+.offer-blocks li {
+  margin: 6px 0;
+}
+
+.offer-minutes {
+  display: inline-block;
+  min-width: 48px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.offer-facts {
+  padding-left: 20px;
+}
+
+.offer-links {
+  margin-top: 28px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/*
+  Выбор из двух-трёх вариантов: онбординг и режим занятия.
+
+  Кнопка, а не радиокнопка: она читается на телефоне пальцем, а не мышью, и
+  состояние `aria-pressed` даёт экранному диктору то же, что и радио.
+*/
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+
+.choice-list.compact {
+  margin-bottom: 8px;
+}
+
+.choice {
+  text-align: left;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+
+.choice.active {
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
+.choice:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.consent-points {
+  text-align: left;
+  max-width: 62ch;
+  margin: 12px auto;
+  padding-left: 20px;
+  line-height: 1.55;
+}
+
+.consent-points li {
+  margin: 8px 0;
+}
+
+.consent-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 62ch;
+  margin: 16px auto;
+  line-height: 1.5;
+}
+
+.consent-check input {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.consent-gate,
+.paywall-card {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/*
+  План встречи в кабинете родителя.
+
+  Печатается отдельным листом: у встречи есть начало и конец, и разрезать её
+  по страницам между «кругом» и «разбором» — значит потерять лист на столе.
+*/
+.meeting-card {
+  break-inside: avoid;
+}
+
+.meeting-blocks {
+  padding-left: 20px;
+}
+
+.meeting-blocks li {
+  margin: 14px 0;
+}
+
+.meeting-blocks p {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.meeting-frame {
+  border-left: 4px solid var(--violet);
+  margin: 12px 0;
+  padding: 6px 0 6px 12px;
+  font-style: italic;
+}
+
+.meeting-freeze {
+  border-left: 4px solid var(--orange);
+  padding: 6px 0 6px 12px;
+  margin: 12px 0;
+}
+
+.meeting-safety summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.meeting-closing {
+  font-weight: 700;
+  margin-top: 16px;
+}
+
+.billing-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+/* Кнопка-ссылка внутри текста: действие, но не отдельная кнопка. */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media print {
+  .meeting-card {
+    break-after: page;
+  }
+}

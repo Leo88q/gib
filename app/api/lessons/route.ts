@@ -6,6 +6,8 @@ import { YEAR } from '@/lib/content/year/index.ts';
 import { yearProgress } from '@/lib/content/year/types.ts';
 import { alignYear } from '@/lib/year/fgos.ts';
 import { lessonPage } from '@/lib/year/valued.ts';
+import { meetingPlan } from '@/lib/year/meeting.ts';
+import { entitlementFor, mayStartLesson } from '@/lib/access/entitlement.ts';
 import {
   attendanceSummary,
   buildSchedule,
@@ -105,6 +107,27 @@ export async function GET(req: Request) {
        * экран перед четвергом, а не таблица за год. Полная таблица есть у
        * педагога — ему она нужна для школы.
        */
+      /**
+       * План встречи — то, что взрослый держит в руках раз в неделю.
+       *
+       * До этого маршрута план существовал только в кабинете педагога. Родитель,
+       * выбравший режим «взрослый ведёт встречу», покупал 36 встреч и не видел
+       * ни одной. Здесь он получает тот же план, собранный тем же кодом, с
+       * пометкой о том, кто в семье может быть тем взрослым.
+       */
+      meeting: (() => {
+        const completed = Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i);
+        const shown = lessonToShow({ year: YEAR, schedule, completedDayIndexes: completed, today });
+        const lesson = YEAR.lessons.find((item) => item.number === (shown?.readyFor ?? 1));
+        return lesson ? meetingPlan(lesson, { lead: profile.meetingLead ?? 'adult', householdAdult: profile.householdAdult }) : null;
+      })(),
+      /** Что открыто без оплаты на этом занятии и что закроется. */
+      access: (() => {
+        const completed = Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i);
+        const shown = lessonToShow({ year: YEAR, schedule, completedDayIndexes: completed, today });
+        const entitlement = entitlementFor({ lessonNumber: shown?.readyFor ?? 1, lead: profile.meetingLead, subscription: store.sub(profile.id) });
+        return { level: entitlement.level, free: entitlement.free, mayStart: mayStartLesson(entitlement), reason: entitlement.reason };
+      })(),
       page: (() => {
         const nextNumber = (() => {
           const completed = Array.from({ length: Math.max(0, state.completedDays) }, (_, i) => i);

@@ -165,7 +165,22 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
     if (!arrayIfPresent(row.badges) || !arrayIfPresent(row.inventory) || (row.stats !== undefined && !object(row.stats)) || (row.equipped !== undefined && !object(row.equipped)) || (row.missions !== undefined && !object(row.missions))) throw new Error('Invalid player state');
     if (object(row.missions) && (!arrayIfPresent(row.missions.ids) || !arrayIfPresent(row.missions.claimed) || (row.missions.progress !== undefined && !object(row.missions.progress)))) throw new Error('Invalid player missions');
   }
-  if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled', 'refunded', 'refund_pending'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'payments') {
+    // Жизненный цикл платежа: суммы, даты и провайдерские идентификаторы. Без
+    // этой проверки повреждённый платёж мог бы выглядеть оплаченным.
+    if (row.appliedAt !== undefined && (!Number.isFinite(row.appliedAt) || (row.appliedAt as number) <= 0)) throw new Error('Invalid payment appliedAt');
+    if (row.canceledAt !== undefined && !Number.isFinite(row.canceledAt)) throw new Error('Invalid payment canceledAt');
+    if (row.refundedAt !== undefined && !Number.isFinite(row.refundedAt)) throw new Error('Invalid payment refundedAt');
+    if (row.receiptEmail !== undefined && !text(row.receiptEmail)) throw new Error('Invalid payment receipt');
+    if (row.providerRefundId !== undefined && !/^[a-zA-Z0-9_-]{1,100}$/.test(String(row.providerRefundId))) throw new Error('Invalid payment refund id');
+    if (String(row.status) === 'refunded' && row.refundedAt === undefined) throw new Error('Invalid refunded payment');
+  }
+  if (key === 'profiles' && row.guardianConsent !== undefined) {
+    const consent = row.guardianConsent;
+    if (!object(consent) || !text(consent.version) || !Number.isFinite(consent.at) || (consent.at as number) <= 0) throw new Error('Invalid guardian consent');
+  }
+  if (key === 'profiles' && row.householdAdult !== undefined && !['parent', 'other', 'none'].includes(String(row.householdAdult))) throw new Error('Invalid household adult');
   if (key === 'programStates' && row.reviewDay !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(row.reviewDay))) throw new Error('Invalid review day');
   if (key === 'programStates' && row.reviewStates !== undefined) {
     // Расписание повторения: только сроки и счётчики, без текстов и свободных полей.

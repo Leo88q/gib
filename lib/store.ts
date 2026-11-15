@@ -7,7 +7,7 @@ import { validateStore } from './store-validation.ts';
 import type { StoredEvent } from './events/journal.ts';
 import { pruneExpired } from './events/journal.ts';
 import { WRITE_LOCK, ensureSchemaSync, openBridge, readState, writeState, type StateShape } from './postgres/state-backend.ts';
-import { SCHEMA_V1, SCHEMA_V2 } from './postgres/schema.ts';
+import { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from './postgres/schema.ts';
 
 type DB = {
   profiles: Profile[];
@@ -56,7 +56,7 @@ let pgReady = false;
 function postgres() {
   const bridge = openBridge();
   if (!pgReady) {
-    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2, v3: SCHEMA_V3 });
     pgReady = true;
   }
   return bridge;
@@ -241,6 +241,11 @@ const implementation = {
   profileByParent: (parentId: string) => load().profiles.find((p) => p.parentId === parentId),
   /** Все профили одного владельца: семья может вести несколько детей. */
   profilesByParent: (parentId: string) => load().profiles.filter((p) => p.parentId === parentId),
+  /**
+   * Все профили: только для счётчиков эксплуатации (воронка, готовность).
+   * Не для выдачи данных: чтение конкретного ребёнка идёт через владельца.
+   */
+  allProfiles: () => load().profiles,
   parentPin: (parentId: string) => load().parentPins.find((row) => row.parentId === parentId)?.pin,
   removeParentPin(parentId: string) {
     const db = load();
@@ -395,6 +400,8 @@ const implementation = {
     persist();
   },
   payments: (profileId: string) => load().payments.filter(p => p.profileId === profileId),
+  /** Все платежи: нужны сверке возвратов, где известен только id возврата. */
+  allPayments: () => load().payments,
   paymentByProviderId: (id: string) => load().payments.find(p => p.providerId === id),
   savePayment(payment: Payment) {
     const payments = load().payments;

@@ -1,6 +1,7 @@
 /** PGlite executes PostgreSQL in-process. This does not replace a real multi-connection server test. */
 import { PGlite } from '@electric-sql/pglite';
 import { ensureSchema, importLegacy, prepareImport, type SqlClient } from '../lib/postgres/migrate.ts';
+import { SCHEMA_V1, SCHEMA_V2 } from '../lib/postgres/schema.ts';
 import { STORE_COLLECTIONS } from '../lib/store-validation.ts';
 import { exportOwnedProfile, deleteOwnedProfile } from '../lib/postgres/profile-repository.ts';
 
@@ -57,6 +58,48 @@ try {
   check(await deleteOwnedProfile(client, 'parent1', 'p1') === 'deleted', 'владелец может удалить профиль без платёжных записей');
   check(Number((await client.query('SELECT count(*) AS n FROM gib.sessions')).rows[0].n) === 0 && Number((await client.query('SELECT count(*) AS n FROM gib.profiles')).rows[0].n) === 1, 'после контролируемого удаления платёжной записи каскад ограничен своим профилем');
   await assertReject(() => importLegacy(client, source), 'удаление данных не разрешает повторно импортировать старую копию');
+  /*
+   * Миграция 2 → 3: живая база на запуске будет именно версии 2, поэтому
+   * ступень проверяется на отдельной базе, собранной как старая — только из
+   * схем v1 и v2. Без этого «миграция» проверялась бы на базе, которая уже
+   * создана с новой схемой.
+   */
+  const old = new PGlite();
+  const oldClient: SqlClient = { query: async (sql, params) => old.query(sql, params) };
+  const statements = (sql: string) => sql.split(';').map(part => part.trim()).filter(Boolean);
+  await oldClient.query('CREATE SCHEMA IF NOT EXISTS gib');
+  await oldClient.query('CREATE TABLE gib.schema_version (id SMALLINT PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, imported_at TIMESTAMPTZ)');
+  for (const statement of [...statements(SCHEMA_V1), ...statements(SCHEMA_V2)]) await oldClient.query(statement);
+  await oldClient.query('INSERT INTO gib.schema_version (id, version) VALUES (1, 2)');
+  await oldClient.query(
+    "INSERT INTO gib.profiles(id,ordinal,parent_id,age,band,created_at,data) VALUES('old-1',0,'old-parent',9,'8-10',1000,'{\"id\":\"old-1\",\"parentId\":\"old-parent\",\"age\":9,\"band\":\"8-10\",\"createdAt\":1000}'::jsonb)");
+  const oldReject = async (fn: () => Promise<unknown>, label: string) => { let rejected = false; try { await fn(); } catch { rejected = true; } check(rejected, label); };
+  await oldReject(() => oldClient.query(
+    "INSERT INTO gib.payments(id,ordinal,profile_id,status,data) VALUES('r0',0,'old-1','refunded','{\"id\":\"r0\",\"profileId\":\"old-1\",\"status\":\"refunded\"}'::jsonb)"),
+    'до миграции статус возврата запрещён — это и есть причина миграции');
+  await oldClient.query(
+    "INSERT INTO gib.payments(id,ordinal,profile_id,status,data) VALUES('pend',0,'old-1','pending','{\"id\":\"pend\",\"profileId\":\"old-1\",\"status\":\"pending\",\"receiptEmail\":\"old@example.ru\"}'::jsonb)");
+  await ensureSchema(oldClient);
+  check(Number((await oldClient.query('SELECT version FROM gib.schema_version WHERE id=1')).rows[0].version) === 3, 'миграция 2 → 3 поднимает версию');
+  check((await oldClient.query("SELECT receipt_email FROM gib.payments WHERE id='pend'")).rows[0].receipt_email === 'old@example.ru', 'миграция переносит почту чека из JSON в столбец');
+  await oldClient.query(
+    "INSERT INTO gib.payments(id,ordinal,profile_id,status,provider_refund_id,data) VALUES('r1',1,'old-1','refunded','refund-1','{\"id\":\"r1\",\"profileId\":\"old-1\",\"status\":\"refunded\",\"providerRefundId\":\"refund-1\"}'::jsonb)");
+  check(Number((await oldClient.query("SELECT count(*) AS n FROM gib.payments WHERE status='refunded'")).rows[0].n) === 1, 'после миграции подтверждённый возврат записывается');
+  await oldReject(() => oldClient.query(
+    "INSERT INTO gib.payments(id,ordinal,profile_id,status,provider_refund_id,data) VALUES('r2',2,'old-1','refunded','refund-1','{\"id\":\"r2\",\"profileId\":\"old-1\",\"status\":\"refunded\"}'::jsonb)"),
+    'второй возврат с тем же идентификатором провайдера невозможен');
+  await oldClient.query(
+    "INSERT INTO gib.payments(id,ordinal,profile_id,status,data) VALUES('r3',3,'old-1','refund_pending','{\"id\":\"r3\",\"profileId\":\"old-1\",\"status\":\"refund_pending\"}'::jsonb)");
+  check(Number((await oldClient.query("SELECT count(*) AS n FROM gib.payments WHERE status='refund_pending'")).rows[0].n) === 1, 'возврат в процессе тоже известен схеме');
+  await oldReject(() => oldClient.query("UPDATE gib.payments SET status='failure' WHERE id='r1'"), 'выдуманный статус платежа отклоняется');
+  await oldClient.query("UPDATE gib.profiles SET meeting_lead='child', household_adult='none' WHERE id='old-1'");
+  check((await oldClient.query("SELECT meeting_lead FROM gib.profiles WHERE id='old-1'")).rows[0].meeting_lead === 'child', 'режим встречи хранится в профиле');
+  await oldReject(() => oldClient.query("UPDATE gib.profiles SET meeting_lead='teacher' WHERE id='old-1'"), 'неизвестный режим встречи отклоняется');
+  await oldReject(() => oldClient.query("UPDATE gib.profiles SET household_adult='neighbour' WHERE id='old-1'"), 'ответ про взрослого ограничен тремя вариантами');
+  await ensureSchema(oldClient);
+  check(Number((await oldClient.query('SELECT version FROM gib.schema_version WHERE id=1')).rows[0].version) === 3, 'повторный запуск миграции не меняет версию');
+  await old.close();
+
   await client.query('UPDATE gib.schema_version SET version=999 WHERE id=1');
   await assertReject(() => ensureSchema(client), 'неизвестная версия схемы отклоняется');
 } finally { await db.close(); }

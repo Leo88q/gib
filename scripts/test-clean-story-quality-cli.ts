@@ -8,7 +8,7 @@ import { detectSourceKind } from './clean-story-quality.ts';
 import { cleanStoryQuality } from '../lib/story-quality-cleanup.ts';
 import { validateStore } from '../lib/store-validation.ts';
 import { openDetachedBridge, ensureSchemaSync, readState, writeState } from '../lib/postgres/state-backend.ts';
-import { SCHEMA_V1, SCHEMA_V2 } from '../lib/postgres/schema.ts';
+import { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from '../lib/postgres/schema.ts';
 
 const tsx = path.join('node_modules', '.bin', 'tsx');
 const cli = (args: string[], env: Record<string, string> = {}) =>
@@ -124,7 +124,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-cli-'));
   // Наполняем базу тем же кодом, что и приложение.
   const bridge = openDetachedBridge(env);
   try {
-    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2, v3: SCHEMA_V3 });
     const empty = readState(bridge);
     writeState(bridge, empty, { ...empty, ...state } as never);
   } finally {

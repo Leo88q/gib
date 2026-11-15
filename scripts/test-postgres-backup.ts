@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { openDetachedBridge, ensureSchemaSync } from '../lib/postgres/state-backend.ts';
-import { SCHEMA_V1, SCHEMA_V2 } from '../lib/postgres/schema.ts';
+import { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from '../lib/postgres/schema.ts';
 import { readPgSnapshot, writePgSnapshot, verifyPgSnapshot, SNAPSHOT_TABLES } from '../lib/postgres/backup.ts';
 import { decryptFile, encryptFile, backupKeyFromEnvironment } from '../lib/encrypted-backup.ts';
 import { validateStore } from '../lib/store-validation.ts';
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   await prepareDataDir(dataDir);
   const env = { GIB_PG_DIR: dataDir } as unknown as NodeJS.ProcessEnv;
   const bridge = openDetachedBridge(env);
-  ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+  ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2, v3: SCHEMA_V3 });
 
   // Настоящие данные: профиль, программа и сессия, как их пишет приложение.
   bridge.query(

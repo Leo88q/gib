@@ -21,6 +21,10 @@ import { TOTAL_DAYS } from '@/lib/content/program';
 import { TASK_BY_ID } from '@/lib/content/cognitive';
 import { SKILL_LABELS } from '@/lib/engine/adaptive';
 import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor } from '@/lib/review/topics';
+import { YEAR, lessonOfDay } from '@/lib/content/year';
+import { entitlementFor, mayStartLesson, paywallCopy } from '@/lib/access/entitlement';
+import { CONSENT_VERSION, consentOutdated } from '@/lib/legal/consent';
+import { recordFunnel } from '@/lib/events/funnel-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,9 +57,32 @@ async function sessionInfo(req: Request) {
   );
 
   const pos = programPosition(profileId);
+  /**
+   * Занятие, к которому относится текущий день, и право его начать.
+   *
+   * Считается на сервере, а не на клиенте: иначе доступ можно было бы открыть
+   * правкой ответа. `mayStart` отвечает только за **новое** занятие; начатая
+   * сессия продолжается всегда.
+   */
+  const lesson = lessonOfDay(YEAR, pos.dayIndex);
+  const entitlement = entitlementFor({
+    lessonNumber: lesson?.number ?? 1,
+    lead: profile.meetingLead,
+    subscription: store.sub(profileId),
+  });
   return NextResponse.json({
     plan,
     band: profile.band,
+    consent: { required: consentOutdated(profile), version: CONSENT_VERSION },
+    access: {
+      lesson: lesson?.number ?? 1,
+      lessonsTotal: YEAR.lessons.length,
+      level: entitlement.level,
+      free: entitlement.free,
+      mayStart: mayStartLesson(entitlement),
+      reason: entitlement.reason,
+      paywallAfterLesson: entitlement.paywallAfterLesson,
+    },
     program: {
       week: pos.week.week,
       weekTitle: pos.week.title,
@@ -110,10 +137,34 @@ async function sessionCommand(req: Request) {
 
   if (body.action === 'start') {
     if (typeof body.profileId !== 'string' || !body.profileId || (body.repeat !== undefined && typeof body.repeat !== 'boolean') || (body.storyChoice !== undefined && typeof body.storyChoice !== 'boolean') || (body.journey !== undefined && typeof body.journey !== 'boolean') || (body.review !== undefined && typeof body.review !== 'boolean') || (body.reviewTopicId !== undefined && (typeof body.reviewTopicId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.reviewTopicId)))) return NextResponse.json({ error: 'invalid_start' }, { status: 400 });
+    /*
+     * Проверки доступа стоят до транзакции старта, но внутри той же ветки:
+     * отказать нужно раньше, чем создастся сессия, иначе «закрытое» занятие
+     * будет лежать в хранилище и его можно будет дописать ответом.
+     *
+     * Порядок: профиль → согласие → оплата. Согласие раньше оплаты, потому
+     * что деньги можно вернуть, а обработку данных ребёнка — нет.
+     */
+    const profile = body.profileId ? ownedProfile(auth.parentId, body.profileId) : undefined;
+    if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    if (consentOutdated(profile)) {
+      return NextResponse.json({ error: 'consent_required', version: CONSENT_VERSION }, { status: 403 });
+    }
+    const lesson = lessonOfDay(YEAR, programPosition(profile.id).dayIndex);
+    const entitlement = entitlementFor({ lessonNumber: lesson?.number ?? 1, lead: profile.meetingLead, subscription: store.sub(profile.id) });
+    // Повтор пройденного занятия не закрывается: он не открывает нового
+    // содержания и не должен наказывать за окончание оплаты.
+    if (!body.repeat && !body.review && !mayStartLesson(entitlement)) {
+      recordFunnel({ step: 'paywall_seen', ownerId: auth.parentId, lessonNumber: entitlement.lessonNumber, at: Date.now() });
+      return NextResponse.json({ error: 'payment_required', ...paywallCopy(entitlement.reason), access: { lesson: entitlement.lessonNumber, level: entitlement.level } }, { status: 402 });
+    }
+    // «Первое занятие» — это первая сессия у этого ребёнка, а не первый клик
+    // вообще: повтор и разбор темы не должны считаться активацией.
+    const firstSession = !body.repeat && !body.review && store.sessions(profile.id).length === 0;
     return context.transaction(() => {
-      const profile = body.profileId ? ownedProfile(auth.parentId, body.profileId) : undefined;
-      if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-      return NextResponse.json(startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey, review: body.review, reviewTopicId: body.reviewTopicId }));
+      const started = startSession(profile, Boolean(body.repeat), context, { storyChoice: body.storyChoice, journey: body.journey, review: body.review, reviewTopicId: body.reviewTopicId });
+      if (firstSession) recordFunnel({ step: 'first_session', ownerId: auth.parentId, at: Date.now() });
+      return NextResponse.json(started);
     });
   }
 
@@ -140,6 +191,10 @@ async function sessionCommand(req: Request) {
     if (!Number.isInteger(body.step) || body.step! < 0) return NextResponse.json({ error: 'step_required' }, { status: 400 });
     const res = answerStep(body.sessionId, body.answer ?? {}, Number(body.ms) || 0, body.step!, context);
     if ('error' in res) return NextResponse.json(res, { status: ['step_conflict', 'story_selection_required', 'story_flow_conflict'].includes(res.error) ? 409 : res.error === 'invalid_answer' ? 400 : 404 });
+    // Занятие доведено до конца — это второй шаг активации, отдельный от
+    // старта. Первым шагом считаем только первый такой случай (дедуп в
+    // хранилище воронки сам отбросит повторы).
+    if (res.done === true) recordFunnel({ step: 'first_finished', ownerId: auth.parentId, at: Date.now() });
     return NextResponse.json(res);
   }
 

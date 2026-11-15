@@ -9,6 +9,7 @@ import NotificationSettings from '@/components/NotificationSettings';
 import FeelingsConsent from '@/components/FeelingsConsent';
 import ParentGate from '@/components/ParentGate';
 import ParentPinSettings from '@/components/ParentPinSettings';
+import MeetingPlanCard from '@/components/MeetingPlanCard';
 
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
 import { removeProfileSelectionDrafts } from '@/lib/selection-draft';
@@ -98,11 +99,39 @@ type ProgramWeek = {
 
 type Sub = { plan: string; status: string; until: number } | null;
 
+/** Как называть статус платежа взрослому: без кодов провайдера. */
+const PAYMENT_STATUS: Record<string, string> = {
+  creating: 'создаётся',
+  pending: 'ожидает подтверждения',
+  succeeded: 'подтверждён',
+  canceled: 'отменён',
+  refund_pending: 'возврат в процессе',
+  refunded: 'возвращён',
+};
+
+/*
+ * Названия тарифов. Год и «год с экспертом» остаются только для чтения старых
+ * записей подписки: продаётся один месячный тариф, а тариф с разборами
+ * специалиста снят — обещанной услуги в продукте нет.
+ */
 const PLAN_TITLES: Record<string, string> = {
   month: 'Месяц',
   year: 'Год',
-  year_pro: 'Год с экспертом',
+  year_pro: 'Год с экспертом (не продаётся)',
 };
+
+/**
+ * Сумма в рублях для взрослого: «599 ₽», а не «599.00 ₽».
+ *
+ * Провайдер отдаёт сумму строкой с копейками, и она нужна такой в запросе; в
+ * интерфейсе копейки без нужды читаются как бухгалтерский документ. Если
+ * копейки не нулевые, они остаются: скрывать их — значит показывать не ту сумму.
+ */
+function rubAmount(amount: string): string {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return amount;
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace('.', ',');
+}
 
 const COMPETENCY_LABEL: Record<string, string> = {
   self_awareness: 'Самопознание',
@@ -136,6 +165,21 @@ function ParentPage() {
   const [billingError, setBillingError] = useState('');
   const [billingBusy, setBillingBusy] = useState(false);
   const [billingAvailable, setBillingAvailable] = useState(false);
+  /** Почему оплата недоступна: провайдер или чек. Разные причины — разные слова. */
+  const [billingUnavailable, setBillingUnavailable] = useState<string | null>(null);
+  /** Что открыто без оплаты и какая встреча следующая. */
+  const [access, setAccess] = useState<{ freeLessons: number; active: boolean; lessonsTotal: number; currentLesson: number; days: number } | null>(null);
+  const [lastPayment, setLastPayment] = useState<{ status: string; amount: string; createdAt: number; appliedAt: number | null; refundedAt: number | null } | null>(null);
+  /** Почта для чека: обязательна, иначе оплата не начинается. */
+  const [receiptEmail, setReceiptEmail] = useState('');
+  const [offerAccepted, setOfferAccepted] = useState(false);
+  const [subscriptionBusy, setSubscriptionBusy] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const [refundConfirm, setRefundConfirm] = useState(false);
+  /** Кто ведёт встречу и есть ли дома взрослый: меняется в кабинете. */
+  const [meetingLead, setMeetingLead] = useState<'adult' | 'child' | null>(null);
+  /** План ближайшей встречи: приходит из /api/lessons вместе с расписанием. */
+  const [meeting, setMeeting] = useState<Parameters<typeof MeetingPlanCard>[0]['plan'] | null>(null);
   const [openWeek, setOpenWeek] = useState<number | null>(null);
   const [dataError, setDataError] = useState('');
   const [dataBusy, setDataBusy] = useState(false);
@@ -174,7 +218,19 @@ function ParentPage() {
         setEventsReport(rep.events ?? null);
         setSub(sb.subscription ?? null); setPlans(sb.plans ?? {});
         setBillingAvailable(Boolean(sb.available));
+        setBillingUnavailable(typeof sb.unavailableReason === 'string' ? sb.unavailableReason : null);
+        setAccess(sb.access ?? null);
+        setLastPayment(sb.lastPayment ?? null);
+        setMeetingLead(rep.profile.meetingLead ?? null);
+        // Почта подставляется в поле, но не отправляется сама: взрослый видит,
+        // куда придёт чек, и может исправить.
+        try { const saved = localStorage.getItem('gib:receiptEmail'); if (saved) setReceiptEmail(saved); } catch { /* storage is optional */ }
         if (pr.weeks) { setProgram(pr); setOpenWeek(pr.progress.currentWeek ?? 1); }
+        // План встречи нужен именно здесь: это ответ на «что делать в четверг»,
+        // и он есть только у того, кто ведёт встречу.
+        void fetchJson(`/api/lessons?profileId=${safeId}`)
+          .then(d => { if (!controller.signal.aborted && d?.meeting) setMeeting(d.meeting); })
+          .catch(() => { /* план не обязателен для отчёта */ });
         setLoadingState('ready');
       } catch { if (!controller.signal.aborted) setLoadingState('error'); }
     })();
@@ -260,13 +316,75 @@ function ParentPage() {
     try {
       const res = await apiFetch('/api/subscribe', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, plan }),
+        body: JSON.stringify({ profileId, plan, receiptEmail: receiptEmail.trim(), offerAccepted }),
       });
       const data = await res.json();
-      if (!res.ok || typeof data.checkoutUrl !== 'string') throw new Error('payment_failed');
+      if (!res.ok || typeof data.checkoutUrl !== 'string') {
+        /*
+         * Отказы объясняются словами, а не «попробуйте позже»:
+         *  - нужна почта для чека — попросить её;
+         *  - не принята оферта — попросить галочку;
+         *  - чек не настроен — это наша проблема, а не взрослого.
+         */
+        if (data?.error === 'receipt_email_required') { setBillingError('Укажите почту: чек приходит на неё, без чека оплата невозможна.'); return; }
+        if (data?.error === 'offer_required') { setBillingError('Отметьте согласие с условиями: без него оплата не начнётся.'); return; }
+        if (data?.error === 'receipt_not_configured') { setBillingError('Оплата пока недоступна: не настроена выдача чеков. Мы не берём деньги без чека.'); return; }
+        throw new Error('payment_failed');
+      }
+      try { localStorage.setItem('gib:receiptEmail', receiptEmail.trim()); } catch { /* storage is optional */ }
       window.location.assign(data.checkoutUrl);
     } catch { setBillingError('Не удалось открыть оплату. Попробуйте позже; доступ появится только после подтверждения платежа.'); }
     finally { setBillingBusy(false); }
+  };
+
+  /**
+   * Отмена доступа и возврат.
+   *
+   * Два разных действия и два разных последствия. «Отменить доступ» закрывает
+   * занятия сразу и денег не возвращает — поэтому кнопка подписана именно так,
+   * а не «отписаться». «Вернуть деньги» требует подтверждения вторым кликом:
+   * промахнуться по ней нельзя.
+   */
+  const subscriptionAction = async (action: 'cancel' | 'refund' | 'reconcile') => {
+    if (!profileId || subscriptionBusy) return;
+    if (action === 'refund' && !refundConfirm) { setRefundConfirm(true); setSubscriptionMessage('Нажмите «Подтвердить возврат» ещё раз: деньги уйдут на карту, с которой платили, и доступ к платным встречам закроется.'); return; }
+    setSubscriptionBusy(true); setSubscriptionMessage('');
+    try {
+      const res = await apiFetch('/api/subscription', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, action, ...(action === 'refund' ? { confirm: true } : {}) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubscriptionMessage(data?.error === 'payment_not_paid'
+          ? 'Возврат пока невозможен: нет подтверждённого платежа.'
+          : data?.error === 'confirm_required' ? 'Возврат нужно подтвердить.' : 'Не удалось выполнить действие. Проверьте соединение.');
+        return;
+      }
+      if (action === 'cancel') setSubscriptionMessage(data.canceled ? 'Доступ закрыт. Оплата не возвращается — вернуть деньги можно отдельно.' : 'Активной подписки нет.');
+      if (action === 'refund') setSubscriptionMessage(data.status === 'refunded'
+        ? 'Возврат подтверждён платёжным сервисом. Деньги вернутся на карту в течение 10 рабочих дней.'
+        : 'Возврат отправлен в платёжный сервис. Статус обновится здесь после подтверждения.');
+      if (action === 'reconcile') setSubscriptionMessage('Статус платежа обновлён.');
+      setRefundConfirm(false);
+      const sb = await apiFetch(`/api/subscribe?profileId=${encodeURIComponent(profileId)}`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+      if (sb) { setSub(sb.subscription ?? null); setAccess(sb.access ?? null); setLastPayment(sb.lastPayment ?? null); }
+    } catch { setSubscriptionMessage('Не удалось выполнить действие. Проверьте соединение и попробуйте снова.'); }
+    finally { setSubscriptionBusy(false); }
+  };
+
+  /** Смена режима: кто ведёт встречу. Влияет на то, что закрыто оплатой. */
+  const saveMeetingLead = async (next: 'adult' | 'child') => {
+    if (!profileId || subscriptionBusy) return;
+    const previous = meetingLead;
+    setMeetingLead(next);
+    try {
+      const res = await apiFetch('/api/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profileId, meetingLead: next }) });
+      if (!res.ok) throw new Error('save_failed');
+      setSubscriptionMessage(next === 'adult'
+        ? 'Режим «взрослый ведёт встречу»: в кабинете появится план встречи на 40 минут, остальные встречи открываются подпиской.'
+        : 'Режим «ребёнок сам»: занятия короткими шагами, встречи с планом не входят в доступ.');
+    } catch { setMeetingLead(previous); setSubscriptionMessage('Не удалось сохранить режим. Попробуйте снова.'); }
   };
 
   if (loadingState === 'loading') return <div className="wrap"><div className="card" role="status">Загружаем кабинет…</div></div>;
@@ -637,35 +755,131 @@ function ParentPage() {
         </>
       )}
 
+      {meeting && meetingLead === 'adult' && <MeetingPlanCard plan={meeting} />}
+
       <div className="card">
         <h2>Подписка</h2>
-        {sub?.status === 'active' ? (
-          <p>
-            Активна: <b>{PLAN_TITLES[sub.plan]}</b> до {new Date(sub.until).toLocaleDateString('ru-RU')}. Спасибо!
+        {/*
+          Сумма, срок, чек, отмена и возврат — на одном экране.
+          Раньше здесь была кнопка «перейти к оплате» без объяснения, что
+          откроется; теперь сначала видно, что уже открыто бесплатно и какая
+          встреча следующая.
+        */}
+        {access && (
+          <p className="muted">
+            Открыто без оплаты: встреча {Math.min(access.freeLessons, access.lessonsTotal)} из {access.lessonsTotal}.
+            {' '}Следующая встреча ребёнка — {access.currentLesson}. Подписка открывает остальные встречи и показы на {access.days} дней.
           </p>
+        )}
+        {sub?.status === 'active' ? (
+          <>
+            <p>
+              Активна: <b>{PLAN_TITLES[sub.plan]}</b> до {new Date(sub.until).toLocaleDateString('ru-RU')}. Спасибо!
+            </p>
+            <p className="muted small">
+              Продления автоматически не будет: когда срок кончится, доступ просто закроется, деньги не спишутся.
+            </p>
+            <div className="billing-actions">
+              <button type="button" className="btn secondary small" disabled={subscriptionBusy} onClick={() => subscriptionAction('cancel')}>
+                Отменить доступ сейчас
+              </button>
+              {(lastPayment?.appliedAt ?? 0) > 0 && lastPayment?.status === 'succeeded' && (
+                <button type="button" className="btn ghost small" disabled={subscriptionBusy} onClick={() => subscriptionAction('refund')}>
+                  {refundConfirm ? 'Подтвердить возврат' : 'Вернуть деньги'}
+                </button>
+              )}
+            </div>
+            <p className="muted small">
+              Отмена доступа закрывает занятия и не возвращает деньги. Возврат — отдельная кнопка, деньги приходят на карту,
+              с которой платили. Условия: <a href="/legal/refund">возврат оплаты</a>.
+            </p>
+          </>
         ) : (
           <>
             <p className="muted">
-              Доступ на 30 дней. Автоматического списания нет. Оплата доступна только родителю.
+              Оплата разовая, автоматического списания нет. Занятие, начатое до окончания срока, можно закончить.
             </p>
-            {!billingAvailable && <p className="muted">Платёжный сервис пока не настроен.</p>}
+            {!billingAvailable && (
+              <p className="muted">
+                {billingUnavailable === 'receipt_not_configured'
+                  ? 'Оплата пока недоступна: не настроена выдача чеков. Без чека деньги не принимаем.'
+                  : 'Платёжный сервис пока не настроен.'}
+              </p>
+            )}
             {billingError && <p role="alert">{billingError}</p>}
-            {Object.entries(plans).map(([key, p]) => (
+            {Object.entries(plans).filter(([key]) => key === 'month').map(([key, p]) => (
               <div key={key} style={{ marginBottom: 14 }}>
                 <div className="price">
                   {p.price.toLocaleString('ru-RU')} ₽
-                  <span style={{ fontSize: 15, fontWeight: 600 }}> / {key === 'month' ? 'мес' : 'год'}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600 }}> / мес</span>
                 </div>
                 <div className="muted" style={{ marginBottom: 8 }}>
                   {p.title}: {p.perks.join(' · ')}
                 </div>
-                <button className="btn" disabled={!billingAvailable || billingBusy} onClick={() => pay(key)}>
-                  Перейти к оплате
+                <label htmlFor="receipt-email">Почта для чека</label>
+                <input
+                  id="receipt-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={receiptEmail}
+                  onChange={e => setReceiptEmail(e.target.value)}
+                  placeholder="name@example.ru"
+                  disabled={billingBusy}
+                />
+                <label className="consent-check">
+                  <input type="checkbox" checked={offerAccepted} disabled={billingBusy} onChange={e => setOfferAccepted(e.target.checked)} />
+                  <span>
+                    Я прочитал(а) <a href="/legal/terms">условия</a> и <a href="/legal/refund">правила возврата</a>,
+                    согласен(на) с ними и подтверждаю, что я законный представитель ребёнка.
+                  </span>
+                </label>
+                <button className="btn" disabled={!billingAvailable || billingBusy || !offerAccepted || !receiptEmail.trim()} onClick={() => pay(key)}>
+                  {billingBusy ? 'Открываем оплату…' : 'Перейти к оплате'}
                 </button>
               </div>
             ))}
+            {lastPayment && lastPayment.status !== 'succeeded' && (
+              <p className="muted small">
+                Последний платёж: {PAYMENT_STATUS[lastPayment.status] ?? lastPayment.status} от{' '}
+                {new Date(lastPayment.createdAt).toLocaleDateString('ru-RU')} на {rubAmount(lastPayment.amount)}.
+                {' '}Если оплата прошла, а доступ не открылся, <button type="button" className="link-button" disabled={subscriptionBusy} onClick={() => subscriptionAction('reconcile')}>проверьте платёж ещё раз</button>.
+              </p>
+            )}
+            {lastPayment?.status === 'refunded' && (
+              <p className="muted small">
+                Оплата возвращена {lastPayment.refundedAt ? new Date(lastPayment.refundedAt).toLocaleDateString('ru-RU') : ''}. Доступ к платным встречам закрыт.
+              </p>
+            )}
           </>
         )}
+        {subscriptionMessage && <p role="status">{subscriptionMessage}</p>}
+        {/*
+          Режим меняет то, что покупается: встречи с планом или короткие шаги.
+          Переключатель стоит рядом с подпиской, потому что это одна и та же
+          развилка, а не настройка внешнего вида.
+        */}
+        <h3>Как занимается ребёнок</h3>
+        <div className="choice-list compact">
+          {(['adult', 'child'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={`choice${meetingLead === mode ? ' active' : ''}`}
+              aria-pressed={meetingLead === mode}
+              disabled={subscriptionBusy}
+              onClick={() => saveMeetingLead(mode)}
+            >
+              <strong>{mode === 'adult' ? 'Взрослый ведёт встречу раз в неделю' : 'Ребёнок сам, короткими шагами'}</strong>
+              <span className="muted small">
+                {mode === 'adult'
+                  ? 'План встречи на 40 минут в кабинете, можно распечатать.'
+                  : 'Без плана встречи: только истории и задания в приложении.'}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="muted small"><a href="/offer">Что входит в подписку</a> · <a href="/legal">Документы</a></p>
       </div>
 
       <div className="card">

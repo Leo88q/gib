@@ -32,6 +32,8 @@ import { SKILL_LABEL } from '../content/program/types.ts';
 import { TASK_BY_ID } from '../content/cognitive.ts';
 import { YEAR } from '../content/year/index.ts';
 import { STAGE_INFO, type StageInfo, stageOfNumber } from './stages.ts';
+import { householdNote, type MeetingLead } from '../onboarding.ts';
+import type { HouseholdAdult } from '../types.ts';
 import { safetyForUnit, type SafetyCheck } from './safety-body.ts';
 import type { Lesson } from '../content/year/types.ts';
 
@@ -82,6 +84,22 @@ export type MeetingPlan = {
   safety?: SafetyCheck;
   /** Одна фраза, которой заканчивается встреча. */
   closing: string;
+  /**
+   * Кому адресован план.
+   *
+   * У педагога группы нет, и `household` там бессмысленно: он про семью. У
+   * родителя, который ведёт встречу дома, семья — единственный контекст, и
+   * совет «попросите знакомого взрослого» нужно привязать к тому, кто есть.
+   */
+  audience?: {
+    lead: MeetingLead;
+    /** Заголовок для того, кто держит план в руках. */
+    title: string;
+    /** Строка о взрослом в семье. `undefined` — в семье не уточняли. */
+    household?: string;
+    /** К кому отправлять ребёнка за поддержкой. `null` — дома такого взрослого нет. */
+    trustedAdult: string | null;
+  };
 };
 
 /** Длина встречи. Одно занятие в неделю — 40 минут, как школьный урок. */
@@ -181,7 +199,14 @@ function themesLine(lesson: Lesson): string {
  * `undefined`, если занятия с таким номером нет: вызывающий решает, что делать,
  * а не получает выдуманный план.
  */
-export function meetingPlan(lesson: Lesson): MeetingPlan {
+export type MeetingAudience = {
+  /** Кто ведёт встречу. У профилей до запуска не указано — считаем взрослого. */
+  lead?: MeetingLead;
+  /** Есть ли дома взрослый, к которому ребёнок может обратиться. */
+  householdAdult?: HouseholdAdult;
+};
+
+export function meetingPlan(lesson: Lesson, audience: MeetingAudience = {}): MeetingPlan {
   const week = weekByNumber(lesson.unit);
   const skills = Array.from(new Set(lesson.skills)).map((skill) => SKILL_LABEL[skill] ?? skill);
   const titles = blockTitles(lesson.isShowcase);
@@ -298,5 +323,17 @@ export function meetingPlan(lesson: Lesson): MeetingPlan {
     // в плане нет вообще: поле, адресованное семье, рано или поздно прочитают
     // группе. Поэтому здесь только `growth` сценария — он написан ребёнку.
     closing: `Скажите вслух: «${growthLine(lesson)}»`,
+    /*
+     * Кому адресован план. По умолчанию — взрослому: так было до появления
+     * режимов, и это же верно для группы. Режим «ребёнок сам» меняет только
+     * заголовок: сам план остаётся тем же, потому что вести встречу по нему
+     * может и ребёнок 11–13 лет.
+     */
+    audience: {
+      lead: audience.lead ?? 'adult',
+      title: audience.lead === 'child' ? 'План встречи: можно провести самому' : 'План встречи для взрослого',
+      ...(audience.householdAdult ? { household: householdNote(audience.householdAdult) } : {}),
+      trustedAdult: audience.householdAdult === 'none' ? null : audience.householdAdult === 'other' ? 'знакомый взрослый, которому доверяет семья' : 'родитель или законный представитель',
+    },
   };
 }

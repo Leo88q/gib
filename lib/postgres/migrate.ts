@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { validateStore, STORE_COLLECTIONS } from '../store-validation.ts';
-import { LOCK_ID, SCHEMA_V1, SCHEMA_V2, SCHEMA_VERSION, TABLES } from './schema.ts';
+import { LOCK_ID, SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_VERSION, TABLES } from './schema.ts';
 
 export interface SqlClient { query(sql: string, parameters?: unknown[]): Promise<{ rows: Record<string, unknown>[] }> }
 export type LegacyState = Record<typeof STORE_COLLECTIONS[number], Record<string, unknown>[]>;
@@ -47,16 +47,24 @@ export async function ensureSchema(client: SqlClient): Promise<void> {
     const current = await client.query('SELECT version FROM gib.schema_version WHERE id=1');
     if (current.rows.length) {
       const version = Number(current.rows[0].version);
-      // Обновление 1 → 2 идемпотентно и не трогает данные: только новые таблицы.
+      /*
+       * Обновления идемпотентны и не удаляют данные: 1 → 2 добавляет таблицы
+       * аккаунта, 2 → 3 — продажу (статусы возврата, чек, режим встречи).
+       * Версия 1 доходит до актуальной обеими ступенями, а не прыжком:
+       * каждая ступень проверяется отдельным прогоном тестов миграции.
+       */
       if (version === SCHEMA_VERSION) return;
-      if (version !== 1) throw new Error('Unsupported PostgreSQL schema version');
-      for (const statement of SCHEMA_V2.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
+      const statements = (sql: string) => sql.split(';').map(s => s.trim()).filter(Boolean);
+      if (version === 1) for (const statement of statements(SCHEMA_V2)) await client.query(statement);
+      else if (version !== 2) throw new Error('Unsupported PostgreSQL schema version');
+      for (const statement of statements(SCHEMA_V3)) await client.query(statement);
       await client.query('UPDATE gib.schema_version SET version = $1 WHERE id = 1', [SCHEMA_VERSION]);
       return;
     }
     // No IF NOT EXISTS: a partially pre-existing schema must fail closed, not be adopted.
     for (const statement of SCHEMA_V1.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
     for (const statement of SCHEMA_V2.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
+    for (const statement of SCHEMA_V3.split(';').map(s => s.trim()).filter(Boolean)) await client.query(statement);
     await client.query('INSERT INTO gib.schema_version (id, version) VALUES (1, $1)', [SCHEMA_VERSION]);
   });
 }
