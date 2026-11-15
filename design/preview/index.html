@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ГИБ · концепт экосистемы в 3D</title>
+<meta name="robots" content="noindex">
+<style>
+  /* ======================================================================
+     КОНЦЕПТ, А НЕ ПРОДУКТ.
+     Один файл, чтобы пример можно было открыть без сборки. Числа и тексты
+     взяты из кода репозитория (день 2 «Задание Миры», 36 встреч по 40 минут,
+     60 дней, 12 тем), поэтому макет не обещает того, чего в программе нет.
+     ====================================================================== */
+  :root{
+    --ink:#241d31;
+    --ink-soft:#544b63;
+    --ink-faint:#7d7590;
+    --cream:#fdf4e9;
+    --cream-deep:#f7e9d8;
+    --paper:#ffffff;
+    --line:#ece0d2;
+    --lis:#ec6f38;
+    --lis-soft:#ffe6d8;
+    --mira:#2e9e80;
+    --mira-soft:#dff2ea;
+    --tima:#5a68c6;
+    --tima-soft:#e6e8fa;
+    --gold:#f2b544;
+    --radius-xl:34px;
+    --radius-lg:26px;
+    --radius-md:18px;
+    --radius-pill:999px;
+    --shadow-card:0 28px 56px -30px rgba(36,29,49,.38), 0 2px 0 rgba(255,255,255,.9) inset;
+    --shadow-float:0 40px 80px -40px rgba(36,29,49,.45);
+    --font:'Nunito','Segoe UI',system-ui,-apple-system,'Trebuchet MS',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font);
+    color:var(--ink);
+    background:
+      radial-gradient(900px 520px at 12% -8%, #ffe9d5 0%, rgba(255,233,213,0) 62%),
+      radial-gradient(760px 480px at 92% 6%, #e3ebff 0%, rgba(227,235,255,0) 60%),
+      var(--cream);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 120px}
+
+  /* ---------- типографика ---------- */
+  h1,h2,h3{margin:0;letter-spacing:-.022em;line-height:1.06;font-weight:900}
+  h1{font-size:clamp(38px,5.6vw,68px)}
+  h2{font-size:clamp(26px,3vw,38px)}
+  h3{font-size:20px;letter-spacing:-.01em}
+  p{margin:0}
+  .lead{font-size:clamp(17px,1.6vw,21px);color:var(--ink-soft);max-width:62ch}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;border-radius:2px;background:currentColor;opacity:.6}
+
+  /* ---------- шапка ---------- */
+  header.top{padding:56px 0 8px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:-.02em;font-size:18px}
+  .brand-mark{
+    width:38px;height:38px;border-radius:14px;display:grid;place-items:center;
+    background:linear-gradient(145deg,#ffd9c2,#ffb994);color:#7a3213;font-size:18px;
+    box-shadow:0 8px 18px -10px rgba(236,111,56,.9), inset 0 1px 0 #fff;
+  }
+  .brand small{display:block;font-size:12px;font-weight:700;color:var(--ink-faint);letter-spacing:0}
+
+  /* ---------- обложка ---------- */
+  .hero{
+    display:grid;grid-template-columns:1.25fr .75fr;gap:48px;align-items:center;
+    padding:56px 0 80px;
+  }
+  .hero-copy{display:flex;flex-direction:column;gap:22px;align-items:flex-start}
+  .hero h1 span{color:var(--lis)}
+  .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;
+    font:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:var(--radius-pill);
+    color:#fff;background:linear-gradient(160deg,#f58a55,#e2612c);
+    box-shadow:0 16px 30px -14px rgba(226,97,44,.85), inset 0 1px 0 rgba(255,255,255,.45);
+    text-decoration:none;
+  }
+  .btn.ghost{background:var(--paper);color:var(--ink);box-shadow:0 12px 26px -18px rgba(36,29,49,.6), inset 0 0 0 1.5px var(--line)}
+  /* Три карточки в сетке, без хаотичных наложений: наложения съедали лица. */
+  .hero-cast{
+    display:grid;grid-template-columns:1fr 1.3fr;grid-template-rows:1fr 1fr;gap:12px;
+    height:480px;
+  }
+  .cast-card{
+    position:relative;border-radius:var(--radius-lg);overflow:hidden;
+    box-shadow:var(--shadow-float);background:#fff;
+  }
+  .cast-card img{display:block;width:100%;height:100%;object-fit:cover}
+  .cast-lis{grid-column:2;grid-row:1 / span 2;background:linear-gradient(160deg,#ffdcc6,#f7c2a0)}
+  .cast-mira{grid-column:1;grid-row:1;background:linear-gradient(160deg,#d9f0e7,#bfe4d7)}
+  .cast-tima{grid-column:1;grid-row:2;background:linear-gradient(160deg,#e4e6fb,#cfd3f4)}
+  .cast-lis img{object-position:50% 26%}
+  .cast-mira img{object-position:50% 20%}
+  .cast-tima img{object-position:50% 14%}
+  .cast-tag{
+    position:absolute;left:10px;bottom:10px;z-index:4;
+    padding:5px 10px;border-radius:var(--radius-pill);background:rgba(255,255,255,.92);
+    font-size:11.5px;font-weight:900;letter-spacing:.02em;color:var(--ink);
+    box-shadow:0 8px 18px -12px rgba(36,29,49,.6);
+  }
+
+  /* ---------- секции ---------- */
+  section{padding:64px 0;border-top:1px solid rgba(36,29,49,.07)}
+  .sec-head{display:flex;justify-content:space-between;gap:32px;align-items:flex-end;margin-bottom:36px;flex-wrap:wrap}
+  .sec-head p{max-width:52ch;color:var(--ink-soft);font-size:16.5px}
+  .num{font-size:13px;font-weight:900;letter-spacing:.16em;color:var(--ink-faint)}
+
+  /* ---------- телефон ---------- */
+  .phone-row{display:grid;grid-template-columns:390px 1fr;gap:56px;align-items:start}
+  .phone{
+    width:390px;border-radius:46px;padding:12px;background:linear-gradient(170deg,#3a3147,#221c2e);
+    box-shadow:var(--shadow-float), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .screen{
+    position:relative;border-radius:36px;overflow:hidden;background:
+      radial-gradient(340px 220px at 80% -10%, #ffe6d3 0%, rgba(255,230,211,0) 70%),
+      linear-gradient(180deg,#fffaf4,#fdf1e2);
+    padding:20px 20px 26px;display:flex;flex-direction:column;gap:16px;min-height:700px;
+  }
+  .statusbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--ink-faint)}
+  .statusbar .dot{width:6px;height:6px;border-radius:50%;background:var(--mira);display:inline-block;margin-right:6px}
+  .screen-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--radius-pill);
+    background:var(--paper);border:1.5px solid var(--line);font-size:12.5px;font-weight:800;color:var(--ink-soft);
+  }
+  .avatar{
+    width:52px;height:52px;border-radius:50%;overflow:hidden;flex:0 0 auto;
+    box-shadow:0 10px 22px -12px rgba(46,158,128,.9), inset 0 0 0 2px #fff;
+    background:#fff;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;object-position:50% 16%}
+  .hello{display:flex;align-items:center;gap:14px}
+  .hello h3{font-size:17px;line-height:1.2}
+  .chip{white-space:nowrap}
+  .hello p{font-size:13.5px;color:var(--ink-faint);font-weight:700}
+  .story{
+    background:var(--paper);border-radius:var(--radius-lg);padding:20px;
+    box-shadow:0 22px 44px -30px rgba(36,29,49,.5);
+    border:1px solid var(--line);
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .story-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .story h4{margin:0;font-size:18px;font-weight:900;letter-spacing:-.01em}
+  .story .theme{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mira)}
+  .story p{font-size:15px;color:var(--ink-soft)}
+  .choices{display:flex;flex-direction:column;gap:9px}
+  .choice{
+    text-align:left;font:inherit;font-size:14.5px;font-weight:700;color:var(--ink);
+    background:#fffdfa;border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .choice span{display:block;font-size:12.5px;font-weight:600;color:var(--ink-faint);margin-top:3px}
+  .choice:hover{transform:translateY(-1px);border-color:var(--mira);box-shadow:0 14px 26px -20px rgba(46,158,128,.9)}
+  .screen-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+  .progress{display:flex;flex-direction:column;gap:7px}
+  .progress-labels{display:flex;justify-content:space-between;font-size:12.5px;font-weight:800;color:var(--ink-faint)}
+  .bar{height:9px;border-radius:999px;background:#f0e4d6;overflow:hidden}
+  .bar i{display:block;height:100%;width:18%;border-radius:999px;background:linear-gradient(90deg,#3fb99a,#2e9e80)}
+  .cta{
+    border:none;font:inherit;font-weight:900;font-size:16px;color:#fff;padding:15px;border-radius:18px;cursor:pointer;
+    background:linear-gradient(160deg,#3cb596,#268c72);
+    box-shadow:0 18px 32px -18px rgba(38,140,114,.95), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  .phone-notes{display:flex;flex-direction:column;gap:26px;padding-top:6px}
+  .note{display:grid;grid-template-columns:44px 1fr;gap:16px;align-items:start}
+  .note b{display:block;font-size:16px;margin-bottom:4px}
+  .note p{color:var(--ink-soft);font-size:15.5px}
+  .note-i{
+    width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:900;
+    background:var(--lis-soft);color:#9a3f14;box-shadow:inset 0 1px 0 #fff;
+  }
+  .note-i.m{background:var(--mira-soft);color:#176b57}
+  .note-i.t{background:var(--tima-soft);color:#39459b}
+  .note-i.g{background:#fdf0cf;color:#8a5a05}
+
+  /* ---------- три линейки ---------- */
+  .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .band{
+    position:relative;border-radius:var(--radius-xl);overflow:hidden;background:var(--paper);
+    border:1px solid var(--line);box-shadow:var(--shadow-card);display:flex;flex-direction:column;
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .band:hover{transform:translateY(-4px);box-shadow:0 40px 70px -40px rgba(36,29,49,.55)}
+  .band-art{position:relative;aspect-ratio:3/4;overflow:hidden}
+  .band-art img{width:100%;height:100%;object-fit:cover;display:block}
+  .band-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,0) 45%,rgba(255,255,255,.9) 100%)}
+  .band-age{
+    position:absolute;top:14px;left:14px;z-index:2;padding:7px 13px;border-radius:var(--radius-pill);
+    font-size:12.5px;font-weight:900;letter-spacing:.04em;background:rgba(255,255,255,.94);color:var(--ink);
+  }
+  .band-body{padding:0 22px 24px;margin-top:-26px;position:relative;z-index:2;display:flex;flex-direction:column;gap:8px}
+  .band-body h3{font-size:23px}
+  .band-body .role{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  .band-body p{font-size:15px;color:var(--ink-soft)}
+  .band.lis{--a:var(--lis)} .band.mira{--a:var(--mira)} .band.tima{--a:var(--tima)}
+  .band .role{color:var(--a)}
+  .band-art{background:var(--a)}
+  .band.lis .band-art{background:linear-gradient(160deg,#ffdcc6,#f8c6a6)}
+  .band.mira .band-art{background:linear-gradient(160deg,#d9f0e7,#bfe4d7)}
+  .band.tima .band-art{background:linear-gradient(160deg,#e4e6fb,#cfd3f4)}
+  /* Портретный кроп от макушки: лица не должны обрезаться, даже если кадр узкий. */
+  .band .band-art img{object-position:50% 5%}
+
+  /* ---------- родительский регистр ---------- */
+  .parent-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
+  .panel{
+    background:var(--paper);border-radius:var(--radius-lg);border:1px solid var(--line);
+    box-shadow:var(--shadow-card);padding:28px;
+  }
+  .panel h3{font-size:22px;margin-bottom:6px}
+  .panel .hint{font-size:14px;color:var(--ink-faint);font-weight:700;margin-bottom:18px}
+  .facts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+  .fact{background:#fffaf3;border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+  .fact b{display:block;font-size:26px;letter-spacing:-.02em}
+  .fact span{font-size:13px;color:var(--ink-faint);font-weight:700}
+  .report-line{border-left:3px solid var(--mira);padding-left:14px;margin-bottom:16px}
+  .report-line .cap{font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px}
+  .report-line p{font-size:15.5px}
+  .quiet-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+  .quiet-list li{display:grid;grid-template-columns:22px 1fr;gap:12px;font-size:15px;color:var(--ink-soft)}
+  .quiet-list li::before{content:"";width:22px;height:22px;border-radius:8px;background:var(--mira-soft);box-shadow:inset 0 1px 0 #fff}
+  .skills{display:flex;flex-direction:column;gap:11px;margin:6px 0 18px}
+  .skill{display:grid;grid-template-columns:124px 1fr;gap:12px;align-items:center;font-size:13.5px;font-weight:800}
+  .skill span{color:var(--ink-soft)}
+  .skill i{display:block;height:8px;border-radius:999px;background:#f0e4d6;overflow:hidden}
+  .skill i b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7fd3bd,#2e9e80)}
+  .emotion-caption{font-size:12.5px;color:var(--ink-faint);font-weight:700}
+
+  /* ---------- токены ---------- */
+  .tokens{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+  .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .sw{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#fff}
+  .sw i{display:block;height:64px}
+  .sw span{display:block;padding:9px 11px;font-size:12px;font-weight:800}
+  .sw span small{display:block;font-weight:700;color:var(--ink-faint);font-size:11px;letter-spacing:.03em}
+  .rules{display:grid;gap:14px}
+  .rule{border-radius:18px;padding:16px 18px;font-size:15px;border:1px solid var(--line);background:#fff}
+  .rule b{display:block;margin-bottom:4px}
+  .rule.yes{background:#f2fbf6;border-color:#cfe9dd}
+  .rule.no{background:#fff5f2;border-color:#f3d8cd}
+  .type-row{display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px dashed rgba(36,29,49,.12)}
+  .type-row:last-child{border-bottom:none}
+  .type-row span{font-size:12px;font-weight:800;color:var(--ink-faint);width:96px;flex:0 0 auto}
+
+  footer{padding:48px 0 0;color:var(--ink-faint);font-size:14px;border-top:1px solid rgba(36,29,49,.07)}
+  footer b{color:var(--ink)}
+
+  @media (max-width:980px){
+    .hero{grid-template-columns:1fr;gap:36px}
+    .hero-cast{min-height:400px;max-width:520px}
+    .phone-row{grid-template-columns:1fr;justify-items:center}
+    .phone-notes{max-width:520px}
+    .bands{grid-template-columns:1fr}
+    .parent-grid,.tokens{grid-template-columns:1fr}
+  }
+  @media (max-width:420px){
+    .wrap{padding:0 16px 80px}
+    .phone{width:100%;border-radius:38px}
+    .screen{border-radius:30px;min-height:660px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+    .band:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="brand-mark">Л</span>
+      <span>ГИБ<small>район, где тренируются навыки</small></span>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">концепт экосистемы · 3D-персонажи</span>
+      <h1>Один район.<br>Три героя.<br><span>Мягкий объём.</span></h1>
+      <p class="lead">
+        Тёплая плюшевая фактура, студийный свет и крупные глаза — но не набор чужих зверят,
+        а собственный мир: мастерская, двор, библиотека. У каждого героя один акцентный цвет
+        и предмет-подпись, по которым его узнают в 24 пикселя.
+      </p>
+      <div class="hero-actions">
+        <a class="btn" href="#child">Детский экран</a>
+        <a class="btn ghost" href="#bands">Три линейки</a>
+      </div>
+    </div>
+    <div class="hero-cast" aria-hidden="true">
+      <div class="cast-card cast-mira"><img src="img/mira.png" alt=""><span class="cast-tag">Мира · 8–10</span></div>
+      <div class="cast-card cast-tima"><img src="img/tima.png" alt=""><span class="cast-tag">Тима · 11–13</span></div>
+      <div class="cast-card cast-lis"><img src="img/lis.png" alt=""><span class="cast-tag">Лис · 5–7</span></div>
+    </div>
+  </div>
+
+  <section id="child">
+    <div class="sec-head">
+      <div>
+        <span class="num">01 · игровой регистр</span>
+        <h2>Детский экран</h2>
+      </div>
+      <p>
+        Текст истории — настоящий: день 2, тема «Я и другие», возраст 8–10.
+        Ничего не придумано ради макета, включая три варианта и подсказки к ним.
+      </p>
+    </div>
+
+    <div class="phone-row">
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span><i class="dot"></i>Программа · день 2</span><span>60 дней</span></div>
+
+          <div class="screen-top">
+            <div class="hello">
+              <div class="avatar"><img src="img/mira.png" alt=""></div>
+              <div>
+                <h3>Мира ведёт сегодня</h3>
+                <p>Тема «Я и другие» · 8–10 лет</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="story">
+            <div class="story-head">
+              <div>
+                <span class="theme">история дня</span>
+                <h4>Задание Миры</h4>
+              </div>
+              <span class="chip">2 мин</span>
+            </div>
+            <p>Друг объяснил Мире идею для поделки, но одна часть ей непонятна. Что доступно Мире?</p>
+            <div class="choices">
+              <button class="choice">Уточнить непонятную часть<span>Вопрос можно задать своими словами.</span></button>
+              <button class="choice">Попросить показать пример<span>Пример — один из способов объяснить.</span></button>
+              <button class="choice">Сделать паузу и спросить позже<span>Можно вернуться к вопросу позже.</span></button>
+            </div>
+          </div>
+
+          <div class="screen-foot">
+            <div class="progress">
+              <div class="progress-labels"><span>Пройдено 11 дней</span><span>18%</span></div>
+              <div class="bar"><i></i></div>
+            </div>
+            <button class="cta">Продолжить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-notes">
+        <div class="note">
+          <span class="note-i m">1</span>
+          <div>
+            <b>Герой — часть интерфейса, а не наклейка</b>
+            <p>Проводник стоит там, где от него есть смысл: объясняет, к кому сейчас перешли.
+               В заголовке — имя и возрастная линейка, чтобы взрослый сразу понимал, чья это версия.</p>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-i">2</span>
+          <div>
+            <b>Один акцент на экран</b>
+            <p>Мятный — цвет Миры: кнопка, прогресс, подпись темы. Остальное — чернила и бумага.
+               Семь цветов одновременно, как сейчас в CSS, не дают глазу понять, что главное.</p>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-i g">3</span>
+          <div>
+            <b>Ошибки нет, есть выбор</b>
+            <p>Три варианта равноправны по форме: ни один не выглядит «правильным».
+               Подсказка под вариантом объясняет смысл, а не оценивает ответ.</p>
+          </div>
+        </div>
+        <div class="note">
+          <span class="note-i t">4</span>
+          <div>
+            <b>Прогресс без давления</b>
+            <p>День и полоса, без таймеров и «ты подвёл серию». Награда — история и питомец,
+               а не страх потерять streak.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="bands">
+    <div class="sec-head">
+      <div>
+        <span class="num">02 · каст</span>
+        <h2>Три линейки, три проводника</h2>
+      </div>
+      <p>
+        Возраст меняет не только сложность, но и того, кто рядом: в 5–7 нужен тот, кто показывает телом,
+        в 8–10 — тот, кто держит договорённости, в 11–13 — тот, кто не сюсюкает.
+      </p>
+    </div>
+
+    <div class="bands">
+      <article class="band lis">
+        <div class="band-art"><span class="band-age">5–7 лет</span><img src="img/lis.png" alt="Лис — лисёнок-изобретатель в мастерской"></div>
+        <div class="band-body">
+          <span class="role">показывает</span>
+          <h3>Лис</h3>
+          <p>Дворовый изобретатель. Неправильные уши, хвост-кисть, фартук с инструментами.
+             Показывает чувства телом: «замер», «выдохнул», «подошёл».</p>
+        </div>
+      </article>
+
+      <article class="band mira">
+        <div class="band-art"><span class="band-age">8–10 лет</span><img src="img/mira.png" alt="Мира — девочка с блокнотом и рюкзаком"></div>
+        <div class="band-body">
+          <span class="role">договаривается</span>
+          <h3>Мира</h3>
+          <p>Квадратный рюкзак, косичка-антенна, блокнот у груди. Собирает договорённости
+             и напоминает, что у другого может быть иначе.</p>
+        </div>
+      </article>
+
+      <article class="band tima">
+        <div class="band-art"><span class="band-age">11–13 лет</span><img src="img/tima.png" alt="Тима — подросток с наушниками и планшетом"></div>
+        <div class="band-body">
+          <span class="role">на равных</span>
+          <h3>Тима</h3>
+          <p>Наушники на шее, планшет под рукой, наклон вперёд. Говорит как со взрослым,
+             планирует и разбирает, что пошло не так.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section id="parent">
+    <div class="sec-head">
+      <div>
+        <span class="num">03 · кабинет</span>
+        <h2>Взрослый регистр того же языка</h2>
+      </div>
+      <p>
+        Кабинет родителя — не детский экран с баннером. Тот же шрифт, та же бумага,
+        но один акцент, плотная сетка и ни одного маскота: здесь взрослый принимает решение о покупке.
+      </p>
+    </div>
+
+    <div class="parent-grid">
+      <div class="panel">
+        <h3>Неделя ребёнка</h3>
+        <p class="hint">Цифры программы — из кода, а не из презентации</p>
+        <div class="facts">
+          <div class="fact"><b>36</b><span>встреч в году</span></div>
+          <div class="fact"><b>40</b><span>минут во встрече</span></div>
+          <div class="fact"><b>60</b><span>дней практики</span></div>
+          <div class="fact"><b>12</b><span>тем и показов</span></div>
+        </div>
+        <div class="report-line">
+          <div class="cap">что было на этой неделе</div>
+          <p>История знакомит с вариантами уточнения и паузы.</p>
+        </div>
+        <div class="report-line">
+          <div class="cap">что можно сделать дома</div>
+          <p>Можно на вымышленном примере предложить вопрос или отложить разговор.</p>
+        </div>
+        <div class="report-line">
+          <div class="cap">вопрос для разговора</div>
+          <p>Как спросить ещё раз, не требуя ответа?</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Динамика без оценки</h3>
+        <p class="hint">Пример данных: шкала показывает, что тренировали, а не «уровень ребёнка»</p>
+        <div class="skills">
+          <div class="skill"><span>внимание</span><i><b style="width:64%"></b></i></div>
+          <div class="skill"><span>память</span><i><b style="width:58%"></b></i></div>
+          <div class="skill"><span>гибкость</span><i><b style="width:47%"></b></i></div>
+          <div class="skill"><span>торможение</span><i><b style="width:71%"></b></i></div>
+          <div class="skill"><span>планирование</span><i><b style="width:52%"></b></i></div>
+          <div class="skill"><span>логика</span><i><b style="width:66%"></b></i></div>
+        </div>
+        <p class="emotion-caption">Полоса — сколько практики по навыку прошло за месяц. Это объём, а не «уровень ребёнка»</p>
+        <ul class="quiet-list" style="margin-top:18px">
+          <li>Без «молодец» и без рейтинга: отчёт описывает, что было, и не делает вывода о человеке.</li>
+          <li>Без сравнения с другими детьми — сравнивать не с кем, данных других семей в отчёте нет.</li>
+          <li>Без медицинских формулировок: «диагностика», «коррекция», «терапия» не встречаются нигде.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="tokens">
+    <div class="sec-head">
+      <div>
+        <span class="num">04 · система</span>
+        <h2>Что делает стиль единым</h2>
+      </div>
+      <p>
+        Не «нарисовать красиво», а правила, по которым можно собрать любой новый экран,
+        не спрашивая дизайнера: палитра, шкала, свет, запреты.
+      </p>
+    </div>
+
+    <div class="tokens">
+      <div>
+        <div class="swatches">
+          <div class="sw"><i style="background:#241d31"></i><span>чернила<small>#241D31</small></span></div>
+          <div class="sw"><i style="background:#fdf4e9"></i><span>бумага<small>#FDF4E9</small></span></div>
+          <div class="sw"><i style="background:#ec6f38"></i><span>Лис<small>#EC6F38</small></span></div>
+          <div class="sw"><i style="background:#2e9e80"></i><span>Мира<small>#2E9E80</small></span></div>
+          <div class="sw"><i style="background:#5a68c6"></i><span>Тима<small>#5A68C6</small></span></div>
+          <div class="sw"><i style="background:#f2b544"></i><span>награда<small>#F2B544</small></span></div>
+        </div>
+        <div style="margin-top:26px">
+          <div class="type-row"><span>заголовок</span><b style="font-size:26px;letter-spacing:-.03em">Район, где тренируются навыки</b></div>
+          <div class="type-row"><span>экран</span><b style="font-size:20px">История дня</b></div>
+          <div class="type-row"><span>текст</span><b style="font-size:15.5px;font-weight:600;color:#544b63">Друг объяснил Мире идею для поделки…</b></div>
+          <div class="type-row"><span>подпись</span><b style="font-size:12.5px;color:#7d7590">Тема 3 · 8–10 лет</b></div>
+        </div>
+      </div>
+
+      <div class="rules">
+        <div class="rule yes"><b>Делаем</b>Мягкий свет сверху, тонкая тёплая обводка, один акцент на героя и на экран.</div>
+        <div class="rule yes"><b>Делаем</b>Фактуру: ткань фартука, фетр, потёртые ботинки. Из неё и берётся «дорого».</div>
+        <div class="rule no"><b>Не делаем</b>Глянцевый пластик и белые перчатки — это читается как чужая франшиза.</div>
+        <div class="rule no"><b>Не делаем</b>Больше двух акцентов на экране и тени-наклейки в кабинете и документах.</div>
+        <div class="rule no"><b>Не делаем</b>Новых зверей на каждый пункт программы: 6 существ навыков и 7 мест района — предел.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>Это концепт, а не продукт.</b> Три персонажа нарисованы как пробы стиля; тексты и числа в макете взяты из
+    репозитория (день 2 «Задание Миры», 36 встреч по 40 минут, 60 дней, 12 тем). Дальше — паспорт стиля,
+    6 существ навыков и питомец в той же фактуре.</p>
+  </footer>
+
+</div>
+</body>
+</html>
