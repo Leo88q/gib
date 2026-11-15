@@ -1,28 +1,35 @@
 @font-face { font-family: 'OpenDyslexic'; src: url('/fonts/opendyslexic-regular.woff2') format('woff2'); font-style: normal; font-weight: 400; font-display: swap; }
 @font-face { font-family: 'OpenDyslexic'; src: url('/fonts/opendyslexic-bold.woff2') format('woff2'); font-style: normal; font-weight: 700; font-display: swap; }
 /* ==========================================================================
-   ГИБ — дизайн-система «района Лис»: комикс-панели, толстые контуры,
-   жёсткие тени, палитра и анимации. Никаких стоковых тем.
+   ГИБ — дизайн-система «мягкий объём»: тёплая бумага, мягкие тени, один
+   акцент на экран. Палитра ниже совпадает с lib/design/tokens.ts, правила —
+   в design/style-passport.md.
    ========================================================================== */
 
 :root {
-  --ink: #1b1b2f;
-  --ink-soft: #3a3a55;
-  --cream: #fff6e5;
+  /* Палитра «мягкий объём»: источник правды — lib/design/tokens.ts.
+     Значения продублированы здесь, потому что CSS и TS не импортируют друг
+     друга; расхождение ловит scripts/test-design-tokens.ts (он читает этот
+     блок и сверяет с токенами). */
+  --ink: #241d31;
+  --ink-soft: #4e4658;
+  --cream: #fdf4e9;
   --paper: #ffffff;
-  --yellow: #ffd23f;
-  --orange: #ff7a3d;
-  --pink: #ff5d8f;
-  --mint: #3ec9a7;
-  --sky: #3aa0ff;
-  --violet: #8b5cf6;
-  --lime: #9be564;
-  --ok: #1f9d68;
-  --bad: #e2445c;
-  --muted: #6f6f8c;
+  /* Акценты: три героя и награда. Остальные — приглушённые «районные» тона,
+     чтобы экран не рассыпался на семь цветов. */
+  --yellow: #f2b544;
+  --orange: #ec6f38;
+  --pink: #c2647a;
+  --mint: #2e9e80;
+  --sky: #4f6fa8;
+  --violet: #5a68c6;
+  --lime: #8fa86b;
+  --ok: #17805a;
+  --bad: #c03b52;
+  --muted: #635c74;
   /* Ссылки и мелкие значки: контраст к кремовому фону ≥ 4.5:1. */
-  --link: #1b5fa8;
-  --glyph: #9a4600;
+  --link: #1e5a94;
+  --glyph: #8a5a12;
   --radius: 20px;
   --shadow: 5px 5px 0 var(--ink);
   --shadow-sm: 3px 3px 0 var(--ink);
@@ -46,7 +53,7 @@ body {
 }
 
 body {
-  background-image: radial-gradient(rgba(27, 27, 47, 0.07) 1.6px, transparent 1.6px);
+  background-image: radial-gradient(rgba(36, 29, 49, 0.07) 1.6px, transparent 1.6px);
   background-size: 22px 22px;
 }
 
@@ -2703,3 +2710,53 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .funnel-steps th:last-child, .funnel-steps td:last-child { text-align: right; }
 .funnel-drop td { background: #fff0e7; font-weight: 800; }
 .funnel-warning { padding: 12px; background: #fff7d6; color: #5a3d00; border: 2px solid #5a3d00; border-radius: 12px; }
+
+/* ==========================================================================
+   Арт v2: «мягкий объём».
+   Портреты героев приходят с бумажным фоном (альфы пока нет), поэтому в
+   маленьких слотах картинку обрезаем по лицу, а не масштабируем целиком:
+   иначе на экране появляется фото с фоном вместо героя.
+   ========================================================================== */
+.mascot-inline,
+.mascot,
+.room-mascot img {
+  object-fit: cover;
+  object-position: 50% 8%;
+  border-radius: 50%;
+  background: #fdf4e9;
+}
+
+.mascot-inline {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+}
+
+.mascot {
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.room-mascot {
+  width: 26%;
+  max-width: 120px;
+}
+
+.room-mascot img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 16px;
+}
+
+.reward-mascot {
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.hero-art {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 18px;
+}

@@ -37,7 +37,7 @@ export default function Rewards({
     <div className="rewards">
       <Confetti count={stars >= 3 ? 70 : 40} />
       <div className="panel reward-panel">
-        <img src="/art/mascot-celebrate.png" alt="" className="reward-mascot" />
+        <img src="/art/v2/creatures/lis.png" alt="" className="reward-mascot" />
         <h2 className="reward-title">Миссия выполнена!</h2>
 
         <div className="stars-row">

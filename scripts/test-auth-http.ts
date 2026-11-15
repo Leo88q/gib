@@ -42,7 +42,7 @@ async function main() {
   check(emptyReport.data.report.skills.every((s: { delta: unknown }) => s.delta === null), 'при отсутствии данных сравнение не выдаётся за ноль');
   const ownProgram = await request(`/api/program?profileId=${profileId}`, a);
   check(ownProgram.status === 200 && ownProgram.data.weeks.length === 12, 'программа содержит 12 недель');
-  check(ownProgram.data.weeks.every((w: { week: number; art: string }) => w.art === `/art/week-${String(w.week).padStart(2, '0')}.png`), 'каждая неделя использует отдельную сцену');
+  check(ownProgram.data.weeks.every((w: { week: number; art: string }) => w.art.startsWith('/art/v2/places/')), 'каждая неделя показывает место района');
   const ownSessionPlan = await request(`/api/session?profileId=${profileId}`, a);
   check(ownSessionPlan.status === 200 && ownSessionPlan.data.program.weekArt === ownProgram.data.weeks[0].art, 'текущая сцена передаётся в детский экран');
   const artResults = await Promise.all(ownProgram.data.weeks.map((w: { art: string }) => fetch(base + w.art)));

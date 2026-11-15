@@ -827,7 +827,7 @@ export default function Home() {
     return <div className="wrap game">
       <Hud data={hud} compact />
       <div className="panel story-deck" aria-busy={storySending}>
-        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" width={64} height={64} /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
+        <div className="story-deck-heading"><img src="/art/v2/creatures/lis.png" alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
         <div className="story-deck-cards">
           {storyOffer.map((card, index) => <button type="button" className="story-deck-card" key={card.id} disabled={storySending || Boolean(pendingStory && pendingStory !== card.id)} onClick={() => void chooseStory(card.id)}>
             <span className="story-deck-number">{index + 1}</span><strong>{card.title}</strong><span>{pendingStory === card.id ? 'Повторить выбор →' : 'Открыть →'}</span>
@@ -873,7 +873,7 @@ export default function Home() {
 
         {!(item?.type === 'task' && item.instance.kind !== 'social-practice') && (
           <div className="quest">
-            <img src="/art/mascot-think.png" alt="" width={64} height={64} />
+            <img src="/art/v2/creatures/lis.png" alt="" width={64} height={64} className="mascot-inline" />
             <div className="quest-text">
               {item?.type === 'task' && item.quest}
               {item?.type === 'scenario' && item.quest}
@@ -1024,7 +1024,7 @@ function Onboarding({ onDone, onCancel }: { onDone: (answer: OnboardingAnswer) =
   return (
     <div className="wrap">
       <div className="panel center onboarding">
-        <img src="/art/hero.png" alt="" className="hero-art" />
+        <img src="/art/v2/places/yard.png" alt="" className="hero-art" />
         {step === 'child' && (
           <>
             <h1>Привет, я Лис!</h1>

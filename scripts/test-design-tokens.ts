@@ -158,4 +158,18 @@ for (const id of ITEMS) {
 }
 console.log('  ok картинки мест и предметов лежат в макете');
 
+/* Паритет с рабочими стилями: :root в app/globals.css — это те же токены.
+ * Без этой проверки макет живёт по новым цветам, а приложение — по старым. */
+const appCss = fs.readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+const appRoot = appCss.slice(appCss.indexOf(':root {'), appCss.indexOf('}', appCss.indexOf(':root {')));
+const appVar = (name: string) => new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(appRoot)?.[1]?.toLowerCase();
+const appPairs: [string, string][] = [
+  ['ink', COLORS.ink], ['cream', COLORS.cream], ['orange', COLORS.lis],
+  ['mint', COLORS.mira], ['violet', COLORS.tima], ['yellow', COLORS.gold],
+];
+for (const [name, token] of appPairs) {
+  assert.equal(appVar(name), token.toLowerCase(), `--${name} в app/globals.css и в токенах расходятся: ${appVar(name)} / ${token}`);
+}
+console.log('  ok app/globals.css и токены совпадают по шести цветам');
+
 console.log('design-tokens: ok');

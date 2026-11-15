@@ -1,24 +1,66 @@
-/** Explicit mappings prevent underscores in domain IDs from becoming broken asset URLs. */
-const skillIcons: Record<string, string> = {
-  attention: 'attention', working_memory: 'working-memory', flexibility: 'flexibility',
-  inhibition: 'inhibition', planning: 'planning', logic: 'logic',
+/**
+ * Пути к картинкам v2 («мягкий объём»).
+ *
+ * Здесь только связка «доменный идентификатор → файл». Сами пути и список
+ * существ/мест живут в `lib/design/tokens.ts`, чтобы не было второго источника
+ * правды: проверка `scripts/test-art-paths.ts` сверяет, что каждый путь из
+ * этих функций существует на диске и является настоящим PNG.
+ *
+ * Что изменилось против старой версии:
+ *  - иконки навыков — это существа навыков (светлячок, белка, осьминог…),
+ *    а не «иконка внимания»;
+ *  - компетенции и недели показывают **место района**, а не ещё одну зверушку
+ *    и не отдельную сцену на каждую из 60 историй;
+ *  - неизвестный идентификатор уходит на безопасный дефолт, а не в 404.
+ */
+import { creatureArt, placeForCompetency, DEFAULT_CREATURE_ART } from './design/tokens.ts';
+
+/** Навык программы → существо навыка. `working_memory` — это «память». */
+const SKILL_CREATURE: Record<string, string> = {
+  attention: 'attention',
+  working_memory: 'memory',
+  flexibility: 'flexibility',
+  inhibition: 'inhibition',
+  planning: 'planning',
+  logic: 'logic',
 };
-const competencyIcons: Record<string, string> = {
-  self_awareness: 'self-awareness', self_regulation: 'self-regulation', empathy: 'empathy',
-  relationships: 'relationships', decision_making: 'decision-making',
-  creative_thinking: 'creative-thinking', growth_mindset: 'growth-mindset',
-};
-export const DEFAULT_ART = '/art/mascot-think.png';
+
+/** Три проводника. Больше героев в продукте нет. */
+const HEROES = ['lis', 'mira', 'tima'] as const;
+export type HeroId = (typeof HEROES)[number];
+
+/** Дефолт для картинки, которой нет: Лис, а не битая картинка. */
+export const DEFAULT_ART = DEFAULT_CREATURE_ART;
+
+/** Проводник по возрастной линейке: 5–7 Лис, 8–10 Мира, 11–13 Тима. */
+export function heroArt(band: string): string {
+  if (band === '8-10') return creatureArt('mira');
+  if (band === '11-13') return creatureArt('tima');
+  return creatureArt('lis');
+}
+
+/** Портрет героя по id, для мест, где линейка не нужна. */
+export function heroById(id: string): string {
+  return (HEROES as readonly string[]).includes(id) ? creatureArt(id) : DEFAULT_ART;
+}
+
+/** Картинка навыка: существо навыка. */
 export function skillArt(skill: string): string {
-  const icon = skillIcons[skill];
-  return icon ? `/art/icon-${icon}.png` : DEFAULT_ART;
+  const creature = SKILL_CREATURE[skill];
+  return creature ? creatureArt(creature) : DEFAULT_ART;
 }
+
+/** Компетенция показывает своё место района. */
 export function competencyArt(competency: string): string {
-  const icon = competencyIcons[competency];
-  return icon ? `/art/icon-${icon}.png` : DEFAULT_ART;
+  return placeForCompetency(competency);
 }
-/** Every program week has its own illustration; unknown IDs use a safe fallback. */
+
+/**
+ * Иллюстрация недели — сцена места, к которому относится компетенция недели.
+ * Отдельных картинок на 12 недель больше нет: семь мест переиспользуются,
+ * и это осознанно (см. `design/lesson-assets.md`).
+ */
 export function weekArt(week: number, competency: string): string {
-  if (Number.isInteger(week) && week >= 1 && week <= 12) return `/art/week-${String(week).padStart(2, '0')}.png`;
+  if (Number.isInteger(week) && week >= 1 && week <= 12) return placeForCompetency(competency);
   return competencyArt(competency);
 }

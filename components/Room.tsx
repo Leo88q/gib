@@ -24,7 +24,7 @@ export default function Room({
   petLevel = 1,
   petMood,
   decor = {},
-  mascot = '/art/mascot-main.png',
+  mascot = '/art/v2/creatures/lis.png',
   bubble,
 }: RoomProps) {
   return (

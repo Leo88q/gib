@@ -406,7 +406,7 @@ function ParentPage() {
   return (
     <div className="wrap">
       <div className="card hero-card">
-        <img src="/art/mascot-think.png" alt="" className="mascot" />
+        <img src="/art/v2/creatures/lis.png" alt="" className="mascot" />
         <div className="hero-text">
           <span className="tag">Отчёт для родителя</span>
           <h1>{profile?.name ?? 'Ребёнок'}</h1>
