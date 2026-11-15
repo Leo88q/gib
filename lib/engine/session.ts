@@ -19,6 +19,8 @@ import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor, type Review
 import { applyReview } from '../review/intervals';
 import { nextJourneyStage } from '../day/journey-machine';
 import { weekOneInk } from './week-one-ink-catalog';
+import { YEAR } from '../content/year/index.ts';
+import { STAGE_INFO, stageOfNumber } from '../year/stages.ts';
 import { remainingInk } from './remaining-ink-catalog';
 import { readInkScene, validateInkVariant } from './ink-snapshot';
 import { readDeepInk, validateDeepInkVariant } from './deep-ink';
@@ -815,6 +817,24 @@ export function buildReport(profile: Profile): WeeklyReport {
       totalDays: TOTAL_DAYS,
       finished: pos.finished,
     },
+    stage: (() => {
+      // Этап считается от урока года, а не от процента дней симулятора: дней
+      // 60, но занятия идут раз в неделю, и «60 дней» — это домашняя практика,
+      // а не шкала года. Если расписания ещё нет, этап — вход: честнее, чем
+      // выдумывать середину.
+      const schedule = store.programState(profile.id)?.lessons ?? [];
+      const today = new Date().toISOString().slice(0, 10);
+      const upcoming = schedule.find((entry) => entry.date >= today);
+      const lesson = upcoming?.lesson ?? schedule.at(-1)?.lesson ?? 1;
+      const id = stageOfNumber(lesson, YEAR.lessons.length);
+      const info = STAGE_INFO[id];
+      return { id, title: info.title, task: info.task, question: info.question };
+    })(),
+    lesson: (() => {
+      const schedule = store.programState(profile.id)?.lessons ?? [];
+      const today = new Date().toISOString().slice(0, 10);
+      return schedule.find((entry) => entry.date >= today)?.lesson ?? schedule.at(-1)?.lesson ?? 1;
+    })(),
     player: {
       level: lvl.level,
       levelTitle: lvl.title,

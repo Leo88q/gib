@@ -41,6 +41,22 @@ const player: PlayerState = {
   console.log('  ok в отчёте нет ни метки оценки, ни счётчика безошибочности');
 }
 
+
+/* ---- 2c. Этап года: есть, без процентов и без оценки ---- */
+{
+  const report = buildReport(profile);
+  assert.ok(report.stage, 'в отчёте нет этапа года');
+  assert.ok(['opening', 'middle', 'closing'].includes(report.stage.id), `этап «${report.stage.id}» неизвестен`);
+  assert.ok(report.stage.question.endsWith('?'), 'вопрос этапа не вопрос');
+  assert.ok(report.lesson >= 1 && report.lesson <= 36, `номер занятия ${report.lesson} вне года`);
+
+  // Этап не должен превращаться в прогресс: ни процентов, ни «этап 2 из 3».
+  const stageText = JSON.stringify(report.stage);
+  assert.equal(/%/.test(stageText), false, 'в этапе появились проценты');
+  assert.equal(/этап \d/i.test(stageText), false, 'этап пронумерован как прогресс');
+  console.log('  ok этап года в отчёте: без процентов и нумерации');
+}
+
 /* ---- 2b. Гибкие навыки в отчёте — список тем, а не оценка ---- */
 {
   // Навык недели собирается из карты «история → навыки». Проверяем сам

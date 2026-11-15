@@ -38,6 +38,10 @@ type Report = {
   question: string;
   scenarioNotes: { scenarioId: string; text: string }[];
   softSkills?: { id: string; title: string; competency: keyof typeof COMPETENCY_LABEL }[];
+  /** Этап года: меняет вопрос недели, а не оценку ребёнка. */
+  stage?: { id: 'opening' | 'middle' | 'closing'; title: string; task: string; question: string };
+  /** Номер ближайшего занятия года, 1..36. */
+  lesson?: number;
   program: {
     week: number;
     weekTitle: string;
@@ -521,6 +525,23 @@ function ParentPage() {
       {/* ---------------- недельный отчёт ---------------- */}
       {report && (
         <>
+          {/*
+            Этап года. Раньше отчёт в сентябре и в мае выглядел одинаково, и
+            вопрос недели был одним и тем же. Этап меняет вопрос, а не оценку:
+            в мае спрашиваем «что я забираю с собой», а не «прогресс 80%».
+          */}
+          {report.stage && (
+            <div className="card stage-card">
+              <span className="tag">{report.stage.title}</span>
+              <p className="muted small" style={{ marginTop: 8 }}>
+                {report.stage.task}
+              </p>
+              <p style={{ marginBottom: 0 }}>
+                <strong>Вопрос недели:</strong> «{report.stage.question}»
+              </p>
+            </div>
+          )}
+
           <div className="card">
             <h2>Неделя</h2>
             <div className="stat">
