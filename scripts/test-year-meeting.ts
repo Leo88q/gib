@@ -199,8 +199,16 @@ console.log('  ok правила телесных упражнений: дейс
 /* ---- 11. «Замри на пике»: начало сцены и место остановки ---- */
 
 const withFreeze = YEAR.lessons.filter((lesson) => meetingPlan(lesson).freeze);
-assert.ok(withFreeze.length >= 15, `приём есть у ${withFreeze.length} занятий — это единичный случай, а не метод`);
-assert.ok(withFreeze.length < YEAR.lessons.length, 'приём обещан на всех занятиях, хотя начало сцены есть не везде');
+/*
+ * Приём есть ровно там, где написано начало сцены. Раньше здесь стояло
+ * обратное условие («не на всех занятиях»), потому что начала не было у
+ * половины дней и обещать приём везде было нельзя. Теперь начало написано для
+ * всех 60 дней, и приём доступен на каждой встрече — это не расширение
+ * обещания, а следствие того, что сцена есть.
+ */
+assert.equal(withFreeze.length, YEAR.lessons.length, `приём есть у ${withFreeze.length} занятий из ${YEAR.lessons.length}, хотя начало сцены написано для всех дней`);
+const freezeStarts = new Set(withFreeze.map((lesson) => meetingPlan(lesson).freeze!.start));
+assert.equal(freezeStarts.size, withFreeze.length, 'начало сцены скопировано с другой встречи');
 
 for (const lesson of withFreeze) {
   const plan = meetingPlan(lesson);
@@ -217,12 +225,18 @@ for (const lesson of withFreeze) {
   assert.ok(/стоп/i.test(plan.blocks[3].lead), `занятие ${lesson.number}: в блоке практики нет остановки`);
 }
 
-// Где начала нет — приём не выдумывается и блок остаётся прежним.
-const withoutFreeze = YEAR.lessons.filter((lesson) => !meetingPlan(lesson).freeze);
-assert.ok(withoutFreeze.length > 0, 'приём есть у всех — значит, начало сцены где-то выдумано');
-for (const lesson of withoutFreeze) {
-  assert.ok(!/стоп-кадр|замирает/i.test(meetingPlan(lesson).blocks[3].lead), `занятие ${lesson.number}: обещан приём без начала сцены`);
+/*
+ * Обратная сторона того же правила: если начало сцены когда-нибудь пропадёт,
+ * приём не должен остаться в плане. Проверяем это на уровне источника, а не
+ * предполагаем: у каждого блока практики с приёмом обязано быть начало сцены,
+ * и каждое начало — из авторских текстов, а не из общего шаблона.
+ */
+for (const lesson of YEAR.lessons) {
+  const plan = meetingPlan(lesson);
+  const promised = /замирает|стоп-кадр/i.test(plan.blocks[3].lead);
+  assert.equal(promised, Boolean(plan.freeze), `занятие ${lesson.number}: приём обещан без начала сцены или начало есть, а приёма нет`);
+  assert.ok(!/^Одна ситуация из жизни/.test(plan.blocks[3].lead), `занятие ${lesson.number}: блок практики без сцены, хотя сцена написана`);
 }
-console.log(`  ok «замри на пике»: ${withFreeze.length} занятий с началом сцены, остальные без обещания`);
+console.log(`  ok «замри на пике»: ${withFreeze.length} занятий с началом сцены, шаблонных блоков нет`);
 
 console.log('\nПлан встречи: 40 минут, из готового контента, без родительских текстов.');
