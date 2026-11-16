@@ -29,6 +29,12 @@ const SKILL_CREATURE: Record<string, string> = {
 const HEROES = ['lis', 'mira', 'tima'] as const;
 export type HeroId = (typeof HEROES)[number];
 
+/** Имя героя линейки — его произносит интерфейс, а не картинка. */
+export const HERO_NAME: Record<string, string> = { '5-7': 'Лис', '8-10': 'Мира', '11-13': 'Тима' };
+
+/** Подпись линейки для экрана: «8–10 лет». */
+export const BAND_LABEL: Record<string, string> = { '5-7': '5–7 лет', '8-10': '8–10 лет', '11-13': '11–13 лет' };
+
 /** Дефолт для картинки, которой нет: Лис, а не битая картинка. */
 export const DEFAULT_ART = DEFAULT_CREATURE_ART;
 
@@ -37,6 +43,14 @@ export function heroArt(band: string): string {
   if (band === '8-10') return creatureArt('mira');
   if (band === '11-13') return creatureArt('tima');
   return creatureArt('lis');
+}
+
+/** Крупный портрет героя для маленьких круглых слотов (56–96 px).
+ *  Полный рост в кружке 56 px читается как «человек вдалеке», а лицо — читается. */
+export function heroFace(band: string): string {
+  if (band === '8-10') return '/art/v2/creatures/mira-face.png';
+  if (band === '11-13') return '/art/v2/creatures/tima-face.png';
+  return '/art/v2/creatures/lis-face.png';
 }
 
 /** Портрет героя по id, для мест, где линейка не нужна. */

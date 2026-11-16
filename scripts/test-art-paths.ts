@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs';
 import { PROGRAM } from '../lib/content/program/index.ts';
-import { DEFAULT_ART, heroArt, heroById, skillArt, competencyArt, weekArt } from '../lib/art-paths.ts';
+import { DEFAULT_ART, heroArt, heroFace, heroById, skillArt, competencyArt, weekArt } from '../lib/art-paths.ts';
 import { PLACES, ITEMS, CREATURES, placeArt, itemArt, creatureArt } from '../lib/design/tokens.ts';
 
 const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -46,6 +46,9 @@ if (weekArts.size < 5) throw new Error(`Места не используются
 
 /* --- проводники --------------------------------------------------------- */
 for (const band of ['5-7', '8-10', '11-13']) checkImage(heroArt(band));
+/* Круглые слоты берут крупный портрет: полный рост в 56 px не читается. */
+for (const band of ['5-7', '8-10', '11-13']) checkImage(heroFace(band));
+if (heroFace('5-7') === heroFace('11-13')) throw new Error('Портреты разных линеек совпадают');
 if (heroArt('5-7') === heroArt('11-13')) throw new Error('Разные линейки должны вести разные герои');
 for (const hero of ['lis', 'mira', 'tima']) checkImage(heroById(hero));
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { skillArt, DEFAULT_ART } from '@/lib/art-paths';
+import { skillArt, heroFace, HERO_NAME, BAND_LABEL, DEFAULT_ART } from '@/lib/art-paths';
 import { YEAR, lessonOfDay } from '@/lib/content/year/index.ts';
 import type { AgeBand } from '@/lib/types';
 import TaskView, { type AnswerPayload, type TaskInstance } from '@/components/TaskView';
@@ -724,6 +724,15 @@ export default function Home() {
         {tab === 'home' && (
           <>
             <div className="panel mission-card">
+              {/* Герой линейки — часть интерфейса, а не наклейка: он называет,
+                  чья это версия программы. Возраст уже выбран в профиле. */}
+              <div className="mission-hero">
+                <img src={heroFace(profile?.band ?? '8-10')} alt="" />
+                <div>
+                  <b>{HERO_NAME[profile?.band ?? '8-10']} ведёт сегодня</b>
+                  <span>{BAND_LABEL[profile?.band ?? '8-10']} · {program?.weekTitle ?? 'Программа'}</span>
+                </div>
+              </div>
               {program?.weekArt && <img className="mission-week-art" src={program.weekArt} alt="" decoding="async" onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }} />}
               <div className="mission-card-head">
                 <span className="chip">
