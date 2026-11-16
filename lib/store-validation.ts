@@ -181,6 +181,26 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
     if (!object(consent) || !text(consent.version) || !Number.isFinite(consent.at) || (consent.at as number) <= 0) throw new Error('Invalid guardian consent');
   }
   if (key === 'profiles' && row.householdAdult !== undefined && !['parent', 'other', 'none'].includes(String(row.householdAdult))) throw new Error('Invalid household adult');
+  if (key === 'profiles' && row.videoConsent !== undefined) {
+    const vc = row.videoConsent;
+    if (!object(vc) || typeof vc.granted !== 'boolean' || !text(vc.version) || !Number.isFinite(vc.updatedAt) || (vc.updatedAt as number) <= 0) {
+      throw new Error('Invalid video consent');
+    }
+    if (vc.revokedAt !== undefined && (!Number.isFinite(vc.revokedAt) || (vc.revokedAt as number) <= 0)) {
+      throw new Error('Invalid video consent revokedAt');
+    }
+  }
+  if (key === 'programStates' && row.lessonReminder !== undefined) {
+    const lr = row.lessonReminder;
+    if (
+      !object(lr)
+      || typeof lr.enabled !== 'boolean'
+      || !(lr.lastRemindedLesson === null || (Number.isInteger(lr.lastRemindedLesson) && (lr.lastRemindedLesson as number) >= 1))
+      || !(lr.lastRemindedAt === null || (typeof lr.lastRemindedAt === 'number' && Number.isFinite(lr.lastRemindedAt) && lr.lastRemindedAt >= 0))
+    ) {
+      throw new Error('Invalid lesson reminder state');
+    }
+  }
   if (key === 'programStates' && row.reviewDay !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(row.reviewDay))) throw new Error('Invalid review day');
   if (key === 'programStates' && row.reviewStates !== undefined) {
     // Расписание повторения: только сроки и счётчики, без текстов и свободных полей.

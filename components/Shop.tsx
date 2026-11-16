@@ -1,8 +1,8 @@
 'use client';
 
 import Pet, { type PetVariant } from './Pet';
-import { heroArt, HERO_NAME } from '@/lib/art-paths';
-import { creatureArt, itemArt } from '@/lib/design/tokens';
+import { heroArt, HERO_NAME, petStageArt } from '@/lib/art-paths';
+import { itemArt } from '@/lib/design/tokens';
 
 export type ShopItemView = {
   id: string;
@@ -75,7 +75,7 @@ export default function Shop({
           />
           {equipped.pet && (
             <div className="shop-pet">
-              <img src={creatureArt('pet')} alt="" className="shop-pet-v2" decoding="async" />
+              <img src={petStageArt(level)} alt="" className="shop-pet-v2" decoding="async" />
               <span className="shop-pet-emblem">
                 <Pet variant={equipped.pet} level={level} />
               </span>
@@ -133,7 +133,7 @@ export default function Shop({
                   <div className="shop-thumb">
                     {item.slot === 'pet' ? (
                       <div className="shop-pet-thumb">
-                        <img src={creatureArt('pet')} alt="" className="shop-pet-v2-thumb" loading="lazy" decoding="async" />
+                        <img src={petStageArt(level)} alt="" className="shop-pet-v2-thumb" loading="lazy" decoding="async" />
                         <span className="shop-pet-emblem">
                           <Pet variant={item.variant as PetVariant} level={level} />
                         </span>

@@ -17,7 +17,7 @@ import { limitStoreInfo } from '../ratelimit.ts';
 import { auditSecrets, clientLeaks, secretsReady, strictBlockers } from '../secrets.ts';
 import { openBridge, pingDatabase } from '../postgres/state-backend.ts';
 import { receiptConfig } from '../billing/receipt.ts';
-import { OPERATOR, legalMissing, legalReady } from '../legal/documents.ts';
+import { legalMissing, legalReady, resolveOperator } from '../legal/documents.ts';
 import { storeModeProblem } from '../store-mode.ts';
 
 export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'secrets' | 'billing' | 'notifications';
@@ -193,11 +193,12 @@ function checkSecrets(): Check {
 function checkBilling(): Check {
   const keys = Boolean(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY);
   const receipt = receiptConfig() !== null;
-  const legal = legalReady(OPERATOR);
+  const operator = resolveOperator();
+  const legal = legalReady(operator);
   const problems = [
     !keys ? 'нет ключей ЮKassa' : '',
     !receipt ? 'не настроен чек: нет ставки НДС' : '',
-    !legal ? `не заполнены реквизиты оферты: ${legalMissing(OPERATOR).join(', ')}` : '',
+    !legal ? `не заполнены реквизиты оферты: ${legalMissing(operator).join(', ')}` : '',
   ].filter(Boolean);
   const ok = keys && receipt && legal;
   return {

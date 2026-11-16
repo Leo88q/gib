@@ -41,6 +41,20 @@ export const OPERATOR: Operator = {
   email: '',
 };
 
+/**
+ * Реквизиты с учётом переменных окружения деплоя (`GIB_OPERATOR_*`).
+ * По умолчанию возвращает `OPERATOR`, чтобы незаполненные реквизиты оставались
+ * явным блокером запуска до внесения настоящих данных ИП или ООО.
+ */
+export function resolveOperator(env: Record<string, string | undefined> = process.env): Operator {
+  return {
+    name: env.GIB_OPERATOR_NAME?.trim() || OPERATOR.name,
+    registration: env.GIB_OPERATOR_REGISTRATION?.trim() || OPERATOR.registration,
+    address: env.GIB_OPERATOR_ADDRESS?.trim() || OPERATOR.address,
+    email: env.GIB_OPERATOR_EMAIL?.trim() || OPERATOR.email,
+  };
+}
+
 /** Готовы ли реквизиты. Без них документы не могут считаться опубликованными. */
 export function legalReady(operator: Operator = OPERATOR): boolean {
   return Boolean(operator.name.trim() && operator.registration.trim() && operator.address.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(operator.email));

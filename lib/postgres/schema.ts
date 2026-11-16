@@ -275,3 +275,25 @@ CREATE TABLE IF NOT EXISTS gib.funnel_events (
 );
 CREATE INDEX IF NOT EXISTS funnel_events_at ON gib.funnel_events(at);
 `;
+
+/**
+ * Таблица двойного кодирования очных показов для исследовательского контура ВУЗа.
+ * Живёт отдельно от `SCHEMA_VERSION`, как и `gib.funnel_events`, и хранит только
+ * псевдонимизированные наблюдения двух независимых оценщиков по шкале 0 · 1 · 2.
+ */
+export const RESEARCH_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.research_codings (
+  sample_id TEXT PRIMARY KEY,
+  profile_id TEXT,
+  participant_hash TEXT NOT NULL,
+  age_band TEXT NOT NULL CHECK (age_band IN ('5-7', '8-10', '11-13')),
+  lesson INTEGER NOT NULL CHECK (lesson BETWEEN 1 AND 36),
+  stage TEXT NOT NULL CHECK (stage IN ('entry', 'mid', 'final')),
+  rater_a JSONB,
+  rater_b JSONB,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  updated_at BIGINT NOT NULL CHECK (updated_at >= 0)
+);
+CREATE INDEX IF NOT EXISTS research_codings_lesson ON gib.research_codings(lesson);
+`;

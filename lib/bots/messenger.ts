@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { store } from '../store.ts';
 import { buildReport } from '../engine/session.ts';
 import { canSend, DEFAULT_NOTIFICATIONS } from '../family/notifications.ts';
+import { findDueLessonReminder, formatLessonReminderMessage } from '../family/lesson-reminders.ts';
 import { issueDeviceLinkCode } from '../web-auth.ts';
 import type { Profile } from '../types.ts';
 
@@ -261,9 +262,17 @@ export function buildBotReply(params: {
  */
 export async function dispatchDueNotifications(
   options: { now?: number; transport?: Transport; appUrl?: string | null } = {},
-): Promise<{ checked: number; sent: number; skipped: number; failed: number }> {
+): Promise<{
+  checked: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  remindersChecked: number;
+  remindersSent: number;
+}> {
   const now = options.now ?? Date.now();
-  const rows = [...store.all().notificationSettings];
+  const snapshot = store.all();
+  const rows = [...snapshot.notificationSettings];
   let checked = 0;
   let sent = 0;
   let skipped = 0;
@@ -296,5 +305,40 @@ export async function dispatchDueNotifications(
     }
   }
 
-  return { checked, sent, skipped, failed };
+  let remindersChecked = 0;
+  let remindersSent = 0;
+  const allProfiles = [...snapshot.profiles];
+  for (const profile of allProfiles) {
+    const prog = store.programState(profile.id);
+    if (!prog.lessonReminder?.enabled) continue;
+    remindersChecked += 1;
+    const due = findDueLessonReminder(prog.lessonReminder, prog.lessons, now);
+    if (!due) continue;
+
+    const membership = snapshot.memberships.find((m) => m.profileId === profile.id);
+    const group = membership ? snapshot.groups.find((g) => g.id === membership.groupId) : undefined;
+    const message = formatLessonReminderMessage({
+      childName: profile.name,
+      due,
+      groupName: group?.name ?? null,
+    });
+    const delivered = await deliverToParent(profile.parentId, message, {
+      subject: `Город историй — напоминание о встрече ${due.lesson}`,
+      transport: options.transport,
+      appUrl: options.appUrl,
+    });
+    if (delivered.sent) {
+      store.setProgramState({
+        ...prog,
+        lessonReminder: {
+          enabled: true,
+          lastRemindedLesson: due.lesson,
+          lastRemindedAt: now,
+        },
+      });
+      remindersSent += 1;
+    }
+  }
+
+  return { checked, sent, skipped, failed, remindersChecked, remindersSent };
 }

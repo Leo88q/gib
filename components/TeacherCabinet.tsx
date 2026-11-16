@@ -57,7 +57,7 @@ type Method = {
   alignments: { lesson: number; wording: string; groups: string[] }[];
   coverage: { byGroup: Record<string, number>; byArea: Record<string, number>; lessonsByArea: Record<string, number[]> };
   pages: { lesson: number; trained: string; examples: { where: string; what: string }[]; noticeAtHome: string; fgosWording: string }[];
-  demos: { items: { id: string; title: string; seconds: number; shot: string; says: string; mustSee: string }[]; totalMinutes: number };
+  demos: { items: { id: string; title: string; block?: string; seconds: number; shot: string; says: string; mustSee: string }[]; totalMinutes: number };
   backup: { items: { id: string; title: string; situation: string; minutes: number; lead: string; why: string }[]; labels: Record<string, string> };
   refusalAlert: number;
   briefs: {
@@ -112,6 +112,8 @@ export default function TeacherCabinet() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [lessons, setLessons] = useState<Record<string, Lessons>>({});
   const [marked, setMarked] = useState<Record<string, string>>({});
+  const [demoFilter, setDemoFilter] = useState<string>('all');
+  const demoVideoBase = (process.env.NEXT_PUBLIC_DEMO_VIDEO_BASE_URL ?? '').replace(/\/+$/, '');
 
   const load = useCallback(async () => {
     try {
@@ -287,6 +289,19 @@ export default function TeacherCabinet() {
             Создать группу
           </button>
         </div>
+
+        <details className="teacher-quickstart" open>
+          <summary>
+            <strong>Быстрый старт для ведущего: как провести первую встречу</strong>
+          </summary>
+          <ol>
+            <li><strong>Круг (5 минут).</strong> Сядьте вместе с детьми и ответьте на вопрос круга первым одним обычным словом. Напоминайте: каждый вправе сказать «пропускаю».</li>
+            <li><strong>Стоп-слово и границы.</strong> До начала этюдов договоритесь об общем стоп-слове: при его произнесении сцена сразу замирает без вопросов и уговоров.</li>
+            <li><strong>Ритм 40 минут.</strong> Пять коротких блоков: круг, разбор домашней истории без поиска «правильного» ответа, игровая разминка, этюд в парах с остановкой на пике и спокойное завершение.</li>
+            <li><strong>Показы раз в тему.</strong> На двенадцати встречах-показах приглашайте не более двух раз. Выход отмечается по трём якорям (отказался / вышел по приглашению / вышел сам) без критики выступления.</li>
+            <li><strong>Отметка за минуту.</strong> После занятия отметьте присутствие одной кнопкой в списке группы — без сбора объяснений пропуска.</li>
+          </ol>
+        </details>
       </section>
     );
   }
@@ -303,6 +318,19 @@ export default function TeacherCabinet() {
 
   return (
     <section className="panel">
+      <details className="teacher-quickstart no-print">
+        <summary>
+          <strong>Памятка ведущему: пять правил первой и каждой встречи</strong>
+        </summary>
+        <ol>
+          <li><strong>Круг без ожидания «отлично».</strong> Начинайте с себя спокойным бытовым словом; право «пропускаю» действует всегда.</li>
+          <li><strong>Никаких оценок выбора.</strong> На разборе спрашивайте «что выбрал → что было дальше → как можно иначе» и принимайте ответ словом «понятно».</li>
+          <li><strong>Замри на пике.</strong> Начинайте этюд с готовой реплики из плана и останавливайте сцену до развязки.</li>
+          <li><strong>Показ — приглашение, а не экзамен.</strong> Два спокойных приглашения; отказ фиксируется как рабочий сигнал ведущему, а не как неудача ребёнка.</li>
+          <li><strong>Граница приватности.</strong> Ответы детей в приложении и семейные заметки ведущему намеренно не открываются — так и задумано.</li>
+        </ol>
+      </details>
+
       {nextPlan && (
         <div className="teacher-plan">
           {/* Название этой встречи, а не только темы: иначе три встречи
@@ -485,16 +513,51 @@ export default function TeacherCabinet() {
             {method.demos.items.length} роликов, {method.demos.totalMinutes} минут на все. Смотреть по блоку,
             к которому готовитесь.
           </p>
-          {method.demos.items.map((demo) => (
-            <details key={demo.id}>
-              <summary className="muted">
-                {demo.title} · {Math.round(demo.seconds / 60)} мин
-              </summary>
-              <p className="muted">В кадре: {demo.shot}</p>
-              <p className="muted">Говорит: {demo.says}</p>
-              <p className="muted">Должно быть видно: {demo.mustSee}</p>
-            </details>
-          ))}
+          <div className="teacher-demo-filter no-print">
+            {([
+              ['all', 'Все блоки'],
+              ['circle', 'Круг'],
+              ['debrief', 'Разбор'],
+              ['training', 'Разминка'],
+              ['pair', 'Этюд в парах'],
+              ['showcase', 'Показ'],
+              ['trouble', 'Сложный момент'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`chip${demoFilter === key ? ' on' : ''}`}
+                onClick={() => setDemoFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {method.demos.items
+            .filter((demo) => demoFilter === 'all' || demo.block === demoFilter)
+            .map((demo) => (
+              <details key={demo.id} className="teacher-demo-card">
+                <summary className="muted">
+                  {demo.title} · {Math.round(demo.seconds / 60)} мин
+                </summary>
+                {demoVideoBase ? (
+                  <video
+                    className="teacher-demo-video"
+                    controls
+                    preload="metadata"
+                    src={`${demoVideoBase}/${encodeURIComponent(demo.id)}.mp4`}
+                  />
+                ) : (
+                  <p className="muted small">
+                    Формат демонстрации: пошаговая раскадровка для ведущего (при подключении медиахранилища через{' '}
+                    <code>NEXT_PUBLIC_DEMO_VIDEO_BASE_URL</code> здесь открывается видеоплеер).
+                  </p>
+                )}
+                <p className="muted">В кадре: {demo.shot}</p>
+                <p className="muted">Говорит: {demo.says}</p>
+                <p className="muted">Должно быть видно: {demo.mustSee}</p>
+              </details>
+            ))}
 
           <h3>Если группа не готова к плану</h3>
           <p className="muted">

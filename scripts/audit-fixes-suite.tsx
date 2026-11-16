@@ -13,8 +13,14 @@ import Room from '../components/Room.tsx';
 import Shop from '../components/Shop.tsx';
 import ExerciseFrame from '../components/ExerciseFrame.tsx';
 import PracticeMap from '../components/PracticeMap.tsx';
+import AdminDashboard from '../components/AdminDashboard.tsx';
+import LessonReminderSettings from '../components/LessonReminderSettings.tsx';
+import VideoConsentControl from '../components/VideoConsentControl.tsx';
+import ChildStudioCard from '../components/ChildStudioCard.tsx';
 import { paywallCopy } from '../lib/access/entitlement.ts';
 import { SHOP } from '../lib/gamification.ts';
+import { resolveOperator, legalMissing, legalReady } from '../lib/legal/documents.ts';
+import { computeInterRaterReliability } from '../lib/research/coding.ts';
 
 function signTelegramInitData(botToken: string, userId: number): string {
   const authDate = Math.floor(Date.now() / 1000);
@@ -27,9 +33,19 @@ function signTelegramInitData(botToken: string, userId: number): string {
 }
 
 async function main() {
-  /* ---- 1. Проверка разметки Дизайна v2 ---- */
+  /* ---- 1. Проверка разметки Дизайна v2 + стадии роста 3D-питомца + прозрачный альфа-канал предметов ---- */
   const crown = SHOP.find((i) => i.variant === 'crown')!;
-  const roomHtml = renderToStaticMarkup(
+  const roomBaby = renderToStaticMarkup(
+    <Room
+      hero="/art/v2/creatures/mira-face.png"
+      heroName="Мира"
+      pet="cat"
+      petLevel={1}
+      petMood="happy"
+      equippedItems={[{ id: crown.id, name: crown.name, variant: crown.variant, slot: 'head' }]}
+    />,
+  );
+  const roomTeen = renderToStaticMarkup(
     <Room
       hero="/art/v2/creatures/mira-face.png"
       heroName="Мира"
@@ -39,8 +55,30 @@ async function main() {
       equippedItems={[{ id: crown.id, name: crown.name, variant: crown.variant, slot: 'head' }]}
     />,
   );
-  assert.ok(roomHtml.includes('/art/v2/creatures/pet.png'), 'Room рендерит 3D-питомца v2');
-  assert.ok(roomHtml.includes('/art/v2/items/crown.png'), 'Room рендерит надетый 3D-предмет');
+  const roomAdult = renderToStaticMarkup(
+    <Room
+      hero="/art/v2/creatures/mira-face.png"
+      heroName="Мира"
+      pet="cat"
+      petLevel={6}
+      petMood="happy"
+      equippedItems={[{ id: crown.id, name: crown.name, variant: crown.variant, slot: 'head' }]}
+    />,
+  );
+  assert.ok(roomBaby.includes('/art/v2/creatures/pet.png'), 'Room lvl 1 рендерит малыша 3D-питомца v2');
+  assert.ok(roomTeen.includes('/art/v2/creatures/pet-teen.png'), 'Room lvl 3 рендерит подросшего 3D-питомца v2');
+  assert.ok(roomAdult.includes('/art/v2/creatures/pet-adult.png'), 'Room lvl 6 рендерит взрослого 3D-питомца v2');
+  assert.ok(roomBaby.includes('/art/v2/items/crown.png'), 'Room рендерит надетый 3D-предмет');
+
+  // Проверяем PNG IHDR colorType === 6 (RGBA с прозрачным фоном) у всех 19 предметов
+  const itemsDir = path.join(process.cwd(), 'public', 'art', 'v2', 'items');
+  const itemPngs = fs.readdirSync(itemsDir).filter((f) => f.endsWith('.png'));
+  assert.equal(itemPngs.length, 19, 'в public/art/v2/items ровно 19 PNG');
+  for (const file of itemPngs) {
+    const header = fs.readFileSync(path.join(itemsDir, file)).subarray(0, 29);
+    const colorType = header[25];
+    assert.equal(colorType, 6, `${file} имеет RGBA альфа-канал (colorType=6)`);
+  }
 
   const shopHtml = renderToStaticMarkup(
     <Shop
@@ -57,6 +95,45 @@ async function main() {
   assert.ok(shopHtml.includes('/art/v2/creatures/mira.png'), 'Shop показывает 3D-проводника возрастной линейки');
   assert.ok(shopHtml.includes('/art/v2/creatures/pet.png'), 'Shop показывает 3D-питомца v2');
   assert.ok(!shopHtml.includes('shop-avatar'), 'Shop больше не рендерит старого плоского 2D-мальчика');
+
+  // Проверка SSR-рендера новых компонентов Части 1
+  const adminHtml = renderToStaticMarkup(<AdminDashboard />);
+  assert.ok(adminHtml.includes('Панель управления и исследования'), 'AdminDashboard рендерит заголовок');
+  const reminderHtml = renderToStaticMarkup(<LessonReminderSettings profileId="p_test" />);
+  assert.ok(reminderHtml.includes('Напоминание за день до встречи'), 'LessonReminderSettings рендерит заголовок');
+  const consentHtml = renderToStaticMarkup(<VideoConsentControl profileId="p_test" />);
+  assert.ok(consentHtml.includes('Съёмка очного показа для исследования'), 'VideoConsentControl рендерит заголовок');
+  const studioEmptyHtml = renderToStaticMarkup(<ChildStudioCard profileId="p_test" />);
+  assert.equal(studioEmptyHtml, '', 'ChildStudioCard скрыт по умолчанию без очной группы');
+
+  /* ---- 1b. Реквизиты оператора из переменных окружения + математика IRR ---- */
+  const fullEnvOperator = resolveOperator({
+    GIB_OPERATOR_NAME: 'ООО «Город Историй»',
+    GIB_OPERATOR_REGISTRATION: 'ИНН 7701234567 · ОГРН 1237700123456',
+    GIB_OPERATOR_ADDRESS: '101000, г. Москва, ул. Примерная, д. 1',
+    GIB_OPERATOR_EMAIL: 'privacy@gorod-istoriy.ru',
+  });
+  assert.deepEqual(legalMissing(fullEnvOperator), [], 'все реквизиты оператора закрываются через GIB_OPERATOR_*');
+  assert.equal(legalReady(fullEnvOperator), true);
+
+  const irrPerfect = computeInterRaterReliability(
+    ([0, 1, 2, 1, 2] as const).map((score, idx) => ({
+      sampleId: `s_${idx}`,
+      profileId: null,
+      participantHash: `subj_${idx}`,
+      ageBand: '8-10' as const,
+      lesson: 3,
+      stage: 'entry' as const,
+      raterA: { raterId: 'a', score, codedAt: 1 },
+      raterB: { raterId: 'b', score, codedAt: 1 },
+      createdAt: 1,
+      updatedAt: 1,
+    })),
+  );
+  assert.equal(irrPerfect.observedAgreement, 1);
+  assert.equal(irrPerfect.cohenKappa, 1);
+  assert.equal(irrPerfect.weightedKappa, 1);
+  assert.equal(irrPerfect.gwetAc1, 1);
 
   const frameGonogo = renderToStaticMarkup(
     <ExerciseFrame kind="gonogo" band="8-10" instruction="Инструкция">
@@ -98,13 +175,20 @@ import { store } from '${process.cwd()}/lib/store.ts';
 import { openBridge } from '${process.cwd()}/lib/postgres/state-backend.ts';
 import { calculateRefundAmount } from '${process.cwd()}/lib/billing.ts';
 import { GET as teacherGet, POST as teacherPost, PUT as teacherPut } from '${process.cwd()}/app/api/teacher/route.ts';
-import { GET as lessonsGet } from '${process.cwd()}/app/api/lessons/route.ts';
+import { GET as lessonsGet, POST as lessonsPost } from '${process.cwd()}/app/api/lessons/route.ts';
 import { POST as pinPost, DELETE as pinDelete } from '${process.cwd()}/app/api/parent-pin/route.ts';
 import { GET as authGet, POST as authPost } from '${process.cwd()}/app/api/auth/session/route.ts';
 import { POST as linkPost } from '${process.cwd()}/app/api/auth/link/route.ts';
 import { POST as tgWebhook } from '${process.cwd()}/app/api/telegram/webhook/route.ts';
 import { POST as maxWebhook } from '${process.cwd()}/app/api/max/webhook/route.ts';
+import { GET as remindersGet, POST as remindersPost } from '${process.cwd()}/app/api/lesson-reminders/route.ts';
+import { GET as consentGet, POST as consentPost } from '${process.cwd()}/app/api/video-consent/route.ts';
+import { GET as adminOverviewGet } from '${process.cwd()}/app/api/admin/overview/route.ts';
+import { GET as adminExportGet } from '${process.cwd()}/app/api/admin/export/route.ts';
+import { GET as adminResearchGet, POST as adminResearchPost } from '${process.cwd()}/app/api/admin/research/route.ts';
 import { dispatchDueNotifications } from '${process.cwd()}/lib/bots/messenger.ts';
+import { pingAsyncPool, readAnalyticsSnapshotAsync, closeAsyncPool } from '${process.cwd()}/lib/postgres/async-pool.ts';
+import { YEAR } from '${process.cwd()}/lib/content/year/index.ts';
 
 const PARENT_INIT = ${JSON.stringify(parentInit)};
 const TEACHER_INIT = ${JSON.stringify(teacherInit)};
@@ -153,6 +237,20 @@ async function run() {
   assert.equal(teacherLessons.lessons.length, 36);
   assert.equal(teacherLessons.page, undefined, 'педагогу не утекает домашний отчёт');
   assert.equal(teacherLessons.access, undefined, 'педагогу не утекает статус оплаты');
+
+  // Родитель видит groupInfo + managedByGroup и не может перезаписать отметку педагога
+  const parentLessonsRes = await lessonsGet(new Request('http://localhost/api/lessons?profileId=p_paid_pg', {
+    headers: { 'x-telegram-init-data': PARENT_INIT },
+  }));
+  const parentLessons = await parentLessonsRes.json();
+  assert.equal(parentLessons.managedByGroup, true);
+  assert.equal(parentLessons.groupInfo?.id, group.id);
+  const forbiddenParentMark = await lessonsPost(new Request('http://localhost/api/lessons', {
+    method: 'POST',
+    headers: { 'x-telegram-init-data': PARENT_INIT, 'content-type': 'application/json' },
+    body: JSON.stringify({ profileId: 'p_paid_pg', lesson: 1, attended: false }),
+  }));
+  assert.equal(forbiddenParentMark.status, 403);
 
   const markRes = await teacherPost(new Request('http://localhost/api/teacher', {
     method: 'POST',
@@ -330,6 +428,210 @@ async function run() {
     transport: (async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as typeof fetch,
   });
   assert.equal(secondDispatch.sent, 0, 'повторная рассылка раньше недели пропускается');
+
+  // G. Напоминания об очной встрече (Item 4) + cron-рассылка без повторного спама
+  const tomorrowIso = new Date(now + 24 * 3600_000).toISOString().slice(0, 10);
+  const lionState = store.programState('p_notify_1');
+  store.setProgramState({
+    ...lionState,
+    startedAt: now,
+    lessons: [{ lesson: 1, date: tomorrowIso }],
+  });
+  const remPost = await remindersPost(new Request('http://localhost/api/lesson-reminders', {
+    method: 'POST',
+    headers: { 'x-telegram-init-data': PARENT_INIT, 'content-type': 'application/json' },
+    body: JSON.stringify({ profileId: 'p_notify_1', enabled: true }),
+  }));
+  assert.equal(remPost.status, 200);
+  const remGet = await remindersGet(new Request('http://localhost/api/lesson-reminders?profileId=p_notify_1', {
+    headers: { 'x-telegram-init-data': PARENT_INIT },
+  }));
+  assert.equal((await remGet.json()).reminder.enabled, true);
+
+  const reminderMessages: string[] = [];
+  const remDispatch1 = await dispatchDueNotifications({
+    now,
+    transport: (async (_url: unknown, init?: RequestInit) => {
+      reminderMessages.push(String(init?.body ?? ''));
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }) as typeof fetch,
+  });
+  assert.equal(remDispatch1.remindersSent, 1);
+  assert.ok(reminderMessages[0].includes('Лев'));
+
+  const remDispatch2 = await dispatchDueNotifications({
+    now: now + 120_000,
+    transport: (async () => new Response(JSON.stringify({ ok: true }), { status: 200 })) as typeof fetch,
+  });
+  assert.equal(remDispatch2.remindersSent, 0, 'напоминание на одну и ту же встречу не дублируется');
+
+  // H. Отдельное видеосогласие + двойное слепое кодирование + IRR + обезличивание при отзыве (Item 9)
+  const showcaseLessonNum = YEAR.lessons.find((l) => l.isShowcase)!.number;
+  const noConsentCode = await adminResearchPost(new Request('http://localhost/api/admin/research', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin-secret-token-1234567890', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create_sample',
+      profileId: 'p_notify_1',
+      lesson: showcaseLessonNum,
+    }),
+  }));
+  assert.equal(noConsentCode.status, 403, 'без видеосогласия создание образца с profileId заблокировано');
+
+  const grantConsent = await consentPost(new Request('http://localhost/api/video-consent', {
+    method: 'POST',
+    headers: { 'x-telegram-init-data': PARENT_INIT, 'content-type': 'application/json' },
+    body: JSON.stringify({ profileId: 'p_notify_1', granted: true }),
+  }));
+  assert.equal(grantConsent.status, 200);
+  const checkConsent = await consentGet(new Request('http://localhost/api/video-consent?profileId=p_notify_1', {
+    headers: { 'x-telegram-init-data': PARENT_INIT },
+  }));
+  assert.equal((await checkConsent.json()).granted, true);
+
+  const createSampleRes = await adminResearchPost(new Request('http://localhost/api/admin/research', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin-secret-token-1234567890', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create_sample',
+      profileId: 'p_notify_1',
+      lesson: showcaseLessonNum,
+    }),
+  }));
+  assert.equal(createSampleRes.status, 200);
+  const { sample } = await createSampleRes.json();
+
+  const rateARes = await adminResearchPost(new Request('http://localhost/api/admin/research', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin-secret-token-1234567890', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'submit_rating',
+      sampleId: sample.sampleId,
+      slot: 'rater_a',
+      raterId: 'rater_a',
+      score: 2,
+    }),
+  }));
+  assert.equal(rateARes.status, 200);
+
+  // Слепой режим: оценщик B до сдачи своей оценки не видит оценку A
+  const blindRes = await adminResearchGet(new Request('http://localhost/api/admin/research?blindSlot=rater_b', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  const blindPayload = await blindRes.json();
+  assert.equal(blindPayload.samples[0].raterA.score, undefined, 'оценка A скрыта от B до сдачи парной оценки');
+
+  const rateBRes = await adminResearchPost(new Request('http://localhost/api/admin/research', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin-secret-token-1234567890', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'submit_rating',
+      sampleId: sample.sampleId,
+      slot: 'rater_b',
+      raterId: 'rater_b',
+      score: 2,
+    }),
+  }));
+  assert.equal(rateBRes.status, 200);
+
+  const researchSummaryRes = await adminResearchGet(new Request('http://localhost/api/admin/research', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  assert.equal(researchSummaryRes.status, 200);
+  const researchSummary = await researchSummaryRes.json();
+  assert.equal(researchSummary.samples.length, 1);
+  assert.equal(researchSummary.report.reliability.pairedCount, 1);
+  assert.equal(researchSummary.report.reliability.observedAgreement, 1);
+  assert.equal(researchSummary.report.constructCoverage.byConstruct.length, 6);
+
+  // Отзыв согласия полностью удаляет записи видеокодирования этого профиля из PostgreSQL (152-ФЗ)
+  const revokeRes = await consentPost(new Request('http://localhost/api/video-consent', {
+    method: 'POST',
+    headers: { 'x-telegram-init-data': PARENT_INIT, 'content-type': 'application/json' },
+    body: JSON.stringify({ profileId: 'p_notify_1', granted: false }),
+  }));
+  assert.equal(revokeRes.status, 200);
+  assert.equal((await revokeRes.json()).purgedSamples, 1);
+  const pgCodings = bridge.query('SELECT profile_id FROM gib.research_codings', []);
+  assert.equal(pgCodings.length, 0, 'после отзыва согласия записи видеокодирования удалены из PostgreSQL');
+
+  // Регистрируем обезличенный образец без привязки к profileId для проверки аналитического снимка
+  const anonSampleRes = await adminResearchPost(new Request('http://localhost/api/admin/research', {
+    method: 'POST',
+    headers: { authorization: 'Bearer admin-secret-token-1234567890', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create_sample',
+      anonymousKey: 'cohort_2026_01',
+      ageBand: '5-7',
+      lesson: showcaseLessonNum,
+    }),
+  }));
+  assert.equal(anonSampleRes.status, 200);
+
+  // I. Панель /api/admin/overview + обезличенный экспорт CSV / JSON / xAPI 1.0.3 (Items 2 & 8)
+  const unauthAdmin = await adminOverviewGet(new Request('http://localhost/api/admin/overview'));
+  assert.equal(unauthAdmin.status, 404, 'без токена админ-маршрут отвечает 404');
+
+  const overviewRes = await adminOverviewGet(new Request('http://localhost/api/admin/overview', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  assert.equal(overviewRes.status, 200);
+  const overview = await overviewRes.json();
+  assert.ok(overview.accounts.profiles >= 1);
+  assert.equal(overview.billing.archivedLedgerRows, 1);
+
+  store.addSession({
+    id: 'sess_export_1',
+    profileId: 'p_notify_1',
+    startedAt: now - 120_000,
+    finishedAt: now - 60_000,
+    seconds: 60,
+    tasks: [{ taskId: 't_1', skillId: 'name_feeling', domain: 'emotion', correct: true, ms: 2400 }],
+    plan: ['emotion'],
+  });
+
+  const exportJsonRes = await adminExportGet(new Request('http://localhost/api/admin/export?dataset=sessions&format=json', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  assert.equal(exportJsonRes.status, 200);
+  const exportJsonText = await exportJsonRes.text();
+  assert.ok(!exportJsonText.includes('Лев'), 'экспорт не содержит имени ребёнка');
+  assert.ok(!exportJsonText.includes('p_notify_1'), 'экспорт не содержит сырого profileId');
+  const exportDataset = JSON.parse(exportJsonText);
+  assert.ok(exportDataset.rows.some((r: { participant_hash: string }) => /^[0-9a-f]{12}$/.test(r.participant_hash)));
+
+  const exportCsvRes = await adminExportGet(new Request('http://localhost/api/admin/export?dataset=sessions&format=csv', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  assert.equal(exportCsvRes.status, 200);
+  const exportCsvText = await exportCsvRes.text();
+  assert.ok(exportCsvText.startsWith('participant_hash,'));
+  assert.ok(!exportCsvText.includes('Лев'));
+
+  const exportXapiRes = await adminExportGet(new Request('http://localhost/api/admin/export?dataset=sessions&format=xapi', {
+    headers: { authorization: 'Bearer admin-secret-token-1234567890' },
+  }));
+  assert.equal(exportXapiRes.status, 200);
+  const xapiPayload = await exportXapiRes.json();
+  assert.equal(xapiPayload.version, '1.0.3');
+  assert.ok(xapiPayload.statements.length >= 1);
+  assert.equal(xapiPayload.statements[0].version, '1.0.3');
+
+  // J. Асинхронный пул pg.Pool (Item 10): проверка пула и REPEATABLE READ аналитического снимка PostgreSQL
+  const unconfiguredPing = await pingAsyncPool({});
+  assert.equal(unconfiguredPing.enabled, false);
+  assert.equal(unconfiguredPing.ok, true);
+
+  const asyncSnap = await readAnalyticsSnapshotAsync({}, {
+    async query(sql: string, params?: unknown[]) {
+      const rows = bridge.query(sql, params ?? []);
+      return { rows: rows as never[], rowCount: rows.length };
+    },
+  });
+  assert.ok(asyncSnap && asyncSnap.profiles.length >= 1);
+  assert.equal(asyncSnap.ledgerCount, 1);
+  assert.equal(asyncSnap.researchCodingsCount, 1);
+  await closeAsyncPool();
 }
 
 run().catch((e) => { console.error(e); process.exit(1); });
@@ -350,6 +652,7 @@ run().catch((e) => { console.error(e); process.exit(1); });
           TELEGRAM_WEBHOOK_SECRET: 'tg-secret-test-123456',
           MAX_WEBHOOK_SECRET: 'max-secret-test-123456',
           GIB_SESSION_SECRET: 'session-secret-test-0123456789abcdef',
+          GIB_ADMIN_TOKEN: 'admin-secret-token-1234567890',
         },
         encoding: 'utf8',
       },
@@ -364,11 +667,23 @@ run().catch((e) => { console.error(e); process.exit(1); });
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 
-  /* ---- 4. Проверка DevOps-артефактов ---- */
-  for (const file of ['Dockerfile', 'docker-compose.yml', '.env.example', '.github/workflows/ci.yml']) {
+  /* ---- 4. Проверка DevOps и мониторинг-артефактов ---- */
+  for (const file of [
+    'Dockerfile',
+    'docker-compose.yml',
+    '.env.example',
+    '.github/workflows/ci.yml',
+    'ops/alertmanager/alertmanager.yml',
+    'ops/grafana/provisioning/datasources/prometheus.yml',
+    'ops/grafana/provisioning/dashboards/dashboards.yml',
+  ]) {
     assert.ok(fs.existsSync(path.join(process.cwd(), file)), `${file} присутствует`);
   }
-  console.log('  ok DevOps: Dockerfile, docker-compose.yml, .env.example и GitHub Actions CI на месте');
+  const composeText = fs.readFileSync(path.join(process.cwd(), 'docker-compose.yml'), 'utf8');
+  for (const svc of ['postgres-backup:', 'prometheus:', 'alertmanager:', 'grafana:']) {
+    assert.ok(composeText.includes(svc), `docker-compose.yml описывает сервис ${svc}`);
+  }
+  console.log('  ok DevOps: Dockerfile, docker-compose (postgres-backup + monitoring stack), .env.example и CI на месте');
 }
 
 main().catch((err) => {

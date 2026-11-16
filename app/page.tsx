@@ -21,6 +21,7 @@ import DayReflection from '@/components/DayReflection';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
+import ChildStudioCard from '@/components/ChildStudioCard';
 import { sfx } from '@/lib/sound';
 import { petVariantOf } from '@/lib/gamification';
 import { petMood, petMoodText } from '@/lib/pet-mood';
@@ -743,6 +744,7 @@ export default function Home() {
 
         {tab === 'home' && (
           <>
+            <ChildStudioCard profileId={profile?.id} />
             <div className="panel mission-card">
               {/* Герой линейки — часть интерфейса, а не наклейка: он называет,
                   чья это версия программы. Возраст уже выбран в профиле. */}

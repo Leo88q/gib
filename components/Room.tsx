@@ -3,8 +3,8 @@
 import type { CSSProperties } from 'react';
 import Pet, { type PetVariant } from './Pet';
 import { PET_MOOD_COLOR, type PetMood } from '@/lib/pet-mood';
-import { DEFAULT_PLACE } from '@/lib/art-paths';
-import { creatureArt, itemArt } from '@/lib/design/tokens';
+import { DEFAULT_PLACE, petStageArt } from '@/lib/art-paths';
+import { itemArt } from '@/lib/design/tokens';
 
 export type RoomEquippedItem = {
   id: string;
@@ -71,7 +71,7 @@ export default function Room({
         )}
         {pet && (
           <span className={`room-pet${petMood ? ` mood-${petMood}` : ''}`} style={moodStyle}>
-            <img className="room-pet-v2" src={creatureArt('pet')} alt="" decoding="async" />
+            <img className="room-pet-v2" src={petStageArt(petLevel)} alt="" decoding="async" />
             <span className="room-pet-badge">
               <Pet variant={pet} level={petLevel} mood={petMood} />
             </span>

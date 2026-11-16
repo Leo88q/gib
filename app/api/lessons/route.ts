@@ -177,6 +177,12 @@ export async function GET(req: Request) {
           noticeAtHome: page.noticeAtHome,
         };
       })(),
+      managedByGroup: store.memberships().some((m) => m.profileId === profile.id),
+      groupInfo: (() => {
+        const membership = store.memberships().find((m) => m.profileId === profile.id);
+        const group = membership ? store.group(membership.groupId) : undefined;
+        return group ? { id: group.id, name: group.name, year: group.year } : null;
+      })(),
       total: YEAR.total,
     });
   });
@@ -220,6 +226,9 @@ export async function POST(req: Request) {
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, profileId);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    if (store.memberships().some((m) => m.profileId === profile.id)) {
+      return NextResponse.json({ error: 'group_managed_by_teacher' }, { status: 403 });
+    }
 
     const state = store.programState(profile.id);
     const schedule = scheduleOf(profile.id, state.startedAt);

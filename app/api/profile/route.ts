@@ -13,6 +13,7 @@ import { CONSENT_VERSION, hasConsent, newConsent } from '@/lib/legal/consent';
 import { parseOnboardingAnswers } from '@/lib/onboarding';
 import { recordFunnel } from '@/lib/events/funnel-store';
 import { verifyParentGateCookie } from '@/lib/parent-gate-cookie';
+import { purgeProfileResearchLinks } from '@/lib/research/coding-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,8 +200,9 @@ export async function DELETE(req: Request) {
     }
     if (store.payments(profileId).some(p => p.status === 'creating' || p.status === 'pending')) return NextResponse.json({ error: 'payment_in_progress' }, { status: 409 });
     store.deleteProfile(profileId);
-    // Журнал технических событий удаляется вместе с профилем: он не переживает удаление данных.
+    // Журнал технических событий и привязки видеокодирования удаляются вместе с профилем.
     createStoreJournal(store).removeProfile(profileId);
+    purgeProfileResearchLinks(profileId);
     return NextResponse.json({ ok: true });
   });
 }
