@@ -172,4 +172,25 @@ for (const [name, token] of appPairs) {
 }
 console.log('  ok app/globals.css и токены совпадают по шести цветам');
 
+/* Мягкие подложки тоже сверяются: иначе плашки живут отдельной жизнью. */
+const softPairs: [string, string][] = [
+  ['lis-soft', COLOR_SOFT.lis], ['mint-soft', COLOR_SOFT.mira],
+  ['sky-soft', COLOR_SOFT.tima], ['gold-soft', COLOR_SOFT.gold], ['rose-soft', COLOR_SOFT.rose],
+];
+for (const [name, token] of softPairs) {
+  assert.equal(appVar(name), token.toLowerCase(), `--${name} в app/globals.css и в токенах расходятся`);
+}
+console.log('  ok пять мягких подложек совпадают с токенами');
+
+/* «Храповик»: литеральные цвета вне :root не должны расти.
+ * 278 значений в правилах — это долг старого файла; новые цвета добавляются
+ * только токенами. Число можно уменьшать, увеличивать — нет. */
+const cssOutsideRoot = appCss.slice(0, appCss.indexOf(':root {')) + appCss.slice(appCss.indexOf('}', appCss.indexOf(':root {')) + 1);
+const literals = cssOutsideRoot.match(/#[0-9a-fA-F]{3,6}\b/g) ?? [];
+const uniqueLiterals = new Set(literals.map((l) => l.toLowerCase()));
+assert.ok(uniqueLiterals.size <= 75, `литеральных цветов вне :root стало ${uniqueLiterals.size}, потолок — 75`);
+assert.ok(literals.length <= 82, `литеральных цветов вне :root стало ${literals.length}, потолок — 82`);
+assert.ok(uniqueLiterals.has('#1264c4'), 'рамка фокуса #1264c4 должна остаться явной');
+console.log(`  ok литеральных цветов вне :root ${uniqueLiterals.size} (потолок 75), новых не появилось`);
+
 console.log('design-tokens: ok');
