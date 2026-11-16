@@ -11,7 +11,7 @@ export const LOCK_ID = 726391804;
 export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments', 'events'] as const;
 
 /** Таблицы состояния аккаунта: не данные ребёнка, но нужны для работы. */
-export const ACCOUNT_TABLES = ['parent_pins', 'family_settings', 'notification_settings', 'rate_limits'] as const;
+export const ACCOUNT_TABLES = ['parent_pins', 'family_settings', 'notification_settings', 'groups', 'memberships', 'rate_limits'] as const;
 export const SCHEMA_V1 = `
 CREATE TABLE gib.profiles (
   id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), parent_id TEXT NOT NULL UNIQUE, age SMALLINT NOT NULL CHECK (age BETWEEN 5 AND 13),
@@ -145,6 +145,107 @@ ALTER TABLE gib.profiles ADD CONSTRAINT profiles_meeting_lead_check
 ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_household_adult_check;
 ALTER TABLE gib.profiles ADD CONSTRAINT profiles_household_adult_check
   CHECK (household_adult IS NULL OR household_adult IN ('parent','other','none'));
+CREATE TABLE IF NOT EXISTS gib.groups (
+  id TEXT PRIMARY KEY,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  teacher_id TEXT NOT NULL,
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+  year INTEGER NOT NULL CHECK (year BETWEEN 2000 AND 2100),
+  join_code TEXT NOT NULL UNIQUE,
+  data JSONB NOT NULL,
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'id' IS NOT DISTINCT FROM id
+    AND data->>'teacherId' IS NOT DISTINCT FROM teacher_id
+    AND data->>'name' IS NOT DISTINCT FROM name
+    AND (data->>'year')::int IS NOT DISTINCT FROM year
+    AND data->>'joinCode' IS NOT DISTINCT FROM join_code
+  )
+);
+CREATE INDEX IF NOT EXISTS groups_teacher ON gib.groups(teacher_id);
+CREATE TABLE IF NOT EXISTS gib.memberships (
+  group_id TEXT NOT NULL REFERENCES gib.groups(id) ON DELETE CASCADE,
+  profile_id TEXT NOT NULL REFERENCES gib.profiles(id) ON DELETE CASCADE,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  joined_at BIGINT NOT NULL CHECK (joined_at > 0),
+  data JSONB NOT NULL,
+  PRIMARY KEY (group_id, profile_id),
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'groupId' IS NOT DISTINCT FROM group_id
+    AND data->>'profileId' IS NOT DISTINCT FROM profile_id
+    AND data->>'joinedAt' IS NOT DISTINCT FROM joined_at::text
+  )
+);
+CREATE INDEX IF NOT EXISTS memberships_profile ON gib.memberships(profile_id);
+CREATE TABLE IF NOT EXISTS gib.payment_ledger (
+  payment_id TEXT PRIMARY KEY,
+  amount TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  applied_at BIGINT CHECK (applied_at >= 0),
+  refunded_at BIGINT CHECK (refunded_at >= 0),
+  offer_version TEXT,
+  archived_at BIGINT NOT NULL CHECK (archived_at >= 0)
+);
+`;
+
+/** Идемпотентная досборка таблиц групп и обезличенного реестра расчётов для уже поднятых баз v3. */
+export const EXTRA_STATE_SCHEMA = `
+CREATE TABLE IF NOT EXISTS gib.groups (
+  id TEXT PRIMARY KEY,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  teacher_id TEXT NOT NULL,
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+  year INTEGER NOT NULL CHECK (year BETWEEN 2000 AND 2100),
+  join_code TEXT NOT NULL UNIQUE,
+  data JSONB NOT NULL,
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'id' IS NOT DISTINCT FROM id
+    AND data->>'teacherId' IS NOT DISTINCT FROM teacher_id
+    AND data->>'name' IS NOT DISTINCT FROM name
+    AND (data->>'year')::int IS NOT DISTINCT FROM year
+    AND data->>'joinCode' IS NOT DISTINCT FROM join_code
+  )
+);
+CREATE INDEX IF NOT EXISTS groups_teacher ON gib.groups(teacher_id);
+CREATE TABLE IF NOT EXISTS gib.memberships (
+  group_id TEXT NOT NULL REFERENCES gib.groups(id) ON DELETE CASCADE,
+  profile_id TEXT NOT NULL REFERENCES gib.profiles(id) ON DELETE CASCADE,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  joined_at BIGINT NOT NULL CHECK (joined_at > 0),
+  data JSONB NOT NULL,
+  PRIMARY KEY (group_id, profile_id),
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'groupId' IS NOT DISTINCT FROM group_id
+    AND data->>'profileId' IS NOT DISTINCT FROM profile_id
+    AND data->>'joinedAt' IS NOT DISTINCT FROM joined_at::text
+  )
+);
+CREATE INDEX IF NOT EXISTS memberships_profile ON gib.memberships(profile_id);
+CREATE TABLE IF NOT EXISTS gib.payment_ledger (
+  payment_id TEXT PRIMARY KEY,
+  amount TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  applied_at BIGINT CHECK (applied_at >= 0),
+  refunded_at BIGINT CHECK (refunded_at >= 0),
+  offer_version TEXT,
+  archived_at BIGINT NOT NULL CHECK (archived_at >= 0)
+);
+CREATE TABLE IF NOT EXISTS gib.auth_challenges (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('device_link', 'email_otp')),
+  code_hash TEXT NOT NULL,
+  target TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  used_at BIGINT
+);
 `;
 
 /**

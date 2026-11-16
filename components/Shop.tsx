@@ -1,10 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
-import { avatarParts, HAIRS, SHIRTS, SKINS, type AvatarOptions } from './avatarParts';
-import { accessoryVariantOf, bodyVariantOf } from '@/lib/gamification';
 import Pet, { type PetVariant } from './Pet';
-import { itemArt } from '@/lib/design/tokens';
+import { heroArt, HERO_NAME } from '@/lib/art-paths';
+import { creatureArt, itemArt } from '@/lib/design/tokens';
 
 export type ShopItemView = {
   id: string;
@@ -22,13 +20,14 @@ const SLOT_LABEL: Record<ShopItemView['slot'], string> = {
   room: 'Комната',
 };
 
-/** Гардероб: косметика за игровые монетки (реальных денег детей не тратится). */
+/** Гардероб v2 («мягкий объём»): 3D-проводник линейки, 3D-питомец и предметы за игровые монетки. */
 export default function Shop({
   items,
   coins,
   inventory,
   equipped,
   level,
+  band = '8-10',
   onBuy,
   onEquip,
 }: {
@@ -42,28 +41,22 @@ export default function Shop({
     room?: string | null;
   };
   level: number;
+  band?: string;
   onBuy: (id: string) => void;
   onEquip: (id: string) => void;
 }) {
-  const preview = useMemo(
-    () => ({
-      skin: SKINS[0],
-      hair: HAIRS[0],
-      shirt: SHIRTS[0],
-      accessory: accessoryVariantOf(equipped.head),
-      body: bodyVariantOf(equipped.body),
-    }),
-    [equipped],
-  );
+  const wornItems = (['head', 'body', 'room'] as const)
+    .map((slot) => items.find((i) => i.id === equipped[slot]))
+    .filter((item): item is ShopItemView => Boolean(item));
 
-  /* Предметы комнаты больше не дорисовываются в сцене: комната — фотография
-     места. Поэтому всё купленное для комнаты видно здесь, плитками. */
   const roomOwned = items.filter((i) => i.slot === 'room' && inventory.includes(i.id));
 
   const groups = (['head', 'body', 'pet', 'room'] as const).map((slot) => ({
     slot,
     list: items.filter((i) => i.slot === slot),
   }));
+
+  const guideName = HERO_NAME[band] ?? 'Мира';
 
   return (
     <div className="panel">
@@ -73,17 +66,42 @@ export default function Shop({
       </div>
 
       <div className="shop-preview">
-        <svg viewBox="0 0 120 150" className="shop-avatar">
-          {avatarParts(preview)}
-        </svg>
-        {equipped.pet && (
-          <div className="shop-pet">
-            <Pet variant={equipped.pet} level={level} />
-          </div>
-        )}
-        <p className="muted">
-          Косметика покупается за монетки, которые начисляются за реальные задания.
-        </p>
+        <div className="shop-stage-v2">
+          <img
+            src={heroArt(band)}
+            alt={guideName}
+            className="shop-hero-v2"
+            decoding="async"
+          />
+          {equipped.pet && (
+            <div className="shop-pet">
+              <img src={creatureArt('pet')} alt="" className="shop-pet-v2" decoding="async" />
+              <span className="shop-pet-emblem">
+                <Pet variant={equipped.pet} level={level} />
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="shop-worn-summary">
+          {wornItems.length > 0 ? (
+            <div className="shop-worn-chips" aria-label="Сейчас надето">
+              {wornItems.map((w) => (
+                <span key={w.id} className="shop-room-item on">
+                  <img src={itemArt(w.variant)} alt="" loading="lazy" decoding="async" />
+                  <b>{w.name}</b>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="muted small" style={{ margin: '0 0 6px' }}>
+              Пока ничего не надето — выбери вещь ниже за заработанные монетки.
+            </p>
+          )}
+          <p className="muted" style={{ margin: 0 }}>
+            Косметика покупается за монетки, которые начисляются за реальные задания.
+          </p>
+        </div>
       </div>
 
       {roomOwned.length > 0 && (
@@ -106,29 +124,38 @@ export default function Shop({
           <div className="shop-grid">
             {g.list.map((item) => {
               const owned = inventory.includes(item.id);
-              const on = equipped[item.slot] === item.id;
+              const on =
+                g.slot === 'pet'
+                  ? equipped.pet === (item.variant as PetVariant)
+                  : equipped[g.slot] === item.id;
               return (
                 <div key={item.id} className={`shop-item${on ? ' on' : ''}`}>
                   <div className="shop-thumb">
-                    {item.slot === 'pet'
-                      ? <Pet variant={item.variant as PetVariant} level={level} />
-                      : <img src={itemArt(item.variant)} alt="" loading="lazy" decoding="async" />}
+                    {item.slot === 'pet' ? (
+                      <div className="shop-pet-thumb">
+                        <img src={creatureArt('pet')} alt="" className="shop-pet-v2-thumb" loading="lazy" decoding="async" />
+                        <span className="shop-pet-emblem">
+                          <Pet variant={item.variant as PetVariant} level={level} />
+                        </span>
+                      </div>
+                    ) : (
+                      <img src={itemArt(item.variant)} alt="" loading="lazy" decoding="async" />
+                    )}
                   </div>
                   <b>{item.name}</b>
                   <span className="muted">{item.desc}</span>
                   {owned ? (
                     <button
                       type="button"
-                      className={`btn tiny${on ? '' : ' secondary'}`}
+                      className={`btn small${on ? ' secondary' : ''}`}
                       onClick={() => onEquip(item.id)}
-                      disabled={on}
                     >
-                      {on ? 'Надето' : 'Надеть'}
+                      {on ? 'Снять' : 'Надеть'}
                     </button>
                   ) : (
                     <button
                       type="button"
-                      className="btn tiny"
+                      className="btn small"
                       disabled={coins < item.price}
                       onClick={() => onBuy(item.id)}
                     >

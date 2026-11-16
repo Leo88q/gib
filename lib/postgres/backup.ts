@@ -34,8 +34,8 @@ export type PgSnapshot = {
 
 /** Таблицы, которые попадают в снимок как данные. */
 export const SNAPSHOT_TABLES = [
-  'profiles', 'skills', 'sessions', 'subscriptions', 'program_states',
-  'player_states', 'payments', 'events',
+  'profiles', 'groups', 'skills', 'sessions', 'subscriptions', 'program_states',
+  'player_states', 'payments', 'events', 'memberships',
   'parent_pins', 'family_settings', 'notification_settings',
 ] as const;
 

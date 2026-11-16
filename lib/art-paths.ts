@@ -41,6 +41,9 @@ export const DEFAULT_ART = DEFAULT_CREATURE_ART;
 /** Дефолтная сцена — дом: место, с которого начинается район. */
 export const DEFAULT_PLACE = DEFAULT_PLACE_ART;
 
+/** Панорамная иллюстрация карты практики v2. */
+export const MAP_BANNER_ART = '/art/v2/places/map.png';
+
 /** Проводник по возрастной линейке: 5–7 Лис, 8–10 Мира, 11–13 Тима. */
 export function heroArt(band: string): string {
   if (band === '8-10') return creatureArt('mira');

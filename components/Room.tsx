@@ -4,29 +4,34 @@ import type { CSSProperties } from 'react';
 import Pet, { type PetVariant } from './Pet';
 import { PET_MOOD_COLOR, type PetMood } from '@/lib/pet-mood';
 import { DEFAULT_PLACE } from '@/lib/art-paths';
+import { creatureArt, itemArt } from '@/lib/design/tokens';
+
+export type RoomEquippedItem = {
+  id: string;
+  name: string;
+  variant: string;
+  slot: 'head' | 'body' | 'room';
+};
 
 export type RoomProps = {
-  /** Сцена: фото места района (16:9). Раньше здесь был рисунок из фигур. */
+  /** Сцена: фото места района (16:9). */
   scene?: string;
-  /** Проводник линейки — портрет, а не полноростовый герой: 34 px. */
+  /** Проводник линейки — портрет 34 px. */
   hero?: string;
   heroName?: string;
   pet?: PetVariant | null;
   petLevel?: number;
   petMood?: PetMood;
   bubble?: string;
+  /** Надетые вещи и предмет комнаты (3D-иконки v2). */
+  equippedItems?: RoomEquippedItem[];
 };
 
 /**
- * «Комната» ребёнка — теперь сцена, а не рисунок.
- *
- * Стиль «мягкий объём» — это свет и фактура, а не линии; плоская комната с
- * чёрными контурами в нём не жила. Поэтому фоном идёт фотография места района (они уже нарисованы в 3D),
- * а поверх лежат две живые вещи: проводник линейки
- * и питомец ребёнка.
- *
- * Предметы комнаты (ковёр, лампа, плакат, растение) больше не дорисовываются
- * в сцене: их видно плитками в «Гардеробе», рядом с ценой и кнопкой «Надеть».
+ * «Комната» ребёнка в стиле «мягкий объём» (v2):
+ * фотография места района (16:9), портрет проводника линейки,
+ * 3D-питомец (`/art/v2/creatures/pet.png`) со значком вида и настроения,
+ * а также надетые предметы гардероба и комнаты.
  */
 export default function Room({
   scene = DEFAULT_PLACE,
@@ -36,6 +41,7 @@ export default function Room({
   petLevel = 1,
   petMood,
   bubble,
+  equippedItems = [],
 }: RoomProps) {
   const moodStyle = petMood ? ({ '--pet-mood': PET_MOOD_COLOR[petMood] } as CSSProperties) : undefined;
 
@@ -44,6 +50,17 @@ export default function Room({
       <img className="room-scene" src={scene} alt="" decoding="async" />
 
       {bubble && <p className="room-bubble">{bubble}</p>}
+
+      {equippedItems.length > 0 && (
+        <div className="room-equipped" aria-label="Выбранные предметы">
+          {equippedItems.map((eq) => (
+            <span key={eq.id} className="room-item" title={eq.name}>
+              <img src={itemArt(eq.variant)} alt="" loading="lazy" decoding="async" />
+              <b>{eq.name}</b>
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="room-cast">
         {hero && (
@@ -54,7 +71,10 @@ export default function Room({
         )}
         {pet && (
           <span className={`room-pet${petMood ? ` mood-${petMood}` : ''}`} style={moodStyle}>
-            <Pet variant={pet} level={petLevel} mood={petMood} />
+            <img className="room-pet-v2" src={creatureArt('pet')} alt="" decoding="async" />
+            <span className="room-pet-badge">
+              <Pet variant={pet} level={petLevel} mood={petMood} />
+            </span>
           </span>
         )}
       </div>

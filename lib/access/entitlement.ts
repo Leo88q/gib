@@ -123,11 +123,20 @@ export function mayStartLesson(entitlement: Entitlement, options: { repeat?: boo
  * Без давления и без «осталось 3 дня»: сначала что открыто, потом что даёт
  * оплата, потом что можно не платить и продолжать первую встречу.
  */
-export function paywallCopy(reason: EntitlementReason): { title: string; body: string } {
-  if (reason === 'meetings_not_in_mode') {
+export function paywallCopy(
+  reason: EntitlementReason,
+  context: 'meeting' | 'session' = 'meeting',
+): { title: string; body: string } {
+  if (reason === 'meetings_not_in_mode' && context === 'meeting') {
     return {
       title: 'Встречи с планом не входят в короткий режим',
       body: 'Вы выбрали короткие шаги: ребёнок занимается в приложении сам. План встречи и печать — часть режима «взрослый ведёт встречу». Режим можно поменять в кабинете.',
+    };
+  }
+  if (reason === 'meetings_not_in_mode' && context === 'session') {
+    return {
+      title: 'Первые дни открыты бесплатно, дальше — по подписке',
+      body: 'Вы выбрали режим «ребёнок сам, короткими шагами»: первые занятия открыты целиком и бесплатно. Подписка открывает все остальные дни практики и истории на 30 дней без автопродления. Уже пройденные дни всегда доступны для повтора.',
     };
   }
   return {

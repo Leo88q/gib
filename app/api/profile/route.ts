@@ -12,6 +12,7 @@ import type { Profile } from '@/lib/types';
 import { CONSENT_VERSION, hasConsent, newConsent } from '@/lib/legal/consent';
 import { parseOnboardingAnswers } from '@/lib/onboarding';
 import { recordFunnel } from '@/lib/events/funnel-store';
+import { verifyParentGateCookie } from '@/lib/parent-gate-cookie';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +100,10 @@ export async function POST(req: Request) {
    * согласия заново.
    */
   const addingChild = body.addChild === true;
+  if (addingChild && store.parentPin(parentId) && !verifyParentGateCookie(req, parentId)) {
+    const isLocalDemo = process.env.NODE_ENV !== 'production' && parentId.startsWith('demo:');
+    if (!isLocalDemo) return NextResponse.json({ error: 'pin_verification_required' }, { status: 403 });
+  }
   const existingProfile = addingChild ? undefined : store.profileByParent(parentId);
   if (!existingProfile) {
     if (body.consentAccepted !== true) return NextResponse.json({ error: 'consent_required', version: CONSENT_VERSION }, { status: 403 });
@@ -188,6 +193,10 @@ export async function DELETE(req: Request) {
   if (!profileId) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
   return store.transaction(() => {
     if (!ownedProfile(auth.parentId, profileId)) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    if (store.parentPin(auth.parentId) && !verifyParentGateCookie(req, auth.parentId)) {
+      const isLocalDemo = process.env.NODE_ENV !== 'production' && auth.parentId.startsWith('demo:');
+      if (!isLocalDemo) return NextResponse.json({ error: 'pin_verification_required' }, { status: 403 });
+    }
     if (store.payments(profileId).some(p => p.status === 'creating' || p.status === 'pending')) return NextResponse.json({ error: 'payment_in_progress' }, { status: 409 });
     store.deleteProfile(profileId);
     // Журнал технических событий удаляется вместе с профилем: он не переживает удаление данных.

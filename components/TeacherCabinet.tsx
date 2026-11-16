@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/telegramClient';
+import WebAuthPanel from './WebAuthPanel';
 
 /**
  * Кабинет педагога: группа, дети, отметки.
@@ -104,6 +105,7 @@ export default function TeacherCabinet() {
   const [groups, setGroups] = useState<Group[] | null>(null);
   const [plan, setPlan] = useState<{ minutes: number; next: number | null; lessons: MeetingPlan[] } | null>(null);
   const [method, setMethod] = useState<Method | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [newName, setNewName] = useState('');
@@ -114,12 +116,18 @@ export default function TeacherCabinet() {
   const load = useCallback(async () => {
     try {
       const res = await apiFetch('/api/teacher');
+      if (res.status === 401) {
+        setAuthRequired(true);
+        setError('');
+        return;
+      }
       if (!res.ok) throw new Error(String(res.status));
       const data = (await res.json()) as {
         groups: Group[];
         plan?: { minutes: number; next: number | null; lessons: MeetingPlan[] };
         method?: Method;
       };
+      setAuthRequired(false);
       setGroups(data.groups);
       setPlan(data.plan ?? null);
       setMethod(data.method ?? null);
@@ -135,8 +143,8 @@ export default function TeacherCabinet() {
     void load();
   }, [load]);
 
-  const loadLessons = async (profileId: string) => {
-    if (lessons[profileId]) return;
+  const loadLessons = async (profileId: string, force = false) => {
+    if (!force && lessons[profileId]) return;
     try {
       const res = await apiFetch(`/api/lessons?profileId=${encodeURIComponent(profileId)}`);
       if (!res.ok) return;
@@ -203,7 +211,7 @@ export default function TeacherCabinet() {
       // педагог не считал его провалом ребёнка.
       const label = level === 0 ? 'отказался выходить' : level === 1 ? 'вышел по приглашению' : 'вышел сам';
       setMarked((prev) => ({ ...prev, [profileId]: `Показ ${target}: ${label}` }));
-      await load();
+      await Promise.all([load(), loadLessons(profileId, true)]);
     } finally {
       setBusy('');
     }
@@ -228,11 +236,15 @@ export default function TeacherCabinet() {
         return;
       }
       setMarked((prev) => ({ ...prev, [profileId]: `Занятие ${target}: ${attended ? 'был' : 'не был'}` }));
-      await load();
+      await Promise.all([load(), loadLessons(profileId, true)]);
     } finally {
       setBusy('');
     }
   };
+
+  if (authRequired) {
+    return <WebAuthPanel title="Вход в кабинет педагога" onAuthenticated={() => void load()} />;
+  }
 
   if (error) {
     return (

@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (message === 'payment_not_paid') return NextResponse.json({ error: 'payment_not_paid' }, { status: 409 });
+      if (message === 'refund_period_expired') return NextResponse.json({ error: 'refund_period_expired' }, { status: 409 });
       return NextResponse.json({ error: 'refund_unavailable' }, { status: 502 });
     }
   }

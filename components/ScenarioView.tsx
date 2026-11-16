@@ -2,6 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import SupportKit from './SupportKit';
+import { heroFace, HERO_NAME } from '@/lib/art-paths';
+
+const GUIDE_INSTRUMENTAL: Record<string, string> = {
+  '5-7': 'Лисом',
+  '8-10': 'Мирой',
+  '11-13': 'Тимой',
+};
 import ReadAloud from './ReadAloud';
 import { AGE_REFLECTIONS } from '@/lib/content/age-reflection';
 import { REFLECTIONS } from '@/lib/content/reflection';
@@ -84,11 +91,11 @@ export default function ScenarioView({ scenario, onAnswer, band, draftKey }: {
       </button>)}</div>
     {selected !== null && <div className="scenario-confirm">
       <p>Ты выбрал: «{scenario.variant.options[selected].text}». Можно изменить выбор.</p>
-      {reflection && !reflectionOpen && <button type="button" className="story-reflect-btn" disabled={submitted} onClick={() => setReflectionOpen(true)}>🔎 Подумать вместе с Лисом</button>}
+      {reflection && !reflectionOpen && <button type="button" className="story-reflect-btn" disabled={submitted} onClick={() => setReflectionOpen(true)}>🔎 Подумать вместе с {GUIDE_INSTRUMENTAL[band] ?? 'Мирой'}</button>}
       {reflection && reflectionOpen && <div className="reflection-box">
-        <p><strong>Лис спрашивает:</strong> {prompt}</p>
+        <p style={{ display: 'flex', alignItems: 'center', gap: 8 }}><img src={heroFace(band)} alt="" width={32} height={32} style={{ borderRadius: '50%' }} /><span><strong>{HERO_NAME[band] ?? 'Мира'} спрашивает:</strong> {prompt}</span></p>
         <div className="reflection-choices">{reflection.choices.map((choice, i) => <button key={choice.label} type="button" disabled={submitted} aria-pressed={reflectionChoice === i} onClick={() => setReflectionChoice(i)}>{choice.label}</button>)}</div>
-        {reflectionChoice !== null && <p className="reflection-reply" aria-live="polite">🦊 {reflection.choices[reflectionChoice].response}</p>}
+        {reflectionChoice !== null && <p className="reflection-reply" aria-live="polite">✨ {reflection.choices[reflectionChoice].response}</p>}
         <small>Здесь нет оценки; можно выбрать несколько вариантов по очереди.</small>
       </div>}
       <button type="button" className="btn big" disabled={!ready || submitted} onClick={() => scenario.variant.followUps ? go(true) : void submit()}>Продолжить историю →</button>

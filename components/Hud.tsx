@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { isMuted, setMuted, sfx } from '@/lib/sound';
 
 export type HudData = {
@@ -14,7 +15,7 @@ export type HudData = {
 
 /** Верхняя панель игрока: уровень, опыт, монетки и звёзды. */
 export default function Hud({ data, compact = false }: { data: HudData; compact?: boolean }) {
-  const muted = isMuted();
+  const [muted, setMutedState] = useState(() => isMuted());
   return (
     <div className={`hud${compact ? ' compact' : ''}`}>
       <div className="hud-level">
@@ -36,10 +37,13 @@ export default function Hud({ data, compact = false }: { data: HudData; compact?
       <button
         type="button"
         className="hud-sound"
+        aria-pressed={muted}
         title={muted ? 'Включить звук' : 'Выключить звук'}
         onClick={() => {
-          setMuted(!muted);
-          if (!muted) sfx.tap();
+          const next = !muted;
+          setMuted(next);
+          setMutedState(next);
+          if (!next) sfx.tap();
         }}
       >
         {muted ? '🔇' : '🔊'}

@@ -9,6 +9,9 @@ import NotificationSettings from '@/components/NotificationSettings';
 import FeelingsConsent from '@/components/FeelingsConsent';
 import ParentGate from '@/components/ParentGate';
 import ParentPinSettings from '@/components/ParentPinSettings';
+import ParentGroupJoin from '@/components/ParentGroupJoin';
+import DeviceLinkCard from '@/components/DeviceLinkCard';
+import WebAuthPanel from '@/components/WebAuthPanel';
 import MeetingPlanCard from '@/components/MeetingPlanCard';
 
 import { removeProfileSwitchDrafts } from '@/lib/switch-draft';
@@ -185,28 +188,48 @@ function ParentPage() {
   const [dataBusy, setDataBusy] = useState(false);
   const [selectedZone, setSelectedZone] = useState('Europe/Moscow');
   const [zoneMessage, setZoneMessage] = useState('');
-  const [loadingState, setLoadingState] = useState<'loading' | 'ready' | 'no-profile' | 'error'>('loading');
+  const [loadingState, setLoadingState] = useState<'loading' | 'auth' | 'ready' | 'no-profile' | 'error'>('loading');
   const [children, setChildren] = useState<{ id: string; name: string; age: number }[]>([]);
 
   useEffect(() => {
-    const url = new URL(window.location.href);
-    let id = url.searchParams.get('profileId');
-    if (!id) { try { id = localStorage.getItem('gib:profileId'); } catch { /* storage is optional */ } }
-    if (!id) { setLoadingState('no-profile'); return; }
     const controller = new AbortController();
-    setProfileId(id);
     void (async () => {
       try {
+        const url = new URL(window.location.href);
+        let id = url.searchParams.get('profileId');
+        if (!id) { try { id = localStorage.getItem('gib:profileId'); } catch { /* storage is optional */ } }
+
+        const profRes = await apiFetch(id ? `/api/profile?profileId=${encodeURIComponent(id)}` : '/api/profile', {
+          signal: controller.signal,
+        });
+        if (profRes.status === 401) {
+          if (!controller.signal.aborted) setLoadingState('auth');
+          return;
+        }
+        if (profRes.ok) {
+          const profData = await profRes.json();
+          if (Array.isArray(profData.profiles) && !controller.signal.aborted) setChildren(profData.profiles);
+          if (!id && profData.profile?.id) id = String(profData.profile.id);
+        }
+        if (!id) {
+          if (!controller.signal.aborted) setLoadingState('no-profile');
+          return;
+        }
+        setProfileId(id);
+
+        void apiFetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'exchange' }),
+        }).catch(() => {});
+
         const fetchJson = async (path: string) => {
           const response = await apiFetch(path, { signal: controller.signal });
+          if (response.status === 401) throw new Error('unauthorized');
           if (!response.ok) throw new Error('load_failed');
           return response.json();
         };
         const safeId = encodeURIComponent(id);
-        void apiFetch('/api/profile')
-          .then(r => (r.ok ? r.json() : null))
-          .then(d => { if (d && Array.isArray(d.profiles) && !controller.signal.aborted) setChildren(d.profiles); })
-          .catch(() => { /* список детей не обязателен для отчёта */ });
         const [rep, sb, pr] = await Promise.all([
           fetchJson(`/api/report?profileId=${safeId}`),
           fetchJson(`/api/subscribe?profileId=${safeId}`),
@@ -222,17 +245,17 @@ function ParentPage() {
         setAccess(sb.access ?? null);
         setLastPayment(sb.lastPayment ?? null);
         setMeetingLead(rep.profile.meetingLead ?? null);
-        // Почта подставляется в поле, но не отправляется сама: взрослый видит,
-        // куда придёт чек, и может исправить.
         try { const saved = localStorage.getItem('gib:receiptEmail'); if (saved) setReceiptEmail(saved); } catch { /* storage is optional */ }
         if (pr.weeks) { setProgram(pr); setOpenWeek(pr.progress.currentWeek ?? 1); }
-        // План встречи нужен именно здесь: это ответ на «что делать в четверг»,
-        // и он есть только у того, кто ведёт встречу.
         void fetchJson(`/api/lessons?profileId=${safeId}`)
           .then(d => { if (!controller.signal.aborted && d?.meeting) setMeeting(d.meeting); })
           .catch(() => { /* план не обязателен для отчёта */ });
         setLoadingState('ready');
-      } catch { if (!controller.signal.aborted) setLoadingState('error'); }
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        if (err instanceof Error && err.message === 'unauthorized') setLoadingState('auth');
+        else setLoadingState('error');
+      }
     })();
     return () => controller.abort();
   }, []);
@@ -332,6 +355,11 @@ function ParentPage() {
         throw new Error('payment_failed');
       }
       try { localStorage.setItem('gib:receiptEmail', receiptEmail.trim()); } catch { /* storage is optional */ }
+      await apiFetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'exchange' }),
+      }).catch(() => {});
       window.location.assign(data.checkoutUrl);
     } catch { setBillingError('Не удалось открыть оплату. Попробуйте позже; доступ появится только после подтверждения платежа.'); }
     finally { setBillingBusy(false); }
@@ -358,7 +386,9 @@ function ParentPage() {
       if (!res.ok) {
         setSubscriptionMessage(data?.error === 'payment_not_paid'
           ? 'Возврат пока невозможен: нет подтверждённого платежа.'
-          : data?.error === 'confirm_required' ? 'Возврат нужно подтвердить.' : 'Не удалось выполнить действие. Проверьте соединение.');
+          : data?.error === 'refund_period_expired'
+            ? 'Оплаченный период подписки уже завершился: неиспользованных дней для возврата не осталось.'
+            : data?.error === 'confirm_required' ? 'Возврат нужно подтвердить.' : 'Не удалось выполнить действие. Проверьте соединение.');
         return;
       }
       if (action === 'cancel') setSubscriptionMessage(data.canceled ? 'Доступ закрыт. Оплата не возвращается — вернуть деньги можно отдельно.' : 'Активной подписки нет.');
@@ -388,14 +418,17 @@ function ParentPage() {
   };
 
   if (loadingState === 'loading') return <div className="wrap"><div className="card" role="status">Загружаем кабинет…</div></div>;
-  if (loadingState === 'error') return <div className="wrap"><div className="card"><h1>Кабинет родителя</h1><p role="alert">Не удалось загрузить данные. Откройте приложение через Telegram или MAX и проверьте соединение.</p><button className="btn secondary" onClick={() => window.location.reload()}>Попробовать снова</button></div></div>;
+  if (loadingState === 'auth') return <WebAuthPanel title="Кабинет родителя" onAuthenticated={() => window.location.reload()} />;
+  if (loadingState === 'error') return <div className="wrap"><div className="card"><h1>Кабинет родителя</h1><p role="alert">Не удалось загрузить данные. Откройте приложение через Telegram, MAX или войдите в браузере и проверьте соединение.</p><button className="btn secondary" onClick={() => window.location.reload()}>Попробовать снова</button></div></div>;
   if (!profileId || loadingState === 'no-profile')
     return (
       <div className="wrap">
         <div className="card">
           <h1>Кабинет родителя</h1>
-          <p className="muted">Откройте ссылку из бота или пройдите онбординг в тренажёре.</p>
+          <p className="muted">Профиль ребёнка ещё не создан. Пройдите быстрый старт в тренажёре, и здесь откроется недельный отчёт и план встречи.</p>
+          <Link className="btn" href="/">Создать профиль ребёнка</Link>
         </div>
+        <DeviceLinkCard />
       </div>
     );
 
@@ -727,7 +760,7 @@ function ParentPage() {
                     <b>{COMPETENCY_LABEL[group.competency]}</b>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
                       {group.items.map(skill => (
-                        <span key={skill.id} className="muted" style={{ border: '1px solid rgba(0,0,0,.12)', borderRadius: 999, padding: '2px 10px', fontSize: 13 }}>
+                        <span key={skill.id} className="muted" style={{ border: '1px solid var(--line)', borderRadius: 999, padding: '2px 10px', fontSize: 13 }}>
                           {skill.title}
                         </span>
                       ))}
@@ -889,6 +922,8 @@ function ParentPage() {
         {dataError && <p role="alert">{dataError}</p>}
       </div>
 
+      <ParentGroupJoin profileId={profileId} childName={profile?.name ?? 'ребёнок'} />
+      <DeviceLinkCard />
       <NotificationSettings profileId={profileId} />
       <DataControls profileId={profileId} busy={dataBusy} onExport={exportProfile} onDelete={deleteProfile} />
 

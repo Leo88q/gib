@@ -54,6 +54,35 @@ export default function NotificationSettings({ profileId }: { profileId: string 
     finally { setBusy(false); }
   };
 
+  const sendNow = async () => {
+    if (busy || !view?.settings.enabled) return;
+    setBusy(true); setError(''); setDone('');
+    try {
+      const res = await apiFetch('/api/notifications/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { sent?: boolean; channel?: string; message?: string };
+      if (!res.ok) {
+        setError(data.message ?? 'Пока нельзя отправить отчёт.');
+        return;
+      }
+      if (data.sent) {
+        const ch = data.channel === 'telegram' ? 'Telegram' : data.channel === 'max' ? 'MAX' : 'почту';
+        setDone(`Отчёт отправлен в ${ch}.`);
+        const refreshed = await apiFetch(`/api/notifications?profileId=${encodeURIComponent(profileId)}`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+        if (refreshed) setView(refreshed);
+      } else {
+        setDone('Канал бота не настроен в этом окружении — полный отчёт уже показан выше на этой странице.');
+      }
+    } catch {
+      setError('Не удалось отправить отчёт. Проверьте соединение.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return <section className="panel notifications" aria-label="Уведомления взрослому">
     <h2>🔔 Уведомления взрослому</h2>
     {error && <p role="alert" className="request-error">{error}</p>}
@@ -83,6 +112,13 @@ export default function NotificationSettings({ profileId }: { profileId: string 
           onClick={() => void save(true, 'monthly')}
         >{view.labels.monthly}</button>
       </div>
+      {view.settings.enabled && view.canSendNow && (
+        <div style={{ marginTop: 10 }}>
+          <button type="button" className="btn secondary small" disabled={busy} onClick={() => void sendNow()}>
+            Отправить сводку сейчас
+          </button>
+        </div>
+      )}
       {done && <p role="status" className="muted small">{done}</p>}
       {view.settings.enabled && !view.canSendNow && view.retryText && (
         <p className="muted small">Следующий отчёт можно отправить через {view.retryText}.</p>

@@ -156,7 +156,7 @@ async function sessionCommand(req: Request) {
     // содержания и не должен наказывать за окончание оплаты.
     if (!body.repeat && !body.review && !mayStartLesson(entitlement)) {
       recordFunnel({ step: 'paywall_seen', ownerId: auth.parentId, lessonNumber: entitlement.lessonNumber, at: Date.now() });
-      return NextResponse.json({ error: 'payment_required', ...paywallCopy(entitlement.reason), access: { lesson: entitlement.lessonNumber, level: entitlement.level } }, { status: 402 });
+      return NextResponse.json({ error: 'payment_required', ...paywallCopy(entitlement.reason, 'session'), access: { lesson: entitlement.lessonNumber, level: entitlement.level } }, { status: 402 });
     }
     // «Первое занятие» — это первая сессия у этого ребёнка, а не первый клик
     // вообще: повтор и разбор темы не должны считаться активацией.

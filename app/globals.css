@@ -1513,7 +1513,7 @@ input[type='text']:focus {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #fff7e0, #ffeccb);
+  background: linear-gradient(135deg, var(--gold-soft), var(--lis-soft));
 }
 
 .hero-text {
@@ -1721,9 +1721,9 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .reading-settings small { display: block; }
 
 .feelings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 12px 0; }
-.feelings-grid button { min-height: 100px; border: 1px solid var(--line); border-radius: 14px; background: #fff6e5; color: var(--ink); font: inherit; font-weight: 700; padding: 8px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.feelings-grid button { min-height: 100px; border: 1px solid var(--line); border-radius: 14px; background: var(--cream); color: var(--ink); font: inherit; font-weight: 700; padding: 8px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .feelings-grid button[aria-pressed="true"] { background: var(--mint-soft); box-shadow: var(--shadow-sm); outline: 2px solid var(--mint); outline-offset: 2px; }
-.feelings-grid button:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
+.feelings-grid button:focus-visible { outline: 3px solid var(--link); outline-offset: 3px; }
 .feelings-grid img { width: 56px; height: 56px; }
 .feelings-status { min-height: 2.5em; }
 
@@ -1923,15 +1923,15 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   cursor: pointer;
   min-height: 44px;
   background: var(--paper);
-  color: var(--ink, #1f2933);
-  border: 2px solid #cfd8e3;
+  color: var(--ink);
+  border: 2px solid var(--line);
 }
 .child-switch .child-chip.on {
   border-color: var(--ok);
   box-shadow: inset 0 0 0 2px var(--ok);
 }
 .family-goal {
-  background: #eef7ee;
+  background: var(--mint-soft);
   border-radius: 12px;
   padding: 8px 12px;
 }
@@ -1956,14 +1956,15 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   aspect-ratio: 1;
   min-height: 16px;
   border-radius: 5px;
-  background: #eef1f5;
+  background: var(--cream);
+  border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
 }
 .activity-day.on { background: var(--mint-soft); border: 1px solid var(--ok); }
-.activity-day.review { background: #dbeafe; border: 1px solid #1d4ed8; }
+.activity-day.review { background: var(--sky-soft); border: 1px solid var(--link); }
 
 /* Код взрослого: ворота кабинета и настройка PIN. */
 .parent-gate { max-width: 420px; margin: 24px auto; }
@@ -2153,7 +2154,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 */
 .teacher-frame {
   border-left: 3px solid var(--link);
-  background: #f4f8fd;
+  background: var(--sky-soft);
   padding: 8px 10px;
   margin: 8px 0;
   font-size: 14px;
@@ -2161,7 +2162,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 
 .teacher-freeze {
   border-left: 3px solid var(--violet);
-  background: #f7f4fe;
+  background: var(--sky-soft);
   padding: 8px 10px;
   margin: 8px 0;
   font-size: 13px;
@@ -2169,7 +2170,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 
 .teacher-safety {
   border-left: 3px solid var(--glyph);
-  background: #fff8f0;
+  background: var(--gold-soft);
   padding: 8px 10px;
   margin: 8px 0;
   font-size: 13px;
@@ -2746,7 +2747,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
    карточек. Ошибка и предупреждение отличаются цветом и подписью, а не только
    оттенком: различать их придётся и без цвета.
 --------------------------------------------------------------------------- */
-.funnel-token { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 6px; }
+.funnel-token { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 6px; }
 .funnel-token label { flex: 0 0 100%; font-weight: 800; }
 .funnel-token input { flex: 1 1 220px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; font: inherit; }
 .funnel-steps { width: 100%; border-collapse: collapse; margin: 10px 0; }
@@ -3339,6 +3340,168 @@ label[for='receipt-email'] {
 }
 
 .input:focus-visible {
-  outline: 3px solid #1264c4;
+  outline: 3px solid var(--link);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Дизайн v2 («мягкий объём»): 3D-питомец, надетые вещи, сцена гардероба,
+   предметы упражнений, панорама карты и первый экран онбординга
+   ========================================================================== */
+
+.room-pet-v2 {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.room-pet-badge {
+  display: inline-flex;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.room-pet-badge svg {
+  width: 100%;
+  height: 100%;
+}
+
+.room-equipped {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 65%;
+  z-index: 2;
+}
+
+.room-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.room-item img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.shop-stage-v2 {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+}
+
+.shop-hero-v2 {
+  width: 104px;
+  height: 124px;
+  object-fit: contain;
+}
+
+.shop-pet-v2 {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.shop-pet-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-pet-v2-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.shop-pet-emblem {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+}
+
+.shop-pet-emblem svg {
+  width: 100%;
+  height: 100%;
+}
+
+.shop-worn-summary {
+  flex: 1;
+  min-width: 180px;
+}
+
+.shop-worn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.exercise-item-art {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: 0 0 36px;
+}
+
+.practice-map-banner {
+  width: 100%;
+  max-height: 168px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.onboarding-intro {
+  text-align: left;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+}
+
+.onboarding-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 8px;
+  text-align: left;
+}
+
+.onboarding-guide img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--line);
+  background: var(--cream);
+}
+
+.onboarding-guide h1 {
+  margin: 0;
+}
+
