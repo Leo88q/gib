@@ -172,6 +172,17 @@ for (const [name, token] of appPairs) {
 }
 console.log('  ok app/globals.css и токены совпадают по шести цветам');
 
+/* Контур карточек: `--line` тоже токен, и он должен быть объявлен.
+ * Проверка появилась после того, как `var(--line)` жил в 100 правилах,
+ * а самой переменной в :root не было — рамки просто не рисовались. */
+assert.equal(appVar('line'), COLORS.line.toLowerCase(), '--line в app/globals.css расходится с токеном line');
+const declared = new Set([...appRoot.matchAll(/--[\w-]+(?=\s*:)/g)].map(m => m[0].slice(2)));
+const used = new Set([...appCss.matchAll(/var\(--([\w-]+)/g)].map(m => m[1]));
+/* --cols читается с запасным значением `var(--cols, 3)`, поэтому не объявлена. */
+const undefinedVars = [...used].filter(name => !declared.has(name) && !appCss.includes(`var(--${name},`));
+assert.deepEqual(undefinedVars, [], `в CSS используются необъявленные переменные: ${undefinedVars.join(', ')}`);
+console.log('  ok у каждой переменной в CSS есть значение в :root');
+
 /* Мягкие подложки тоже сверяются: иначе плашки живут отдельной жизнью. */
 const softPairs: [string, string][] = [
   ['lis-soft', COLOR_SOFT.lis], ['mint-soft', COLOR_SOFT.mira],

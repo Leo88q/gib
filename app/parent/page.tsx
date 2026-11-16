@@ -18,7 +18,7 @@ import { YEAR, yearProgress } from '@/lib/content/year/index.ts';
 import { removeProfileJourneyResumes } from '@/components/useJourneyResume';
 import { PENDING_ANSWER_KEY, parsePendingAnswer } from '@/lib/pending-answer';
 
-import { competencyArt, skillArt, DEFAULT_ART } from '@/lib/art-paths';
+import { skillArt, heroFace, DEFAULT_ART } from '@/lib/art-paths';
 import { TIME_ZONES, profileZone } from '@/lib/calendar';
 import { apiFetch } from '@/lib/telegramClient';
 
@@ -406,7 +406,7 @@ function ParentPage() {
   return (
     <div className="wrap">
       <div className="card hero-card">
-        <img src="/art/v2/creatures/lis.png" alt="" className="mascot" />
+        <img src={heroFace(profile?.band ?? '')} alt="" className="mascot" />
         <div className="hero-text">
           <span className="tag">Отчёт для родителя</span>
           <h1>{profile?.name ?? 'Ребёнок'}</h1>
@@ -511,11 +511,6 @@ function ParentPage() {
                 <span className="week-art" style={{ backgroundImage: `url("${w.art}"), url("${DEFAULT_ART}")` }}>
                   <span className="week-num">{w.week}</span>
                 </span>
-                <span
-                  className="comp-icon"
-                  style={{ backgroundImage: `url("${competencyArt(w.competency)}"), url("${DEFAULT_ART}")` }}
-                  title={COMPETENCY_LABEL[w.competency]}
-                />
                 <span className="week-title">
                   <b>
                     Неделя {w.week}. {w.title}
@@ -909,7 +904,9 @@ function ParentPage() {
 
 /** Радар навыков ребёнка — наглядно для родителя. */
 function SkillRadar({ skills }: { skills: { label: string; ability: number }[] }) {
-  const size = 300;
+  // 340, а не 300: подписи стоят на 1.22 радиуса, и в 300 последних букв
+  // «Рабочая память» и «Планирование» не хватало — их срезал край SVG.
+  const size = 340;
   const c = size / 2;
   const r = 110;
   const n = Math.max(skills.length, 3);
@@ -929,7 +926,7 @@ function SkillRadar({ skills }: { skills: { label: string; ability: number }[] }
           key={rr}
           points={skills.map((_, i) => point(i, rr).join(',')).join(' ')}
           fill="none"
-          stroke="#d8d8e6"
+          stroke="var(--line)"
           strokeWidth="1.5"
         />
       ))}
@@ -938,17 +935,17 @@ function SkillRadar({ skills }: { skills: { label: string; ability: number }[] }
         const [lx, ly] = point(i, 1.22);
         return (
           <g key={i}>
-            <line x1={c} y1={c} x2={x} y2={y} stroke="#d8d8e6" strokeWidth="1.5" />
-            <text x={lx} y={ly} textAnchor="middle" fontSize="11" fontWeight="700" fill="#3a3a55">
+            <line x1={c} y1={c} x2={x} y2={y} stroke="var(--line)" strokeWidth="1.5" />
+            <text x={lx} y={ly} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--ink-soft)">
               {skills[i]?.label}
             </text>
           </g>
         );
       })}
-      <polygon points={poly} fill="rgba(62,201,167,.45)" stroke="#1b1b2f" strokeWidth="2.5" />
+      <polygon points={poly} fill="var(--mint-soft)" stroke="var(--mint)" strokeWidth="2.5" />
       {skills.map((s, i) => {
         const [x, y] = point(i, Math.max(0.08, Math.min(1, s.ability)));
-        return <circle key={i} cx={x} cy={y} r="4.5" fill="#3ec9a7" stroke="#1b1b2f" strokeWidth="2" />;
+        return <circle key={i} cx={x} cy={y} r="4.5" fill="var(--mint)" stroke="var(--paper)" strokeWidth="2" />;
       })}
     </svg>
   );
