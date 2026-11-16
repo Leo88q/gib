@@ -195,13 +195,15 @@ console.log('  ok пять мягких подложек совпадают с �
 
 /* «Храповик»: литеральные цвета вне :root не должны расти.
  * 278 значений в правилах — это долг старого файла; новые цвета добавляются
- * только токенами. Число можно уменьшать, увеличивать — нет. */
+ * только токенами. Число можно уменьшать, увеличивать — нет.
+ * Было 75/82; после переноса историй, поддержки, упражнений и экранов задания на
+ * токены — 48/60. */
 const cssOutsideRoot = appCss.slice(0, appCss.indexOf(':root {')) + appCss.slice(appCss.indexOf('}', appCss.indexOf(':root {')) + 1);
 const literals = cssOutsideRoot.match(/#[0-9a-fA-F]{3,6}\b/g) ?? [];
 const uniqueLiterals = new Set(literals.map((l) => l.toLowerCase()));
-assert.ok(uniqueLiterals.size <= 75, `литеральных цветов вне :root стало ${uniqueLiterals.size}, потолок — 75`);
-assert.ok(literals.length <= 82, `литеральных цветов вне :root стало ${literals.length}, потолок — 82`);
+assert.ok(uniqueLiterals.size <= 48, `литеральных цветов вне :root стало ${uniqueLiterals.size}, потолок — 48`);
+assert.ok(literals.length <= 60, `литеральных цветов вне :root стало ${literals.length}, потолок — 60`);
 assert.ok(uniqueLiterals.has('#1264c4'), 'рамка фокуса #1264c4 должна остаться явной');
-console.log(`  ok литеральных цветов вне :root ${uniqueLiterals.size} (потолок 75), новых не появилось`);
+console.log(`  ok литеральных цветов вне :root ${uniqueLiterals.size} (потолок 48), новых не появилось`);
 
 console.log('design-tokens: ok');

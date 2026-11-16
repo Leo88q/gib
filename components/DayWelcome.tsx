@@ -5,6 +5,7 @@ import type { AgeBand } from '@/lib/types';
 import useJourneyResume from './useJourneyResume';
 import FeelingsCheckIn from './FeelingsCheckIn';
 import SupportKit from './SupportKit';
+import { heroFace } from '@/lib/art-paths';
 
 /**
  * Приватные экраны живут в памяти компонента; события не содержат выборов.
@@ -30,7 +31,7 @@ export default function DayWelcome({ band, starting, error, onStart, onBack, pro
   const next = () => { const stage=nextJourneyStage(phase,{type:'checkin_done'}); if(stage) { setRestored(false); setPhase(stage); } };
   const start = () => { if(nextJourneyStage(phase,{type:'pause_done'}) === 'choose_story') { resume.clear(); onStart(); } };
   return <main className="wrap day-welcome"><div className="panel">
-    <div className="day-welcome-heading"><img src="/art/v2/creatures/lis.png" alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">Перед миссией</span><h1>Начнём в своём темпе</h1><p>Всё здесь необязательно: можно просто продолжить.</p></div></div>
+    <div className="day-welcome-heading"><img src={heroFace(band)} alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">Перед миссией</span><h1>Начнём в своём темпе</h1><p>Всё здесь необязательно: можно просто продолжить.</p></div></div>
     {restored && <p className="muted day-welcome-restored" role="status">Ты вернулся на этот экран. Отметки не сохранялись — начать можно заново или сразу перейти к миссии.</p>}
     {phase === 'checkin' ? <>
       <button type="button" className="day-feelings-toggle" aria-expanded={showFeelings} onClick={() => setShowFeelings(open => !open)} disabled={starting}>💬 {showFeelings ? 'Закрыть отметку' : 'Как я сейчас? (необязательно)'}</button>

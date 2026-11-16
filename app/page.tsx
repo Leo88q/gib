@@ -839,7 +839,7 @@ export default function Home() {
     return <div className="wrap game">
       <Hud data={hud} compact />
       <div className="panel story-deck" aria-busy={storySending}>
-        <div className="story-deck-heading"><img src="/art/v2/creatures/lis.png" alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
+        <div className="story-deck-heading"><img src={heroFace(profile?.band ?? '8-10')} alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
         <div className="story-deck-cards">
           {storyOffer.map((card, index) => <button type="button" className="story-deck-card" key={card.id} disabled={storySending || Boolean(pendingStory && pendingStory !== card.id)} onClick={() => void chooseStory(card.id)}>
             <span className="story-deck-number">{index + 1}</span><strong>{card.title}</strong><span>{pendingStory === card.id ? 'Повторить выбор →' : 'Открыть →'}</span>
@@ -885,7 +885,7 @@ export default function Home() {
 
         {!(item?.type === 'task' && item.instance.kind !== 'social-practice') && (
           <div className="quest">
-            <img src="/art/v2/creatures/lis.png" alt="" width={64} height={64} className="mascot-inline" />
+            <img src={heroFace(profile?.band ?? '8-10')} alt="" width={64} height={64} className="mascot-inline" />
             <div className="quest-text">
               {item?.type === 'task' && item.quest}
               {item?.type === 'scenario' && item.quest}
@@ -955,6 +955,7 @@ export default function Home() {
               }
             : null
         }
+        band={profile?.band}
         onReflect={() => { clearAcknowledged(); setStage('reflection'); }}
         onDone={() => { clearAcknowledged(); setStage('home'); }}
       />
