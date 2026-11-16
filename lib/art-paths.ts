@@ -13,7 +13,7 @@
  *    и не отдельную сцену на каждую из 60 историй;
  *  - неизвестный идентификатор уходит на безопасный дефолт, а не в 404.
  */
-import { creatureArt, placeForCompetency, DEFAULT_CREATURE_ART } from './design/tokens.ts';
+import { creatureArt, placeForCompetency, DEFAULT_CREATURE_ART, DEFAULT_PLACE_ART } from './design/tokens.ts';
 
 /** Навык программы → существо навыка. `working_memory` — это «память». */
 const SKILL_CREATURE: Record<string, string> = {
@@ -37,6 +37,9 @@ export const BAND_LABEL: Record<string, string> = { '5-7': '5–7 лет', '8-10
 
 /** Дефолт для картинки, которой нет: Лис, а не битая картинка. */
 export const DEFAULT_ART = DEFAULT_CREATURE_ART;
+
+/** Дефолтная сцена — дом: место, с которого начинается район. */
+export const DEFAULT_PLACE = DEFAULT_PLACE_ART;
 
 /** Проводник по возрастной линейке: 5–7 Лис, 8–10 Мира, 11–13 Тима. */
 export function heroArt(band: string): string {

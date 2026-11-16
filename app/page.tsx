@@ -20,7 +20,7 @@ import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
 import { sfx } from '@/lib/sound';
-import { accessoryVariantOf, bodyVariantOf, petVariantOf } from '@/lib/gamification';
+import { petVariantOf } from '@/lib/gamification';
 import { petMood, petMoodText } from '@/lib/pet-mood';
 import { TIME_ZONES, DEFAULT_TIME_ZONE } from '@/lib/calendar';
 import { switchDraftKey } from '@/lib/switch-draft';
@@ -680,18 +680,11 @@ export default function Home() {
         )}
 
         <Room
-          avatar={{
-            accessory: accessoryVariantOf(player?.equipped.head ?? null),
-            body: bodyVariantOf(player?.equipped.body ?? null),
-          }}
+          scene={program?.weekArt}
+          hero={heroFace(profile?.band ?? '8-10')}
+          heroName={HERO_NAME[profile?.band ?? '8-10'] ?? 'Проводник'}
           pet={petVariantOf(player?.equipped.pet ?? null)}
           petLevel={player?.level ?? 1}
-          decor={{
-            rug: player?.equipped.room === 'room_rug',
-            lamp: player?.equipped.room === 'room_lamp',
-            poster: player?.equipped.room === 'room_poster',
-            plant: player?.equipped.room === 'room_plant',
-          }}
           bubble={greeting(program, player)}
           petMood={moodFor(program)}
         />
@@ -733,9 +726,19 @@ export default function Home() {
                   <span>{BAND_LABEL[profile?.band ?? '8-10']} · {program?.weekTitle ?? 'Программа'}</span>
                 </div>
               </div>
-              {program?.weekArt && <img className="mission-week-art" src={program.weekArt} alt="" decoding="async" onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }} />}
               <div className="mission-card-head">
                 <span className="chip">
+                  {/* Место недели уже показано сценой сверху — здесь только
+                      маленькая метка, чтобы не было двух одинаковых фото. */}
+                  {program?.weekArt && (
+                    <img
+                      className="chip-place"
+                      src={program.weekArt}
+                      alt=""
+                      decoding="async"
+                      onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }}
+                    />
+                  )}
                   Неделя {program?.week ?? 1} · день {program?.day ?? 1}
                 </span>
                 {/* Год — вид сверху: ребёнок видит, к какому занятию относится

@@ -33,16 +33,31 @@ async function main() {
   assert.ok(container.querySelector('svg'), 'дракончик без настроения отрисован');
   assert.ok(container.innerHTML.includes('5fd28a'), 'цвет дракона сохранён');
 
-  // 3. Комната принимает настроение и передаёт его питомцу.
-  await act(async () => root.render(<Room pet="cat" petLevel={4} petMood="missing" />));
+  // 3. Комната — фотография места, поверх проводник и питомец с настроением.
+  await act(async () => root.render(
+    <Room
+      scene="/art/v2/places/home.png"
+      hero="/art/v2/creatures/mira-face.png"
+      heroName="Мира"
+      pet="cat"
+      petLevel={4}
+      petMood="missing"
+      bubble="Привет!"
+    />,
+  ));
   const room = container.innerHTML;
+  assert.ok(room.includes('room-scene'), 'сцена комнаты на месте');
+  assert.ok(room.includes('/art/v2/places/home.png'), 'сцена — фото места района');
   assert.ok(room.includes('room-pet'), 'питомец в комнате');
-  assert.ok(room.includes('ff5d8f'), 'настроение дошло до комнаты');
+  assert.ok(room.includes('--pet-mood'), 'настроение дошло до комнаты');
+  assert.ok(room.includes('--pink'), 'соскучился — розовая метка, а не оценка');
+  assert.ok(room.includes('room-guide') && room.includes('Мира'), 'виден проводник линейки');
   await act(async () => root.render(<Room pet={null} />));
   assert.ok(!container.innerHTML.includes('room-pet'), 'без питомца комната не рисует его');
+  assert.ok(container.innerHTML.includes('/art/v2/places/home.png'), 'без аргументов сцена — дом');
 
   // 4. Подпись не появляется без питомца на главной — проверим текст напрямую.
-  assert.ok(container.querySelector('svg'), 'комната отрисована');
+  assert.ok(container.querySelector('img'), 'комната отрисована');
   for (const mood of ['happy', 'sleepy', 'curious', 'missing'] as const) {
     assert.ok(petMoodText(mood).endsWith('.'), `${mood}: законченная фраза`);
   }

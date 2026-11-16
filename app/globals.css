@@ -356,65 +356,111 @@ a:focus-visible {
 
 /* -------------------------------- комната ------------------------------ */
 
+/*
+  Сцена вместо рисунка.
+
+  Плоская комната с контурами 4 px спорила с «мягким объёмом»: там объём даёт
+  свет, а не линия. Фоном идёт фотография места района (16:9), поверх — только
+  две живые вещи: проводник линейки и питомец ребёнка. Предметы комнаты
+  переехали плитками в «Гардероб», их рисует не сцена, а карточка.
+*/
 .room {
   position: relative;
-  background: var(--sky-soft);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: 26px;
   overflow: hidden;
-  padding-bottom: 6px;
+  background: var(--cream);
+  box-shadow: var(--shadow);
 }
 
-.room-svg {
+.room-scene {
   display: block;
   width: 100%;
-  height: auto;
-}
-
-.room-hero {
-  animation: bob 3.4s ease-in-out infinite;
-  transform-origin: 160px 190px;
-}
-
-.room-pet {
-  animation: hop 2.6s ease-in-out infinite;
-}
-
-.room-mascot {
-  position: absolute;
-  right: 6px;
-  bottom: 4px;
-  width: 34%;
-  max-width: 150px;
-  filter: drop-shadow(3px 4px 0 rgba(27, 27, 47, 0.25));
-  animation: bob 2.6s ease-in-out infinite;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--cream);
 }
 
 .room-bubble {
   position: absolute;
-  left: 10px;
-  top: 10px;
-  max-width: 62%;
-  background: var(--paper);
-  border: 1px solid var(--line);
+  left: 12px;
+  top: 12px;
+  max-width: 66%;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 18px;
   padding: 9px 13px;
   font-weight: 800;
   font-size: 15px;
+  line-height: 1.25;
+  color: var(--ink);
   box-shadow: var(--shadow-sm);
   animation: pop 0.45s ease;
 }
 
-.room-bubble::after {
+.room-cast {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.room-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.room-guide img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 8%;
+  background: var(--cream);
+}
+
+.room-pet {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  padding: 6px 6px 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Метка настроения — цвет и точка, без лица «с настроением» на фотографии. */
+.room-pet::after {
   content: '';
   position: absolute;
-  left: 22px;
-  bottom: -12px;
-  width: 0;
-  height: 0;
-  border: 6px solid transparent;
-  border-top-color: var(--ink);
+  right: 4px;
+  top: 4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--pet-mood, var(--mint));
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.room-pet svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* --------------------------------- табы -------------------------------- */
@@ -461,18 +507,6 @@ a:focus-visible {
   background: linear-gradient(180deg, var(--cream), var(--cream));
 }
 
-.mission-week-art {
-  display: block;
-  width: 100%;
-  max-height: 260px;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  object-position: center 55%;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 14px;
-}
 
 .mission-card-head {
   display: flex;
@@ -640,7 +674,7 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 2.5px dashed var(--ink);
+  border: 1px dashed var(--line);
   border-radius: 16px;
   padding: 10px;
   margin-bottom: 14px;
@@ -2730,8 +2764,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
    иначе на экране появляется фото с фоном вместо героя.
    ========================================================================== */
 .mascot-inline,
-.mascot,
-.room-mascot img {
+.mascot {
   object-fit: cover;
   object-position: 50% 8%;
   border-radius: 50%;
@@ -2747,18 +2780,6 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .mascot {
   aspect-ratio: 1;
   height: auto;
-}
-
-.room-mascot {
-  width: 26%;
-  max-width: 120px;
-}
-
-.room-mascot img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 16px;
 }
 
 .reward-mascot {
@@ -2844,13 +2865,6 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   background: var(--paper);
 }
 
-.mission-week-art {
-  aspect-ratio: 16 / 9;
-  max-height: none;
-  border: 0;
-  border-radius: 20px;
-  box-shadow: 0 18px 36px -28px rgba(36, 29, 49, 0.6);
-}
 
 .mission-hero {
   display: flex;
@@ -3146,4 +3160,160 @@ label[for='receipt-email'] {
 .card > .stat > span:last-child:not(:first-child) {
   margin-left: auto;
   text-align: right;
+}
+
+/* Гардероб: настоящие картинки предметов вместо эмодзи. Эмодзи — чужой шрифт
+   и чужая палитра; предмет уже нарисован в v2, его и показываем. */
+.shop-thumb {
+  width: 54px;
+  height: 54px;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+.shop-thumb img,
+.shop-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* «Моя комната» — плитка с тем, что ребёнок уже купил для комнаты.
+   Сцена теперь фотография места, поэтому предметы живут здесь. */
+.shop-room {
+  margin: 6px 0 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--cream);
+}
+
+.shop-room h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.shop-room-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.shop-room-item {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  text-align: center;
+}
+
+.shop-room-item.on {
+  border-color: var(--mint);
+  box-shadow: inset 0 0 0 2px var(--mint-soft);
+}
+
+.shop-room-item img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+/* Место недели в чипе: маленький кадр 16:9, не второй постер. */
+.chip-place {
+  width: 26px;
+  height: 18px;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: -4px;
+}
+
+/* Табы: активный — мятая мятная плашка с тонкой линией, а не жёлтая наклейка
+   с чернильной рамкой. Наведения на неактивных тоже мягкие. */
+.tabs {
+  border-radius: 20px;
+}
+
+.tabs button,
+.tabs a {
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+
+.tabs button.on,
+.tabs a:hover {
+  background: var(--mint-soft);
+  border-color: var(--mint);
+}
+
+.tabs button:hover:not(.on) {
+  background: var(--cream);
+}
+
+/* Питомец на сцене: тёплый кремовый кружок вместо белого — так он не выглядит
+   вырезанной наклейкой на фотографии, а фон питомца совпадает с подложкой. */
+.room-pet {
+  width: 84px;
+  height: 84px;
+  background: var(--cream);
+}
+
+.room-pet svg {
+  filter: drop-shadow(0 6px 10px rgba(36, 29, 49, 0.18));
+}
+
+/* Кнопки покупки в гардеробе: цена — на золотой подложке (это про награду),
+   «Надеть» — мятная капсула; жёлтой заливки во всю кнопку больше нет. */
+.btn.tiny {
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.btn.tiny.secondary {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.btn.tiny:hover {
+  background: var(--gold-soft);
+  border-color: rgba(36, 29, 49, 0.18);
+}
+
+.btn.tiny.secondary:hover {
+  background: var(--mint-soft);
+}
+
+/* Превью гардероба: герой и питомец рядом с подписью, без пустого поля. */
+.shop-preview {
+  align-items: center;
+  border-radius: 20px;
+}
+
+.shop-avatar {
+  width: 96px;
+  flex: 0 0 96px;
+  animation: none;
+}
+
+.shop-pet {
+  width: 62px;
+  flex: 0 0 62px;
+}
+
+.shop-preview p {
+  flex: 1 1 150px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
 }

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { avatarParts, HAIRS, SHIRTS, SKINS, type AvatarOptions } from './avatarParts';
 import { accessoryVariantOf, bodyVariantOf } from '@/lib/gamification';
 import Pet, { type PetVariant } from './Pet';
+import { itemArt } from '@/lib/design/tokens';
 
 export type ShopItemView = {
   id: string;
@@ -55,6 +56,10 @@ export default function Shop({
     [equipped],
   );
 
+  /* Предметы комнаты больше не дорисовываются в сцене: комната — фотография
+     места. Поэтому всё купленное для комнаты видно здесь, плитками. */
+  const roomOwned = items.filter((i) => i.slot === 'room' && inventory.includes(i.id));
+
   const groups = (['head', 'body', 'pet', 'room'] as const).map((slot) => ({
     slot,
     list: items.filter((i) => i.slot === slot),
@@ -81,6 +86,20 @@ export default function Shop({
         </p>
       </div>
 
+      {roomOwned.length > 0 && (
+        <div className="shop-room">
+          <h4>Моя комната</h4>
+          <div className="shop-room-strip">
+            {roomOwned.map((item) => (
+              <span key={item.id} className={`shop-room-item${equipped.room === item.id ? ' on' : ''}`}>
+                <img src={itemArt(item.variant)} alt="" loading="lazy" decoding="async" />
+                <b>{item.name}</b>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {groups.map((g) => (
         <div key={g.slot} className="shop-group">
           <h4>{SLOT_LABEL[g.slot]}</h4>
@@ -91,7 +110,9 @@ export default function Shop({
               return (
                 <div key={item.id} className={`shop-item${on ? ' on' : ''}`}>
                   <div className="shop-thumb">
-                    <span>{item.variant === 'cat' ? '🐱' : item.variant === 'dragon' ? '🐲' : '🎁'}</span>
+                    {item.slot === 'pet'
+                      ? <Pet variant={item.variant as PetVariant} level={level} />
+                      : <img src={itemArt(item.variant)} alt="" loading="lazy" decoding="async" />}
                   </div>
                   <b>{item.name}</b>
                   <span className="muted">{item.desc}</span>
