@@ -19,10 +19,12 @@ import {
 } from './coding.ts';
 import { SHOWCASE_ANCHORS } from '../year/lessons.ts';
 import { listCodingSamples } from './coding-store.ts';
+import { FQS_ITEMS } from './fqs.ts';
+import { listFqsResponses } from './fqs-store.ts';
 import type { AgeBand, Payment, Profile, ProgramState, Session, Subscription } from '../types.ts';
 import type { Group, Membership } from '../teacher/access.ts';
 
-export type ResearchDatasetKind = 'sessions' | 'showcases' | 'retention' | 'irr';
+export type ResearchDatasetKind = 'sessions' | 'showcases' | 'retention' | 'irr' | 'fqs';
 export type ResearchExportFormat = 'csv' | 'json' | 'xapi';
 
 export type AnalyticsSourceData = {
@@ -228,6 +230,47 @@ export function buildDatasetRows(
     return { columns, rows };
   }
 
+  if (kind === 'fqs') {
+    const fqs = listFqsResponses();
+    const itemCols = FQS_ITEMS.map((i) => i.id);
+    const columns = [
+      'response_id',
+      'participant_hash',
+      'age_band',
+      'stage',
+      'lesson',
+      'companionship',
+      'conflict',
+      'help',
+      'security',
+      'closeness',
+      'composite_mean',
+      ...itemCols,
+      'created_date',
+    ];
+    const rows = fqs.map((r) => {
+      const base: Record<string, unknown> = {
+        response_id: r.responseId,
+        participant_hash: r.participantHash,
+        age_band: r.ageBand,
+        stage: r.stage,
+        lesson: r.lesson ?? '',
+        companionship: r.subscales.companionship,
+        conflict: r.subscales.conflict,
+        help: r.subscales.help,
+        security: r.subscales.security,
+        closeness: r.subscales.closeness,
+        composite_mean: r.compositeMean,
+        created_date: isoDate(r.createdAt),
+      };
+      for (const col of itemCols) {
+        base[col] = r.items[col] ?? '';
+      }
+      return base;
+    });
+    return { columns, rows };
+  }
+
   // dataset === 'irr'
   const columns = [
     'sample_id',
@@ -280,6 +323,43 @@ export function buildXapiStatements(
 ): Record<string, unknown>[] {
   const homePage = 'https://gib.research.local';
   const profileById = new Map(data.profiles.map((p) => [p.id, p]));
+
+  if (kind === 'fqs') {
+    return listFqsResponses().map((r) => ({
+      id: deterministicUuid(`fqs:${r.participantHash}:${r.responseId}`),
+      version: '1.0.3',
+      actor: {
+        objectType: 'Agent',
+        account: { homePage, name: r.participantHash },
+      },
+      verb: {
+        id: 'http://adlnet.gov/expapi/verbs/responded',
+        display: { 'ru-RU': 'заполнил исследовательский бланк качества дружбы (FQS)' },
+      },
+      object: {
+        objectType: 'Activity',
+        id: `${homePage}/activities/fqs/${r.stage}`,
+        definition: {
+          type: 'http://adlnet.gov/expapi/activities/assessment',
+          name: { 'ru-RU': `Опросник FQS · срез ${r.stage}` },
+        },
+      },
+      result: {
+        score: { min: 1, max: 5, raw: r.compositeMean },
+        extensions: {
+          [`${homePage}/ext/fqs_subscales`]: r.subscales,
+          [`${homePage}/ext/stage`]: r.stage,
+        },
+      },
+      context: {
+        extensions: {
+          [`${homePage}/ext/age_band`]: r.ageBand,
+          [`${homePage}/ext/lesson`]: r.lesson ?? null,
+        },
+      },
+      timestamp: new Date(r.createdAt).toISOString(),
+    }));
+  }
 
   if (kind === 'showcases') {
     const statements: Record<string, unknown>[] = [];

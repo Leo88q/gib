@@ -297,3 +297,46 @@ CREATE TABLE IF NOT EXISTS gib.research_codings (
 );
 CREATE INDEX IF NOT EXISTS research_codings_lesson ON gib.research_codings(lesson);
 `;
+
+/**
+ * Расширение таблиц состояния для асинхронной построчной записи без глобального
+ * `pg_advisory_xact_lock`: версионирование строк (`row_version`) и независимые
+ * последовательности `ordinal` для параллельной вставки из нескольких реплик.
+ */
+export const ROW_LEVEL_WRITE_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+ALTER TABLE gib.profiles ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.skills ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.sessions ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.program_states ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.player_states ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.events ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+CREATE SEQUENCE IF NOT EXISTS gib.skills_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.sessions_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.program_states_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.player_states_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.events_ordinal_seq START WITH 1;
+`;
+
+/**
+ * Таблица обезличенных цифровых бланков опросника качества дружбы
+ * (FQS, Bukowski, Hoza & Boivin, 1994) по пяти шкалам на этапах
+ * `entry` (вход), `mid` (середина) и `final` (итог).
+ */
+export const FQS_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.research_fqs (
+  response_id TEXT PRIMARY KEY,
+  profile_id TEXT,
+  participant_hash TEXT NOT NULL,
+  age_band TEXT NOT NULL CHECK (age_band IN ('5-7', '8-10', '11-13')),
+  stage TEXT NOT NULL CHECK (stage IN ('entry', 'mid', 'final')),
+  lesson INTEGER CHECK (lesson IS NULL OR (lesson BETWEEN 1 AND 36)),
+  items JSONB NOT NULL,
+  subscales JSONB NOT NULL,
+  composite_mean DOUBLE PRECISION NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0)
+);
+CREATE INDEX IF NOT EXISTS research_fqs_stage ON gib.research_fqs(stage);
+CREATE INDEX IF NOT EXISTS research_fqs_participant ON gib.research_fqs(participant_hash);
+`;

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { isMuted, setMuted, sfx } from '@/lib/sound';
+import { useEffect, useState } from 'react';
+import { isMuted, onMuteChange, setMuted, sfx } from '@/lib/sound';
 
 export type HudData = {
   level: number;
@@ -13,9 +13,12 @@ export type HudData = {
   combo?: number;
 };
 
-/** Верхняя панель игрока: уровень, опыт, монетки и звёзды. */
+/** Верхняя панель игрока: уровень, опыт, монетки, звёзды и явный режим «Без звука». */
 export default function Hud({ data, compact = false }: { data: HudData; compact?: boolean }) {
   const [muted, setMutedState] = useState(() => isMuted());
+
+  useEffect(() => onMuteChange(setMutedState), []);
+
   return (
     <div className={`hud${compact ? ' compact' : ''}`}>
       <div className="hud-level">
@@ -36,9 +39,10 @@ export default function Hud({ data, compact = false }: { data: HudData; compact?
 
       <button
         type="button"
-        className="hud-sound"
+        className={`hud-sound${muted ? ' muted' : ''}`}
         aria-pressed={muted}
-        title={muted ? 'Включить звук' : 'Выключить звук'}
+        aria-label={muted ? 'Режим «Без звука» включён — нажмите, чтобы включить звук' : 'Включить режим «Без звука»'}
+        title={muted ? 'Включить звук' : 'Режим «Без звука»'}
         onClick={() => {
           const next = !muted;
           setMuted(next);
@@ -46,7 +50,8 @@ export default function Hud({ data, compact = false }: { data: HudData; compact?
           if (!next) sfx.tap();
         }}
       >
-        {muted ? '🔇' : '🔊'}
+        <span aria-hidden="true">{muted ? '🔇' : '🔊'}</span>
+        {!compact && <span className="hud-sound-label">{muted ? 'Без звука' : 'Звук'}</span>}
       </button>
     </div>
   );

@@ -10,7 +10,7 @@ import { SCENARIO_BY_ID as PROGRAM_SCENARIOS, TOTAL_DAYS, programDay } from '../
 import type { Scenario } from '../content/softskills';
 import { hasSupportPractice, makeSupportPractice } from '../content/support-practice';
 import { STORYLETS_BY_ID } from '../content/storylets';
-import { selectStoryCards, DAY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
+import { selectStoryCards, DAY_STORY_CARDS, JOURNEY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
 import { STORY_SKILLS } from '../content/story-skills';
 import { SKILL_BY_ID } from '../content/skills-catalog';
 import { nextDayStage } from '../day/day-machine';
@@ -267,7 +267,7 @@ function startReviewSession(
   const scenario = ALL_SCENARIOS[topic.scenarioId];
   if (!scenario) return null;
   const item: PlanItem = { type: 'scenario', scenarioId: topic.scenarioId };
-  const built = buildItem(profile, item, context, snapshotStory(scenario, profile.band, false));
+  const built = buildItem(profile, item, context, snapshotStory(scenario, profile.band, true));
   const id = 's_' + randomUUID();
   const rt: Runtime = {
     sessionId: id, profileId: profile.id, plan: [item], items: [built], index: 0, taskAnswers: [],
@@ -330,7 +330,19 @@ export function startSession(
   const plan = buildPlan(profile, repeat, context);
   const dayIndex = repeat ? state.lastDayIndex : Math.min(state.completedDays, TOTAL_DAYS - 1);
   const id = 's_' + randomUUID();
-  const offer = options.storyChoice ? selectStoryCards(dayIndex, profile.band, [], id, DAY_STORY_CARDS) : [];
+  const seenStories = options.journey
+    ? Array.from(
+        new Set(
+          context
+            .sessions(profile.id)
+            .filter((s) => Boolean(s.finishedAt))
+            .flatMap((s) => [s.storySelection?.cardId, s.scenario?.scenarioId])
+            .filter((v): v is string => typeof v === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(v)),
+        ),
+      )
+    : [];
+  const deckCatalog = options.journey ? JOURNEY_STORY_CARDS : DAY_STORY_CARDS;
+  const offer = options.storyChoice ? selectStoryCards(dayIndex, profile.band, seenStories, id, deckCatalog) : [];
   const scenarioIndex = plan.findIndex(item => item.type === 'scenario');
   const scenarioPlan = plan[scenarioIndex];
   if (options.storyChoice && scenarioPlan?.type === 'scenario' && hasSupportPractice(scenarioPlan.scenarioId)) {

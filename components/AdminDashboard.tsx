@@ -62,6 +62,13 @@ type ResearchPayload = {
     showcaseLessons: { lesson: number; title: string; stage: string }[];
     blindingRule: string;
   };
+  fqsProtocol?: {
+    version: string;
+    scaleAnchors: Record<'1' | '2' | '3' | '4' | '5', string>;
+    dimensions: { id: string; label: string; reverseInComposite: boolean; description: string }[];
+    items: { id: string; dimension: string; reverseInComposite: boolean; prompt: string }[];
+    caveat: string;
+  };
   report: {
     sample: {
       participantsTotal: number;
@@ -89,6 +96,21 @@ type ResearchPayload = {
       confusionMatrix: [[number, number, number], [number, number, number], [number, number, number]];
       verdict: string;
     };
+    fqs?: {
+      totalResponses: number;
+      uniqueParticipants: number;
+      cronbachAlphaOverall: number | null;
+      cronbachAlphaByDimension: Record<string, number | null>;
+      byStage: Record<
+        'entry' | 'mid' | 'final',
+        { count: number; compositeMean: number | null; subscales: Record<string, number | null> }
+      >;
+      pairedEntryToFinal: {
+        participantsCount: number;
+        deltaCompositeMean: number | null;
+        deltaByDimension: Record<string, number | null>;
+      };
+    };
     limitations: string[];
   };
   samples: {
@@ -100,6 +122,15 @@ type ResearchPayload = {
     raterA: { submitted: boolean; score?: number } | null;
     raterB: { submitted: boolean; score?: number } | null;
     paired: boolean;
+  }[];
+  fqsResponses?: {
+    responseId: string;
+    participantHash: string;
+    ageBand: string;
+    stage: 'entry' | 'mid' | 'final';
+    lesson: number | null;
+    subscales: Record<string, number>;
+    compositeMean: number;
   }[];
   consentedCandidates: { profileId: string; participantHash: string; ageBand: string }[];
 };
@@ -135,6 +166,13 @@ export default function AdminDashboard() {
   const [raterId, setRaterId] = useState('rater_1');
   const [selectedSampleId, setSelectedSampleId] = useState('');
   const [selectedScore, setSelectedScore] = useState<0 | 1 | 2>(1);
+
+  // Поля обезличенного бланка FQS (Friendship Quality Scale)
+  const [fqsProfileId, setFqsProfileId] = useState('');
+  const [fqsAnonKey, setFqsAnonKey] = useState('');
+  const [fqsBand, setFqsBand] = useState<'5-7' | '8-10' | '11-13'>('8-10');
+  const [fqsStage, setFqsStage] = useState<'entry' | 'mid' | 'final'>('entry');
+  const [fqsScores, setFqsScores] = useState<Record<string, number>>({});
 
   const cleanToken = token.trim();
 
@@ -176,7 +214,7 @@ export default function AdminDashboard() {
     }
   }
 
-  async function downloadDataset(dataset: 'sessions' | 'showcases' | 'retention' | 'irr', format: 'csv' | 'json' | 'xapi') {
+  async function downloadDataset(dataset: 'sessions' | 'showcases' | 'retention' | 'irr' | 'fqs', format: 'csv' | 'json' | 'xapi') {
     if (!cleanToken) return;
     setBusy(true);
     setError('');
@@ -277,6 +315,41 @@ export default function AdminDashboard() {
       await loadAll();
     } catch {
       setError('Сбой сети при сохранении оценки.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitFqsBlank() {
+    if (!cleanToken || !research?.fqsProtocol) return;
+    setBusy(true);
+    setError('');
+    setStatusMsg('');
+    try {
+      const items: Record<string, number> = {};
+      for (const spec of research.fqsProtocol.items) {
+        items[spec.id] = fqsScores[spec.id] ?? 3;
+      }
+      const payload = fqsProfileId
+        ? { action: 'submit_fqs', profileId: fqsProfileId, stage: fqsStage, items }
+        : { action: 'submit_fqs', anonymousKey: fqsAnonKey, ageBand: fqsBand, stage: fqsStage, items };
+      const res = await fetch('/api/admin/research', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        setError('Не удалось сохранить бланк FQS (проверьте шифр участника или согласие).');
+        return;
+      }
+      setFqsAnonKey('');
+      setStatusMsg('Обезличенный бланк FQS сохранён и учтён в сводке.');
+      await loadAll();
+    } catch {
+      setError('Сбой сети при отправке бланка FQS.');
     } finally {
       setBusy(false);
     }
@@ -449,6 +522,15 @@ export default function AdminDashboard() {
                     <td>
                       <button type="button" className="secondary" disabled={busy} onClick={() => downloadDataset('irr', 'csv')}>CSV</button>{' '}
                       <button type="button" className="secondary" disabled={busy} onClick={() => downloadDataset('irr', 'json')}>JSON</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><strong>Качество дружбы (`fqs`)</strong></td>
+                    <td>Обезличенные срезы FQS (Bukowski et al., 1994) по 5 субшкалам и 15 пунктам на входе, в середине и в конце года</td>
+                    <td>
+                      <button type="button" className="secondary" disabled={busy} onClick={() => downloadDataset('fqs', 'csv')}>CSV</button>{' '}
+                      <button type="button" className="secondary" disabled={busy} onClick={() => downloadDataset('fqs', 'json')}>JSON</button>{' '}
+                      <button type="button" className="secondary" disabled={busy} onClick={() => downloadDataset('fqs', 'xapi')}>xAPI 1.0.3</button>
                     </td>
                   </tr>
                 </tbody>
@@ -641,6 +723,128 @@ export default function AdminDashboard() {
                   </table>
                 )}
               </section>
+
+              {research.fqsProtocol && research.report.fqs && (
+                <section className="card stack">
+                  <h2>Опросник качества дружбы (FQS, Bukowski et al., 1994)</h2>
+                  <p className="muted small">{research.fqsProtocol.caveat}</p>
+                  <div className="stat">
+                    <span>Заполнено бланков / уникальных участников (`participant_hash`)</span>
+                    <b>{research.report.fqs.totalResponses} / {research.report.fqs.uniqueParticipants}</b>
+                  </div>
+                  <div className="stat">
+                    <span>Внутренняя согласованность α Кронбаха (общая по 15 пунктам)</span>
+                    <b>{research.report.fqs.cronbachAlphaOverall ?? '— (нужно ≥ 3 бланков)'}</b>
+                  </div>
+                  <div className="stat">
+                    <span>Продольная парная дельта (итог − вход) по участникам с двумя срезами</span>
+                    <b>
+                      {research.report.fqs.pairedEntryToFinal.participantsCount > 0
+                        ? `${research.report.fqs.pairedEntryToFinal.deltaCompositeMean ?? '—'} (n = ${research.report.fqs.pairedEntryToFinal.participantsCount})`
+                        : '—'}
+                    </b>
+                  </div>
+
+                  <table className="funnel-steps">
+                    <thead>
+                      <tr>
+                        <th>Этап</th>
+                        <th>Бланков</th>
+                        <th>Сводный индекс (1–5)</th>
+                        <th>Совместность</th>
+                        <th>Конфликт</th>
+                        <th>Помощь</th>
+                        <th>Надёжность</th>
+                        <th>Близость</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(['entry', 'mid', 'final'] as const).map((st) => {
+                        const row = research.report.fqs!.byStage[st];
+                        return (
+                          <tr key={st}>
+                            <td>{STAGE_LABEL[st]}</td>
+                            <td>{row.count}</td>
+                            <td>{row.compositeMean ?? '—'}</td>
+                            <td>{row.subscales.companionship ?? '—'}</td>
+                            <td>{row.subscales.conflict ?? '—'}</td>
+                            <td>{row.subscales.help ?? '—'}</td>
+                            <td>{row.subscales.security ?? '—'}</td>
+                            <td>{row.subscales.closeness ?? '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  <h3>Внести обезличенный бланк FQS</h3>
+                  <div className="stack">
+                    <label>
+                      Этап замера
+                      <select value={fqsStage} onChange={(e) => setFqsStage(e.target.value as 'entry' | 'mid' | 'final')}>
+                        <option value="entry">Вход в год (entry)</option>
+                        <option value="mid">Середина года (mid)</option>
+                        <option value="final">Итог года (final)</option>
+                      </select>
+                    </label>
+                    {research.consentedCandidates.length > 0 && (
+                      <label>
+                        Профиль с действующим исследовательским согласием (необязательно)
+                        <select value={fqsProfileId} onChange={(e) => setFqsProfileId(e.target.value)}>
+                          <option value="">— Внешний обезличенный шифр ВУЗа —</option>
+                          {research.consentedCandidates.map((c) => (
+                            <option key={c.profileId} value={c.profileId}>
+                              Участник {c.participantHash} ({c.ageBand})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    {!fqsProfileId && (
+                      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder="Шифр участника (например, study-104)"
+                          value={fqsAnonKey}
+                          onChange={(e) => setFqsAnonKey(e.target.value)}
+                        />
+                        <select value={fqsBand} onChange={(e) => setFqsBand(e.target.value as '5-7' | '8-10' | '11-13')}>
+                          <option value="8-10">8–10 лет</option>
+                          <option value="11-13">11–13 лет</option>
+                          <option value="5-7">5–7 лет (интервью с исследователем)</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {research.fqsProtocol.items.map((item) => (
+                      <label key={item.id}>
+                        <span className="small">{item.prompt}</span>
+                        <select
+                          value={fqsScores[item.id] ?? 3}
+                          onChange={(e) =>
+                            setFqsScores((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))
+                          }
+                        >
+                          {([1, 2, 3, 4, 5] as const).map((val) => (
+                            <option key={val} value={val}>
+                              {val} — {research.fqsProtocol!.scaleAnchors[val]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+
+                    <button
+                      type="button"
+                      className="primary"
+                      disabled={busy || (!fqsProfileId && fqsAnonKey.trim().length < 3)}
+                      onClick={submitFqsBlank}
+                    >
+                      Сохранить бланк FQS
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </>

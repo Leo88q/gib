@@ -3550,4 +3550,27 @@ label[for='receipt-email'] {
   margin-bottom: 12px;
 }
 
+.hud-sound {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-sound.muted {
+  background: var(--mint-soft);
+  border-color: var(--mint);
+}
+
+.hud-sound-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .hud-sound-label {
+    display: none;
+  }
+}
+
 

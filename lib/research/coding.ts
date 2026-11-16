@@ -17,6 +17,7 @@ import { STORY_SKILLS } from '../content/story-skills.ts';
 import { YEAR } from '../content/year/index.ts';
 import { SHOWCASE_ANCHORS, type ShowcaseLevel } from '../year/lessons.ts';
 import type { AgeBand } from '../types.ts';
+import { summarizeFqsResponses, type FqsResponseRecord, type FqsSummaryReport } from './fqs.ts';
 
 export const VIDEO_CONSENT_VERSION = '2026-11-16';
 
@@ -255,6 +256,7 @@ export type SupervisorReport = {
     { observations: number; level0: number; level1: number; level2: number }
   >;
   reliability: ReliabilityMetrics;
+  fqs: FqsSummaryReport;
   limitations: readonly string[];
 };
 
@@ -264,6 +266,7 @@ export function buildSupervisorReport(params: {
   programStates: readonly { lessons?: readonly { lesson: number; showcase?: ShowcaseLevel }[] }[];
   groupsCount: number;
   codings: readonly ShowcaseCodingSample[];
+  fqsResponses?: readonly FqsResponseRecord[];
   now?: number;
 }): SupervisorReport {
   const byAgeBand: Record<AgeBand, number> = { '5-7': 0, '8-10': 0, '11-13': 0 };
@@ -320,10 +323,12 @@ export function buildSupervisorReport(params: {
     },
     stageDynamics,
     reliability: computeInterRaterReliability(params.codings),
+    fqs: summarizeFqsResponses(params.fqsResponses ?? []),
     limitations: [
       'Внутренние отметки педагогов отражают вовлечённость и факт выхода на показ, но не заменяют внешнюю контрольную группу.',
       'Сценарные выборы в симуляторе намеренно не имеют правильного ответа и не интерпретируются как оценка личности ребёнка.',
       'Вывод о надёжности кодирования правомерен при не менее чем 10 парных независимых наблюдениях и κ ≥ 0.70 (AC1 ≥ 0.75).',
+      'Рабочий русскоязычный бланк FQS (Bukowski et al., 1994) оценивает диадную дружбу с выбранным сверстником и требует проверки α Кронбаха на пилотной выборке ВУЗа.',
     ],
   };
 }

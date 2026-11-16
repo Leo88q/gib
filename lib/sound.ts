@@ -7,6 +7,7 @@
 
 let ctx: AudioContext | null = null;
 let muted = false;
+const listeners = new Set<(muted: boolean) => void>();
 
 try {
   muted = typeof localStorage !== 'undefined' && localStorage.getItem('gib:muted') === '1';
@@ -25,6 +26,27 @@ export function setMuted(value: boolean) {
   } catch {
     /* ignore */
   }
+  if (value && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      /* ignore */
+    }
+  }
+  for (const fn of listeners) {
+    try {
+      fn(value);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+export function onMuteChange(listener: (muted: boolean) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 function audio(): AudioContext | null {

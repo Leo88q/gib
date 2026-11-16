@@ -12,7 +12,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const DATASETS = new Set<ResearchDatasetKind>(['sessions', 'showcases', 'retention', 'irr']);
+const DATASETS = new Set<ResearchDatasetKind>(['sessions', 'showcases', 'retention', 'irr', 'fqs']);
 const FORMATS = new Set<ResearchExportFormat>(['csv', 'json', 'xapi']);
 
 export async function GET(req: Request) {

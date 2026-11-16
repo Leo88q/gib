@@ -4,6 +4,7 @@ import { storeModeOf } from '../store-mode.ts';
 import { openBridge } from '../postgres/state-backend.ts';
 import { RESEARCH_SCHEMA } from '../postgres/schema.ts';
 import type { ShowcaseCodingSample } from './coding.ts';
+import { purgeProfileFqsLinks } from './fqs-store.ts';
 
 function filePath(): string {
   if (process.env.GIB_RESEARCH_FILE) return process.env.GIB_RESEARCH_FILE;
@@ -105,19 +106,20 @@ export function saveCodingSample(sample: ShowcaseCodingSample): void {
 
 /**
  * При отзыве согласия на видеофиксацию или удалении профиля ребёнка удаляются
- * все связанные с профилем записи видеокодирования.
+ * все связанные с профилем записи видеокодирования и опросника FQS.
  */
 export function purgeProfileResearchLinks(profileId: string): number {
+  const purgedFqs = purgeProfileFqsLinks(profileId);
   if (storeModeOf() === 'postgres') {
     const rows = pg().query(
       'DELETE FROM gib.research_codings WHERE profile_id = $1 RETURNING sample_id',
       [profileId],
     );
-    return rows.length;
+    return rows.length + purgedFqs;
   }
   const all = readFileSamples();
   const kept = all.filter((s) => s.profileId !== profileId);
   const removed = all.length - kept.length;
   if (removed > 0) writeFileSamples(kept);
-  return removed;
+  return removed + purgedFqs;
 }

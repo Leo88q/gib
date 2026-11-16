@@ -21,6 +21,19 @@ import { paywallCopy } from '../lib/access/entitlement.ts';
 import { SHOP } from '../lib/gamification.ts';
 import { resolveOperator, legalMissing, legalReady } from '../lib/legal/documents.ts';
 import { computeInterRaterReliability } from '../lib/research/coding.ts';
+import Hud from '../components/Hud.tsx';
+import { JOURNEY_STORY_CARDS, selectStoryCards } from '../lib/day/story-deck.ts';
+import { isMuted, onMuteChange, setMuted } from '../lib/sound.ts';
+import {
+  FQS_ITEMS,
+  FQS_DIMENSIONS,
+  computeCronbachAlpha,
+  parseAndScoreFqsItems,
+  summarizeFqsResponses,
+  type FqsResponseRecord,
+} from '../lib/research/fqs.ts';
+import { listFqsResponses, saveFqsResponse, purgeProfileFqsLinks } from '../lib/research/fqs-store.ts';
+import { buildDatasetRows, buildXapiStatements, rowsToCsv } from '../lib/research/export.ts';
 
 function signTelegramInitData(botToken: string, userId: number): string {
   const authDate = Math.floor(Date.now() / 1000);
@@ -189,6 +202,7 @@ import { GET as adminResearchGet, POST as adminResearchPost } from '${process.cw
 import { dispatchDueNotifications } from '${process.cwd()}/lib/bots/messenger.ts';
 import { pingAsyncPool, readAnalyticsSnapshotAsync, closeAsyncPool } from '${process.cwd()}/lib/postgres/async-pool.ts';
 import { YEAR } from '${process.cwd()}/lib/content/year/index.ts';
+import { startOwnedSessionRowLevel, selectOwnedStoryRowLevel, answerOwnedSessionRowLevel, ConcurrentRowVersionError, ensureRowLevelSchema } from '${process.cwd()}/lib/postgres/row-writer.ts';
 
 const PARENT_INIT = ${JSON.stringify(parentInit)};
 const TEACHER_INIT = ${JSON.stringify(teacherInit)};
@@ -632,6 +646,57 @@ async function run() {
   assert.equal(asyncSnap.ledgerCount, 1);
   assert.equal(asyncSnap.researchCodingsCount, 1);
   await closeAsyncPool();
+
+  // K. Построчный асинхронный писатель (lib/postgres/row-writer.ts): версии строк, последовательности, откат при конфликте
+  const asyncClient = {
+    async query(sql: string, params?: unknown[]) {
+      return { rows: bridge.query(sql, params ?? []) as never[], rowCount: undefined as never };
+    },
+  };
+  await ensureRowLevelSchema(asyncClient);
+  store.addProfile({ id: 'p_row_1', parentId: '500101', name: 'Мира', age: 9, band: '8-10', createdAt: now });
+  const rowStart = await startOwnedSessionRowLevel(asyncClient, '500101', 'p_row_1', { journey: true, storyChoice: true });
+  assert.ok(!('error' in rowStart), 'построчный старт создаёт сессию');
+  assert.ok('started' in rowStart && Array.isArray(rowStart.started.storyOffer) && rowStart.started.storyOffer.length === 3, 'Journey v2 через построчный путь предлагает три истории');
+  const rowSessionId = rowStart.started.sessionId;
+  const eventsAfterStart = Number(bridge.query('SELECT COUNT(*)::int AS c FROM gib.events WHERE profile_id = $1', ['p_row_1'])[0].c);
+  assert.equal(eventsAfterStart, 1, 'старт фиксируется ровно одним событием');
+
+  const rowPick = await selectOwnedStoryRowLevel(asyncClient, '500101', rowSessionId, rowStart.started.storyOffer[0].id);
+  assert.ok(!('error' in rowPick), 'выбор истории через построчный путь принят');
+  const eventsAfterPick = Number(bridge.query('SELECT COUNT(*)::int AS c FROM gib.events WHERE profile_id = $1', ['p_row_1'])[0].c);
+  assert.equal(eventsAfterPick, eventsAfterStart + 1, 'выбор истории фиксируется событием story_selected');
+
+  // Конкурентная запись между чтением и обновлением → отказ по версии строки и полный откат транзакции
+  const beforeVersion = Number(bridge.query('SELECT row_version FROM gib.sessions WHERE id = $1', [rowSessionId])[0].row_version);
+  let bumpedOnce = false;
+  const racedClient = {
+    async query(sql: string, params?: unknown[]) {
+      if (!bumpedOnce && /^\s*UPDATE gib\.sessions/i.test(sql)) {
+        bumpedOnce = true;
+        // Иная «реплика» успевает закоммитить строку первой: версия уехала вперёд.
+        bridge.query('UPDATE gib.sessions SET row_version = row_version + 1 WHERE id = $1', [rowSessionId]);
+      }
+      return { rows: bridge.query(sql, params ?? []) as never[], rowCount: undefined as never };
+    },
+  };
+  const sessionRow = bridge.query('SELECT data FROM gib.sessions WHERE id = $1', [rowSessionId])[0].data as { runtime: { index: number } };
+  const raceStep = sessionRow.runtime.index;
+  await assert.rejects(
+    () => answerOwnedSessionRowLevel(racedClient, '500101', rowSessionId, { index: 0 }, 150, raceStep),
+    (err: unknown) => err instanceof ConcurrentRowVersionError,
+    'расхождение row_version отклоняется (ConcurrentRowVersionError), частичные записи откачены',
+  );
+  const afterVersion = Number(bridge.query('SELECT row_version FROM gib.sessions WHERE id = $1', [rowSessionId])[0].row_version);
+  assert.equal(afterVersion, beforeVersion, 'после отката row_version не изменился');
+  const eventsAfterRace = Number(bridge.query('SELECT COUNT(*)::int AS c FROM gib.events WHERE profile_id = $1', ['p_row_1'])[0].c);
+  assert.equal(eventsAfterRace, eventsAfterPick, 'после отката новых событий нет');
+
+  // Обычный ответ через построчный путь проходит и двигает row_version
+  const rowAnswer = await answerOwnedSessionRowLevel(asyncClient, '500101', rowSessionId, { index: 0 }, 150, raceStep);
+  assert.ok(!('error' in rowAnswer), 'ответ через построчный путь принят');
+  const finalVersion = Number(bridge.query('SELECT row_version FROM gib.sessions WHERE id = $1', [rowSessionId])[0].row_version);
+  assert.ok(finalVersion > beforeVersion, 'успешный ответ повышает row_version');
 }
 
 run().catch((e) => { console.error(e); process.exit(1); });
@@ -662,7 +727,7 @@ run().catch((e) => { console.error(e); process.exit(1); });
       console.error(runResult.stderr);
     }
     assert.equal(runResult.status, 0, 'интеграционный прогон на PostgreSQL завершился успешно');
-    console.log('  ok PostgreSQL: группы, отметки педагога, удаление платного профиля + payment_ledger, возвраты, PIN-кука, веб-вход и рассылка отчётов');
+    console.log('  ok PostgreSQL: группы, отметки педагога, удаление платного профиля + payment_ledger, возвраты, PIN-кука, веб-вход, рассылка отчётов и построчный асинхронный писатель (версии строк, последовательности, откат при конфликте)');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -684,6 +749,130 @@ run().catch((e) => { console.error(e); process.exit(1); });
     assert.ok(composeText.includes(svc), `docker-compose.yml описывает сервис ${svc}`);
   }
   console.log('  ok DevOps: Dockerfile, docker-compose (postgres-backup + monitoring stack), .env.example и CI на месте');
+
+  /* ---- 5. v2+ · Journey: у всех 60 дней выбор из трёх историй, непрочитанные поднимаются наверх ---- */
+  assert.equal(JOURNEY_STORY_CARDS.length, 120, 'в Journey-колоде 120 карточек (79 базовых + 41 третья карточка недели)');
+  const auditBands = ['5-7', '8-10', '11-13'] as const;
+  for (let day = 0; day < 60; day++) {
+    for (const band of auditBands) {
+      const offer = selectStoryCards(day, band, [], `audit-deck-${day}`, JOURNEY_STORY_CARDS);
+      assert.equal(offer.length, 3, `день ${day + 1} (${band}) предлагает три истории`);
+      assert.equal(new Set(offer.map((choice) => choice.scenarioId)).size, 3, `день ${day + 1} (${band}): три разные истории`);
+    }
+  }
+  // Ранее не пройденная карточка поднимается наверх при том же сиде (seenStories из сохранённой сессии).
+  const rotationSeed = 'audit-rotation-seed';
+  const baseline = selectStoryCards(0, '8-10', [], rotationSeed, JOURNEY_STORY_CARDS);
+  const seenTopCard = baseline[0].id;
+  const rotated = selectStoryCards(0, '8-10', [seenTopCard], rotationSeed, JOURNEY_STORY_CARDS);
+  assert.equal(rotated.length, 3, 'после отметки «пройдено» предложение остаётся из трёх карточек');
+  assert.equal(rotated[rotated.length - 1].id, seenTopCard, 'пройденная карточка уходит вниз колоды');
+  assert.notEqual(rotated[0].id, seenTopCard, 'наверх поднимается ещё не пройденная история');
+  console.log('  ok Journey: 60 дней × 3 возраста предлагают три истории, непрочитанные поднимаются по seenStories');
+
+  /* ---- 6. v2+ · Звук и PWA: явная подпись «Без звука», единый mute, статический service worker ---- */
+  const hudData = { level: 4, levelTitle: 'Искра', xp: 130, xpPercent: 56, coins: 80, stars: 11 };
+  setMuted(false);
+  const hudSoundOn = renderToStaticMarkup(<Hud data={hudData} />);
+  assert.ok(hudSoundOn.includes('hud-sound'), 'Hud рендерит кнопку звука');
+  assert.ok(hudSoundOn.includes('>Звук<'), 'подпись «Звук» видна, когда звук включён');
+  const muteEvents: boolean[] = [];
+  const unsubscribe = onMuteChange((value) => { muteEvents.push(value); });
+  setMuted(true);
+  assert.equal(isMuted(), true, 'setMuted(true) включает беззвучный режим');
+  unsubscribe();
+  const hudMuted = renderToStaticMarkup(<Hud data={hudData} />);
+  assert.ok(hudMuted.includes('Без звука'), 'в беззвучном режиме подпись — «Без звука»');
+  assert.ok(hudMuted.includes('aria-pressed="true"'), 'кнопка отражает aria-pressed=true');
+  setMuted(false);
+  assert.deepEqual(muteEvents, [true], 'onMuteChange уведомляет подписчиков об изменении режима');
+
+  const swSource = fs.readFileSync(path.join(process.cwd(), 'public', 'sw.js'), 'utf8');
+  assert.ok(swSource.includes('gib-static-v2'), 'service worker — статический кеш gib-static-v2');
+  assert.ok(/pathname\.startsWith\('\/api\/'\)\)\s*return false/.test(swSource), 'API исключён из кеша');
+  assert.ok(swSource.includes('/art/v2/') && swSource.includes('/fonts/'), 'кешируются только неизменяемые ресурсы оформления');
+  const manifestSource = fs.readFileSync(path.join(process.cwd(), 'app', 'manifest.ts'), 'utf8');
+  assert.ok(manifestSource.includes("display: 'standalone'"), 'PWA-манифест standalone');
+  assert.ok(fs.existsSync(path.join(process.cwd(), 'public', 'art', 'v2', 'creatures', 'lis-face.png')), 'иконка манифеста существует в public/');
+  const layoutSource = fs.readFileSync(path.join(process.cwd(), 'app', 'layout.tsx'), 'utf8');
+  assert.ok(layoutSource.includes("manifest: '/manifest.webmanifest'") && layoutSource.includes('<PwaRegistration />'), 'layout отдаёт манифест и регистрирует SW');
+  const pwaSource = fs.readFileSync(path.join(process.cwd(), 'components', 'PwaRegistration.tsx'), 'utf8');
+  assert.ok(pwaSource.includes("serviceWorker.register('/sw.js'"), 'SW регистрируется по /sw.js');
+  const readAloudSource = fs.readFileSync(path.join(process.cwd(), 'components', 'ReadAloud.tsx'), 'utf8');
+  assert.ok(readAloudSource.includes('onMuteChange'), 'ReadAloud синхронизируется с общим режимом «Без звука»');
+  console.log('  ok Звук и PWA: явный режим «Без звука», onMuteChange для Hud/ReadAloud, standalone-манифест и статический SW без API');
+
+  /* ---- 7. v2+ · FQS: 15 пунктов, α Кронбаха, парная дельта, экспорт и удаление с отзывом согласия ---- */
+  const fqsTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-fqs-'));
+  const prevFqsFile = process.env.GIB_FQS_FILE;
+  process.env.GIB_FQS_FILE = path.join(fqsTmp, 'research-fqs.json');
+  try {
+    const allFours = Object.fromEntries(FQS_ITEMS.map((item) => [item.id, 4]));
+    const scored = parseAndScoreFqsItems(allFours);
+    assert.ok(scored.ok, 'корректный бланк принимается');
+    if (!scored.ok) throw new Error('parse_failed');
+    assert.equal(FQS_ITEMS.length, 15, 'в опроснике 15 пунктов');
+    for (const dimension of FQS_DIMENSIONS) {
+      assert.equal(scored.subscales[dimension.id], 4, `шкала ${dimension.id} считается как среднее`);
+    }
+    // Неконфликтных пунктов 12, конфликтных 3: (4*12 + (6-4)*3) / 15 = 3.6
+    assert.equal(scored.compositeMean, 3.6, 'шкала конфликта инвертируется в составном среднем');
+    assert.equal(parseAndScoreFqsItems({ ...allFours, [FQS_ITEMS[0].id]: 6 }).ok, false, 'балл вне шкалы 1–5 отклоняется');
+
+    assert.equal(computeCronbachAlpha([[5, 5, 5], [1, 1, 1], [4, 4, 4], [2, 2, 2]]), 1, 'согласованные пункты дают α = 1');
+    assert.equal(computeCronbachAlpha([[3, 3], [3, 3], [3, 3]]), null, 'нулевая дисперсия → α = null');
+    assert.equal(computeCronbachAlpha([[5, 1], [1, 5]]), null, 'меньше трёх наблюдений → α = null');
+
+    const mkFqs = (participantHash: string, stage: 'entry' | 'final', score: number, createdAt: number): FqsResponseRecord => {
+      const raw = Object.fromEntries(FQS_ITEMS.map((item) => [item.id, score]));
+      const parsed = parseAndScoreFqsItems(raw);
+      if (!parsed.ok) throw new Error('parse_failed');
+      return {
+        responseId: `fqs_${participantHash}_${stage}`,
+        profileId: `p_fqs_${participantHash}`,
+        participantHash,
+        ageBand: '8-10',
+        stage,
+        lesson: 1,
+        items: parsed.items,
+        subscales: parsed.subscales,
+        compositeMean: parsed.compositeMean,
+        createdAt,
+      };
+    };
+    saveFqsResponse(mkFqs('hash_a', 'entry', 3, 1000));
+    saveFqsResponse(mkFqs('hash_a', 'final', 5, 2000));
+    saveFqsResponse(mkFqs('hash_b', 'entry', 3, 1000));
+    saveFqsResponse(mkFqs('hash_b', 'final', 5, 2000));
+    const fqsSummary = summarizeFqsResponses(listFqsResponses());
+    assert.equal(fqsSummary.totalResponses, 4);
+    assert.equal(fqsSummary.uniqueParticipants, 2);
+    assert.equal(fqsSummary.byStage.entry.count, 2);
+    assert.equal(fqsSummary.byStage.final.count, 2);
+    assert.equal(fqsSummary.pairedEntryToFinal.participantsCount, 2, 'дельта считается по парным участникам');
+    // composite(3) = (3*12 + 3*3) / 15 = 3.0; composite(5) = (5*12 + 1*3) / 15 = 4.2; Δ = 1.2
+    assert.equal(fqsSummary.pairedEntryToFinal.deltaCompositeMean, 1.2, 'парная дельта final − entry посчитана верно');
+
+    const emptyAnalytics = { profiles: [], sessions: [], subs: [], programStates: [], payments: [], groups: [], memberships: [], ledgerCount: 0 };
+    const fqsEnv = { ...process.env, GIB_SESSION_SECRET: 'audit-fqs-secret' };
+    const fqsBuilt = buildDatasetRows('fqs', emptyAnalytics, fqsEnv);
+    const fqsCsv = rowsToCsv(fqsBuilt.columns, fqsBuilt.rows);
+    assert.ok(fqsCsv.startsWith('response_id,participant_hash,'), 'FQS-экспорт — CSV с псевдонимом участника');
+    assert.ok(!fqsCsv.includes('p_fqs_hash_a'), 'экспорт не содержит сырого profileId');
+    const fqsStatements = buildXapiStatements('fqs', emptyAnalytics, fqsEnv);
+    assert.equal(fqsStatements.length, 4, 'xAPI: по одному утверждению на бланк');
+    assert.equal(fqsStatements[0].version, '1.0.3');
+    assert.ok(JSON.stringify(fqsStatements).includes('/activities/fqs/'), 'xAPI-объекты указывают на активность fqs');
+
+    const purged = purgeProfileFqsLinks('p_fqs_hash_a');
+    assert.equal(purged, 2, 'отзыв согласия удаляет все бланки профиля');
+    assert.equal(listFqsResponses().some((row) => row.profileId === 'p_fqs_hash_a'), false, 'после удаления бланков профиля нет');
+    assert.equal(listFqsResponses().length, 2, 'бланки второго участника не затронуты');
+    console.log('  ok FQS: шкалы и составное среднее с инверсией конфликта, α Кронбаха, парная дельта, экспорт CSV/xAPI и удаление с отзывом согласия');
+  } finally {
+    if (prevFqsFile === undefined) delete process.env.GIB_FQS_FILE; else process.env.GIB_FQS_FILE = prevFqsFile;
+    fs.rmSync(fqsTmp, { recursive: true, force: true });
+  }
 }
 
 main().catch((err) => {

@@ -6,6 +6,9 @@ import { store } from '@/lib/store';
 import { SHOP } from '@/lib/gamification';
 import { publicPlayer } from '@/lib/engine/player-view';
 import { buyItem, claimMission, ensureMissions } from '@/lib/engine/rewards';
+import { storeModeOf } from '@/lib/store-mode';
+import { getAsyncPool, withAsyncClient, type AsyncQueryable } from '@/lib/postgres/async-pool';
+import { actOnOwnedPlayerRowLevel, getOwnedPlayerRowLevel, ConcurrentRowVersionError } from '@/lib/postgres/row-writer';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +21,21 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const profileId = url.searchParams.get('profileId');
   if (!profileId) return NextResponse.json({ error: 'profileId_required' }, { status: 400 });
+  if (storeModeOf() === 'postgres' && getAsyncPool()) {
+    let view;
+    try {
+      view = await withAsyncClient((client) =>
+        getOwnedPlayerRowLevel(client as unknown as AsyncQueryable, auth.parentId, profileId, {
+          useGlobalSchemaFlag: true,
+        }),
+      );
+    } catch (err) {
+      if (err instanceof ConcurrentRowVersionError) return NextResponse.json({ error: 'row_version_conflict' }, { status: 409 });
+      throw err;
+    }
+    if ('error' in view) return NextResponse.json(view, { status: 404 });
+    return NextResponse.json(view);
+  }
   if (!ownedProfile(auth.parentId, profileId))
     return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
   return store.transaction(() => NextResponse.json(publicPlayer(profileId)));
@@ -39,6 +57,26 @@ export async function POST(req: Request) {
   if (typeof body.profileId !== 'string' || !body.profileId) return NextResponse.json({ error: 'profileId_required' }, { status: 400 });
   if (!['claim', 'buy', 'equip'].includes(body.action ?? '') || typeof body.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.id)) return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
   const profileId = body.profileId;
+  if (storeModeOf() === 'postgres' && getAsyncPool()) {
+    let out;
+    try {
+      out = await withAsyncClient((client) =>
+        actOnOwnedPlayerRowLevel(
+          client as unknown as AsyncQueryable,
+          auth.parentId,
+          profileId,
+          body.action!,
+          body.id!,
+          { useGlobalSchemaFlag: true },
+        ),
+      );
+    } catch (err) {
+      if (err instanceof ConcurrentRowVersionError) return NextResponse.json({ error: 'row_version_conflict' }, { status: 409 });
+      throw err;
+    }
+    if ('error' in out) return NextResponse.json({ error: out.error }, { status: out.status });
+    return NextResponse.json(out);
+  }
   return store.transaction(() => {
   if (!ownedProfile(auth.parentId, profileId)) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
   const player = store.playerState(profileId);

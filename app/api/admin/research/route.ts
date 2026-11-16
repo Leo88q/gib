@@ -13,6 +13,8 @@ import {
   type ShowcaseCodingSample,
 } from '@/lib/research/coding';
 import { getCodingSample, listCodingSamples, saveCodingSample } from '@/lib/research/coding-store';
+import { FQS_PROTOCOL, parseAndScoreFqsItems, type FqsResponseRecord } from '@/lib/research/fqs';
+import { listFqsResponses, saveFqsResponse } from '@/lib/research/fqs-store';
 import { loadAnalyticsSourceData } from '@/lib/research/export';
 import type { AgeBand } from '@/lib/types';
 
@@ -34,6 +36,7 @@ export async function GET(req: Request) {
   const blindSlot = new URL(req.url).searchParams.get('blindSlot');
   const data = await loadAnalyticsSourceData();
   const codings = listCodingSamples();
+  const fqsResponses = listFqsResponses();
 
   const report = buildSupervisorReport({
     profiles: data.profiles,
@@ -41,6 +44,7 @@ export async function GET(req: Request) {
     programStates: data.programStates,
     groupsCount: data.groups.length,
     codings,
+    fqsResponses,
   });
 
   const publicSamples = codings.map((s) => {
@@ -70,11 +74,24 @@ export async function GET(req: Request) {
       ageBand: p.band,
     }));
 
+  const publicFqs = fqsResponses.slice(0, 50).map((r) => ({
+    responseId: r.responseId,
+    participantHash: r.participantHash,
+    ageBand: r.ageBand,
+    stage: r.stage,
+    lesson: r.lesson ?? null,
+    subscales: r.subscales,
+    compositeMean: r.compositeMean,
+    createdAt: r.createdAt,
+  }));
+
   return NextResponse.json(
     {
       protocol: CODING_PROTOCOL,
+      fqsProtocol: FQS_PROTOCOL,
       report,
       samples: publicSamples,
+      fqsResponses: publicFqs,
       consentedCandidates,
     },
     { headers: { 'Cache-Control': 'no-store' } },
@@ -199,6 +216,88 @@ export async function POST(req: Request) {
       paired,
       sampleId: updated.sampleId,
     });
+  }
+
+  if (body.action === 'submit_fqs') {
+    const stage = body.stage;
+    if (stage !== 'entry' && stage !== 'mid' && stage !== 'final') {
+      return NextResponse.json({ error: 'invalid_stage' }, { status: 400 });
+    }
+    const rawLesson = body.lesson;
+    let lesson: number | null = null;
+    if (rawLesson !== undefined && rawLesson !== null && rawLesson !== '') {
+      const parsedLesson = Number(rawLesson);
+      if (!Number.isInteger(parsedLesson) || parsedLesson < 1 || parsedLesson > 36) {
+        return NextResponse.json({ error: 'invalid_lesson' }, { status: 400 });
+      }
+      lesson = parsedLesson;
+    }
+
+    let profileId: string | null = null;
+    let participantHash = '';
+    let ageBand: AgeBand = '8-10';
+
+    if (typeof body.profileId === 'string' && body.profileId.trim()) {
+      const profile = store.profile(body.profileId.trim());
+      if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+      if (!profile.videoConsent?.granted) {
+        return NextResponse.json({ error: 'research_consent_required' }, { status: 403 });
+      }
+      profileId = profile.id;
+      participantHash = pseudonymizeId(profile.id);
+      ageBand = profile.band;
+    } else if (typeof body.anonymousKey === 'string' && body.anonymousKey.trim().length >= 3) {
+      const cleanKey = body.anonymousKey.trim();
+      if (cleanKey.length > 80 || !/^[a-zA-Z0-9._-]+$/.test(cleanKey)) {
+        return NextResponse.json({ error: 'invalid_anonymous_key' }, { status: 400 });
+      }
+      if (body.ageBand !== '5-7' && body.ageBand !== '8-10' && body.ageBand !== '11-13') {
+        return NextResponse.json({ error: 'invalid_age_band' }, { status: 400 });
+      }
+      participantHash = pseudonymizeId(`anon:${cleanKey}`);
+      ageBand = body.ageBand;
+    } else {
+      return NextResponse.json({ error: 'participant_required' }, { status: 400 });
+    }
+
+    if (!body.items || typeof body.items !== 'object' || Array.isArray(body.items)) {
+      return NextResponse.json({ error: 'items_required' }, { status: 400 });
+    }
+    const scored = parseAndScoreFqsItems(body.items as Record<string, unknown>);
+    if (!scored.ok) {
+      return NextResponse.json({ error: scored.error }, { status: 400 });
+    }
+
+    const record: FqsResponseRecord = {
+      responseId: `fqs_${randomUUID().slice(0, 12)}`,
+      profileId,
+      participantHash,
+      ageBand,
+      stage,
+      lesson,
+      items: scored.items,
+      subscales: scored.subscales,
+      compositeMean: scored.compositeMean,
+      createdAt: now,
+    };
+    saveFqsResponse(record);
+
+    return NextResponse.json(
+      {
+        ok: true,
+        response: {
+          responseId: record.responseId,
+          participantHash: record.participantHash,
+          ageBand: record.ageBand,
+          stage: record.stage,
+          lesson: record.lesson,
+          subscales: record.subscales,
+          compositeMean: record.compositeMean,
+          createdAt: record.createdAt,
+        },
+      },
+      { status: 201 },
+    );
   }
 
   return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
