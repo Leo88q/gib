@@ -8,7 +8,8 @@ for(const [band,age] of [['5-7',6],['8-10',9],['11-13',12]] as [AgeBand,number][
  const profile:Profile={id:'p',parentId:'owner',name:'Тест',age,band,createdAt:1};
  const make=()=>makeSessionMemory({profile,skills:[],sessions:[],playerStates:[],programStates:[{profileId:'p',completedDays:day,lastDayIndex:day,startedAt:1}]});
  const initial=make();const start=startSession(profile,false,initial.store,{storyChoice:true});const saved=initial.state.sessions[0];const rt=saved.runtime!;
- assert.equal(rt.storyOffer!.length,day===0?3:2);
+ // От двух до трёх: основная история, дополнительная и, на отдельных днях, сцена под непокрытый навык.
+ assert.ok(rt.storyOffer!.length>=2 && rt.storyOffer!.length<=3, `${day}: ожидалось 2–3 карточки, получено ${rt.storyOffer!.length}`);
  for(const card of rt.storyOffer!) {
   const v=rt.storyVersions![card.id].variants[band]; assert.ok(v.ink);const ink=v.ink;
   assert.deepEqual(readInkScene(ink),{text:v.text,choices:v.options.map(x=>x.text)});

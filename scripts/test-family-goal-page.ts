@@ -25,6 +25,13 @@ async function main() {
   // Браузер в демо-режиме получает владельца по умолчанию, поэтому профиль
   // создаём без заголовка: иначе кабинет его не увидит.
   const h = { 'content-type': 'application/json' };
+  // Демо-владелец один на весь сервер, а POST /api/profile без addChild
+  // намеренно возвращает уже существующего ребёнка (защита от повторной
+  // отправки формы). В общем прогоне это значит, что тест получит профиль,
+  // созданный предыдущим тестом, и будет проверять чужое состояние. Чистим
+  // заранее — иначе падение ничего не говорит о продукте.
+  const stale = await fetch(`${BASE}/api/profile`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  if (stale?.profile?.id) await fetch(`${BASE}/api/profile?profileId=${stale.profile.id}`, { method: 'DELETE' }).catch(() => {});
   const a = await (await fetch(`${BASE}/api/profile`, { method: 'POST', headers: h, body: JSON.stringify({ name: 'Первый', age: 9 }) })).json();
   const b = await (await fetch(`${BASE}/api/profile`, { method: 'POST', headers: h, body: JSON.stringify({ name: 'Второй', age: 8, addChild: true }) })).json();
   // Отметки: один подтверждённый вклад у первого ребёнка.

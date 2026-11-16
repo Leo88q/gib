@@ -92,8 +92,8 @@ async function main() {
   // Схема не ломается от повторного вызова.
   const { ensureSchemaSync } = await import('../lib/postgres/state-backend.ts');
   const { openBridge } = await import('../lib/postgres/state-backend.ts');
-  const { SCHEMA_V1, SCHEMA_V2 } = await import('../lib/postgres/schema.ts');
-  ensureSchemaSync(openBridge(), { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+  const { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } = await import('../lib/postgres/schema.ts');
+  ensureSchemaSync(openBridge(), { v1: SCHEMA_V1, v2: SCHEMA_V2, v3: SCHEMA_V3 });
   // `before` снят уже после создания профиля, поэтому сравниваем с ним же.
   assert.equal(store.profileCount(), before, 'повторная проверка схемы ничего не удалила');
   ok('обновление схемы идемпотентно');

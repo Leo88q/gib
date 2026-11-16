@@ -13,15 +13,26 @@ import type { PlayerState, PlayerStats } from './types.ts';
 
 export type LevelDef = { level: number; title: string; minXp: number; next: number };
 
+/**
+ * Названия уровней говорят о том, что ребёнок уже успел пройти, и не оценивают
+ * его самого. Прежние названия («Умница», «Знаток», «Стратег», «Легенда
+ * района») были именно оценками: они приписывали ребёнку свойство за набранный
+ * опыт. Здесь уровень — это отметка пути, как ступенька на карте: её видит
+ * ребёнок в HUD, её же показывает отчёт родителю. Поэтому названия описывают
+ * место в программе, а не качество.
+ *
+ * Цифры `minXp`/`next` не менялись: это шкала, а не формулировка, и старые
+ * снимки игрока должны читаться как раньше.
+ */
 export const LEVELS: LevelDef[] = [
-  { level: 1, title: 'Новичок', minXp: 0, next: 60 },
-  { level: 2, title: 'Ученик', minXp: 60, next: 140 },
-  { level: 3, title: 'Исследователь', minXp: 140, next: 260 },
-  { level: 4, title: 'Умница', minXp: 260, next: 420 },
-  { level: 5, title: 'Знаток', minXp: 420, next: 640 },
-  { level: 6, title: 'Стратег', minXp: 640, next: 920 },
-  { level: 7, title: 'Мастер мысли', minXp: 920, next: 1400 },
-  { level: 8, title: 'Легенда района', minXp: 1400, next: 999999 },
+  { level: 1, title: 'Первые шаги', minXp: 0, next: 60 },
+  { level: 2, title: 'На своём пути', minXp: 60, next: 140 },
+  { level: 3, title: 'Всё дальше', minXp: 140, next: 260 },
+  { level: 4, title: 'Своя дорога', minXp: 260, next: 420 },
+  { level: 5, title: 'Много пройдено', minXp: 420, next: 640 },
+  { level: 6, title: 'Дальний маршрут', minXp: 640, next: 920 },
+  { level: 7, title: 'За горизонтом', minXp: 920, next: 1400 },
+  { level: 8, title: 'Первый круг', minXp: 1400, next: 999999 },
 ];
 
 export function levelOf(xp: number): LevelDef {

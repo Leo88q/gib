@@ -9,7 +9,12 @@ export const WEEK_10: WeekPlan = {
   week: 10,
   title: 'План и порядок',
   subtitle: 'Учимся разворачивать большие задачи на шаги',
-  competency: 'decision_making',
+  // Было decision_making — и это расходилось с содержанием: дни недели несут
+  // навыки планирования, а они в self_regulation. Три темы (8, 9, 10) стояли
+  // под decision_making, хотя решений в них нет: память, гибкость и порядок
+  // действий — это управление действием. Переразмечено 07.11.2026, чтобы
+  // компетенция недели не спорила с навыками её дней.
+  competency: 'self_regulation',
   focusSkills: ['planning', 'logic'],
   parentNote:
     'Неделя про порядок действий. Здесь родителю полезно быть не контролёром, а соавтором: соберите вместе план ребёнка и дайте ему вести его самому. Отмечайте не «сделал», а «зачем этот шаг».',
@@ -187,7 +192,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   /* ---------------------------- НЕДЕЛЯ 10 ---------------------------- */
   {
     id: 'w10d1',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -224,10 +229,11 @@ export const SCENARIOS_W10_12: Scenario[] = [
     report: 'Ребёнок собирал вещи и планы по списку, а не на глаз.',
     growth: 'Пока чек-листы не привычны — важно, чтобы они были короткими и всегда под рукой.',
     question: 'Как ты проверяешь, что всё собрал?',
+    frame: 'План можно менять. Это не провал, а часть работы.',
   },
   {
     id: 'w10d2',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -267,7 +273,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d3',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -307,7 +313,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d4',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -347,7 +353,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
   },
   {
     id: 'w10d5',
-    competency: 'decision_making',
+    competency: 'self_regulation',
     skillLabel: 'Ответственные решения',
     variants: {
       '5-7': {
@@ -426,6 +432,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
     report: 'Ребёнок генерировал несколько решений вместо одного.',
     growth: 'Пока идеи перестают появляться после второй — стоит тренировать количество, а не качество.',
     question: 'Придумай три способа на завтра: что сделаешь, если…',
+    frame: 'Своя идея может быть не самой удачной. Её всё равно можно попробовать.',
   },
   {
     id: 'w11d2',
@@ -628,6 +635,7 @@ export const SCENARIOS_W10_12: Scenario[] = [
     report: 'Ребёнок участвовал в общем празднике, а не только в своей роли.',
     growth: 'Пока внимание направлено только на себя — стоит тренировать «радость другого».',
     question: 'Кому ты сегодня сделал приятно и как?',
+    frame: 'Всё, что мы делали, можно собрать вместе — и это не экзамен.',
   },
   {
     id: 'w12d2',

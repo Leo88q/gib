@@ -5,6 +5,7 @@ import { validFamilyState } from './engine/family.ts';
 import { validateEvent } from './events/journal.ts';
 import { validCheckIn, validPreferences, MAX_CHECKINS } from './feelings/state.ts';
 import { validParentPin } from './family/roles.ts';
+import { validJoinCode } from './teacher/invites.ts';
 /** Partial structural validation. It intentionally does not claim full data integrity. */
 export const STORE_COLLECTIONS = ['profiles', 'skills', 'sessions', 'subs', 'programStates', 'playerStates', 'payments', 'events'] as const;
 /**
@@ -50,6 +51,35 @@ export function validateStore(value: unknown): void {
       if (seen.has(unique as string)) throw new Error(`Duplicate store identity: ${key}`);
       seen.add(unique as string);
       validateRecord(key, row);
+    }
+  }
+  // Группы и членство: отдельные коллекции, отдельные правила.
+  const groups = (value as { groups?: unknown }).groups;
+  if (groups !== undefined) {
+    if (!Array.isArray(groups)) throw new Error('Invalid store collection: groups');
+    const ids = new Set<string>();
+    for (const row of groups) {
+      if (!object(row) || !text(row.id) || !text(row.teacherId) || !text(row.name)) throw new Error('Invalid group record');
+      if (typeof row.year !== 'number' || !Number.isInteger(row.year) || row.year < 2000 || row.year > 2100) throw new Error('Invalid group year');
+      // Код группы — право войти. Без проверки формата в хранилище может
+      // оказаться «12345», и тогда ввод кода перестаёт что-либо защищать.
+      if (!validJoinCode(row.joinCode)) throw new Error('Invalid group join code');
+      if (ids.has(String(row.id))) throw new Error('Duplicate store identity: groups');
+      ids.add(String(row.id));
+    }
+  }
+  const memberships = (value as { memberships?: unknown }).memberships;
+  if (memberships !== undefined) {
+    if (!Array.isArray(memberships)) throw new Error('Invalid store collection: memberships');
+    const pairs = new Set<string>();
+    for (const row of memberships) {
+      if (!object(row) || !text(row.groupId) || !text(row.profileId)) throw new Error('Invalid membership record');
+      if (typeof row.joinedAt !== 'number' || !Number.isFinite(row.joinedAt) || row.joinedAt <= 0) throw new Error('Invalid membership joinedAt');
+      // Один ребёнок в одной группе дважды — это не «на всякий случай», а
+      // двойная отметка посещаемости в отчёте. Поэтому запрет.
+      const pair = `${row.groupId}:${row.profileId}`;
+      if (pairs.has(pair)) throw new Error('Duplicate store identity: memberships');
+      pairs.add(pair);
     }
   }
   // PIN взрослого: только владелец и корректная запись, без повторов.
@@ -135,7 +165,22 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
     if (!arrayIfPresent(row.badges) || !arrayIfPresent(row.inventory) || (row.stats !== undefined && !object(row.stats)) || (row.equipped !== undefined && !object(row.equipped)) || (row.missions !== undefined && !object(row.missions))) throw new Error('Invalid player state');
     if (object(row.missions) && (!arrayIfPresent(row.missions.ids) || !arrayIfPresent(row.missions.claimed) || (row.missions.progress !== undefined && !object(row.missions.progress)))) throw new Error('Invalid player missions');
   }
-  if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'payments' && !['creating', 'pending', 'succeeded', 'canceled', 'refunded', 'refund_pending'].includes(String(row.status))) throw new Error('Invalid payment status');
+  if (key === 'payments') {
+    // Жизненный цикл платежа: суммы, даты и провайдерские идентификаторы. Без
+    // этой проверки повреждённый платёж мог бы выглядеть оплаченным.
+    if (row.appliedAt !== undefined && (!Number.isFinite(row.appliedAt) || (row.appliedAt as number) <= 0)) throw new Error('Invalid payment appliedAt');
+    if (row.canceledAt !== undefined && !Number.isFinite(row.canceledAt)) throw new Error('Invalid payment canceledAt');
+    if (row.refundedAt !== undefined && !Number.isFinite(row.refundedAt)) throw new Error('Invalid payment refundedAt');
+    if (row.receiptEmail !== undefined && !text(row.receiptEmail)) throw new Error('Invalid payment receipt');
+    if (row.providerRefundId !== undefined && !/^[a-zA-Z0-9_-]{1,100}$/.test(String(row.providerRefundId))) throw new Error('Invalid payment refund id');
+    if (String(row.status) === 'refunded' && row.refundedAt === undefined) throw new Error('Invalid refunded payment');
+  }
+  if (key === 'profiles' && row.guardianConsent !== undefined) {
+    const consent = row.guardianConsent;
+    if (!object(consent) || !text(consent.version) || !Number.isFinite(consent.at) || (consent.at as number) <= 0) throw new Error('Invalid guardian consent');
+  }
+  if (key === 'profiles' && row.householdAdult !== undefined && !['parent', 'other', 'none'].includes(String(row.householdAdult))) throw new Error('Invalid household adult');
   if (key === 'programStates' && row.reviewDay !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(row.reviewDay))) throw new Error('Invalid review day');
   if (key === 'programStates' && row.reviewStates !== undefined) {
     // Расписание повторения: только сроки и счётчики, без текстов и свободных полей.
@@ -150,6 +195,35 @@ function validateRecord(key: Collection, row: Record<string, unknown>): void {
       if (Object.keys(state).some(key => !['topicId', 'band', 'reviews', 'dueAt', 'skipped', 'updatedAt'].includes(key))) throw new Error('Invalid review state fields');
       if (seenTopics.has(String(state.topicId))) throw new Error('Duplicate review topic');
       seenTopics.add(String(state.topicId));
+    }
+  }
+  if (key === 'programStates' && Array.isArray(row.lessons)) {
+    // Показ: только 0, 1, 2 и только на занятиях-показах. Иначе в хранилище
+    // окажется «3» или отметка показа с обычного занятия, и сводка посчитает
+    // то, чего не было.
+    for (const entry of row.lessons as Record<string, unknown>[]) {
+      if (entry.showcase !== undefined && entry.showcase !== 0 && entry.showcase !== 1 && entry.showcase !== 2) {
+        throw new Error('Invalid showcase level');
+      }
+    }
+  }
+  if (key === 'programStates' && row.lessons !== undefined) {
+    // Расписание занятий: только номер, дата и отметка. Ни причин отсутствия,
+    // ни оценок — их сбор требует отдельного решения и согласия.
+    if (!Array.isArray(row.lessons)) throw new Error('Invalid lessons');
+    if (row.lessons.length > 60) throw new Error('Too many lessons');
+    const seenLessons = new Set<number>();
+    let previousDate = '';
+    for (const entry of row.lessons) {
+      if (!object(entry)) throw new Error('Invalid lesson entry');
+      if (!Number.isInteger(entry.lesson) || (entry.lesson as number) < 1) throw new Error('Invalid lesson number');
+      if (seenLessons.has(entry.lesson as number)) throw new Error('Duplicate lesson number');
+      seenLessons.add(entry.lesson as number);
+      if (!text(entry.date) || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date as string)) throw new Error('Invalid lesson date');
+      if (previousDate && (entry.date as string) < previousDate) throw new Error('Lesson dates out of order');
+      previousDate = entry.date as string;
+      if (entry.attended !== undefined && typeof entry.attended !== 'boolean') throw new Error('Invalid attendance');
+      if (Object.keys(entry).some(f => !['lesson', 'date', 'attended', 'showcase'].includes(f))) throw new Error('Invalid lesson fields');
     }
   }
   if (key === 'events') {

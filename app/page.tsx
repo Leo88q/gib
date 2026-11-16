@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { skillArt, DEFAULT_ART } from '@/lib/art-paths';
+import { skillArt, heroFace, HERO_NAME, BAND_LABEL, DEFAULT_ART } from '@/lib/art-paths';
+import { YEAR, lessonOfDay } from '@/lib/content/year/index.ts';
 import type { AgeBand } from '@/lib/types';
 import TaskView, { type AnswerPayload, type TaskInstance } from '@/components/TaskView';
 import ScenarioView from '@/components/ScenarioView';
@@ -19,7 +20,7 @@ import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
 import { sfx } from '@/lib/sound';
-import { accessoryVariantOf, bodyVariantOf, petVariantOf } from '@/lib/gamification';
+import { petVariantOf } from '@/lib/gamification';
 import { petMood, petMoodText } from '@/lib/pet-mood';
 import { TIME_ZONES, DEFAULT_TIME_ZONE } from '@/lib/calendar';
 import { switchDraftKey } from '@/lib/switch-draft';
@@ -27,6 +28,12 @@ import { selectionDraftKey } from '@/lib/selection-draft';
 import { exerciseDraftKey, removeProfileExerciseDrafts } from '@/lib/exercise-draft';
 import { PENDING_ANSWER_KEY, parsePendingAnswer, clearMatchingPendingAnswer, type PendingAnswer } from '@/lib/pending-answer';
 import { hideBackButton, apiFetch, setupTelegram, showBackButton, haptic } from '@/lib/telegramClient';
+import {
+  CONSENT_POINTS, CONSENT_VERSION, consentSummary,
+} from '@/lib/legal/consent';
+import {
+  HOUSEHOLD_CHOICES, HOUSEHOLD_QUESTION, MEETING_LEAD_CHOICES, MEETING_LEAD_QUESTION,
+} from '@/lib/onboarding';
 
 type StoryCardView = { id: string; title: string };
 
@@ -96,6 +103,19 @@ type Summary = {
   comboBest: number;
 };
 
+/**
+ * Подпись «занятие N из 36» для дня программы.
+ *
+ * Ребёнку не нужно знать про учебный год и календарь школы. Ему нужно понимать,
+ * что этот день — часть одной встречи, а не отдельное задание из шестидесяти.
+ * Поэтому подпись короткая и без слова «занятие» в смысле «урок»: «встреча».
+ */
+function lessonOfDayLabel(dayIndex: number): string {
+  const lesson = lessonOfDay(YEAR, dayIndex);
+  if (!lesson) return '';
+  return `Встреча ${lesson.number} из ${YEAR.total}`;
+}
+
 export default function Home() {
   const [stage, setStage] = useState<'boot' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
   const [tab, setTab] = useState<'home' | 'map' | 'family' | 'badges' | 'shop'>('home');
@@ -121,6 +141,19 @@ export default function Home() {
   const [pendingStory, setPendingStory] = useState<string | null>(null);
   const [storySending, setStorySending] = useState(false);
   const [requestError, setRequestError] = useState('');
+  /**
+   * Экран согласия для уже созданного профиля.
+   *
+   * Профили, созданные до появления согласия, его не имеют — и это не повод
+   * пускать их дальше. При входе сервер говорит `consent.required`, и ребёнок
+   * видит экран вместо города: занятия не начинаются, пока взрослый не
+   * подтвердит редакцию.
+   */
+  const [needsConsent, setNeedsConsent] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
+  const [consentError, setConsentError] = useState('');
+  /** Занятие закрыто оплатой: что показать вместо миссии. */
+  const [paywall, setPaywall] = useState<{ title: string; body: string } | null>(null);
   const [missionNotice, setMissionNotice] = useState('');
   const busy = useRef(false);
   const playerBusy = useRef(false);
@@ -210,6 +243,9 @@ export default function Home() {
         setProfile(data.profile);
         try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
         setStage('home');
+        // Согласие проверяется здесь, а не только на сервере при старте: так
+        // взрослый видит экран согласия сразу, а не после нажатия «начать».
+        setNeedsConsent(data.profile.consent === null || data.profile.consent?.current !== true);
         void loadPlan(data.profile.id);
         void loadPlayer(data.profile.id);
       } else {
@@ -222,12 +258,23 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const createProfile = async (name: string, age: number, timeZone: string) => {
+  const createProfile = async (answer: OnboardingAnswer) => {
     const res = await apiFetch('/api/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, age, timeZone, ...(addingChild ? { addChild: true } : {}) }),
+      body: JSON.stringify({
+        name: answer.name, age: answer.age, timeZone: answer.timeZone,
+        // Без этих двух полей сервер откажет: профиль ребёнка не создаётся без
+        // согласия законного представителя. Версия текста передаётся, чтобы
+        // сервер мог отличить согласие на старую редакцию от согласия вообще.
+        consentAccepted: answer.consentAccepted === true,
+        consentVersion: answer.consentVersion,
+        meetingLead: answer.meetingLead,
+        householdAdult: answer.householdAdult,
+        ...(addingChild ? { addChild: true } : {}),
+      }),
     });
+    if (res.status === 403 || res.status === 409) throw new Error('consent_required');
     if (!res.ok) throw new Error('profile_failed');
     const data = await res.json();
     if (!data.profile?.id) throw new Error('profile_failed');
@@ -237,6 +284,7 @@ export default function Home() {
       return [...others, { id: data.profile.id, name: data.profile.name, age: data.profile.age, band: data.profile.band }];
     });
     setAddingChild(false);
+    setNeedsConsent(false);
     try { localStorage.setItem('gib:profileId', data.profile.id); } catch { /* optional convenience only */ }
     setStage('home');
     void loadPlan(data.profile.id);
@@ -313,7 +361,19 @@ export default function Home() {
       body: JSON.stringify({ action: 'start', profileId: profile.id, repeat, storyChoice: true, journey: true }),
     });
     const data = await res.json();
+    /*
+     * Два отказа, у которых есть свой экран:
+     *  - 403 `consent_required` — взрослый не подтвердил редакцию;
+     *  - 402 `payment_required` — занятие закрыто оплатой.
+     * Показывать вместо них «проверьте связь» значит врать: связь в порядке.
+     */
+    if (res.status === 403 && data?.error === 'consent_required') { setNeedsConsent(true); return; }
+    if (res.status === 402 && data?.error === 'payment_required') {
+      setPaywall({ title: String(data.title ?? 'Нужна подписка'), body: String(data.body ?? '') });
+      return;
+    }
     if (!res.ok || !data.sessionId) throw new Error('start_failed');
+    setPaywall(null);
     setFeedback(null);
     const auto = data.autoClaimed;
     setMissionNotice(auto?.count ? `Награды за прошлые миссии получены: +${auto.xp} XP, +${auto.coins} монет.` : '');
@@ -499,7 +559,7 @@ export default function Home() {
   const hud: HudData = useMemo(
     () => ({
       level: player?.level ?? 1,
-      levelTitle: player?.levelTitle ?? 'Новичок',
+      levelTitle: player?.levelTitle ?? 'Первые шаги',
       xp: player?.xp ?? 0,
       xpPercent: player?.xpPercent ?? 0,
       coins: player?.coins ?? 0,
@@ -519,6 +579,81 @@ export default function Home() {
     );
 
   if (stage === 'onboarding') return <Onboarding onDone={createProfile} onCancel={children.length > 0 ? () => setAddingChild(false) : undefined} />;
+
+  /*
+   * Согласие для существующего профиля.
+   *
+   * Стоит до экрана города, а не внутри него: если профиль создан до запуска,
+   * ребёнок не должен увидеть ни одной истории, пока взрослый не подтвердил
+   * редакцию. Кнопка «позже» здесь была бы обманом — её действие всё равно
+   * упёрлось бы в 403 на сервере.
+   */
+  if (needsConsent && profile)
+    return (
+      <div className="wrap">
+        <div className="panel center consent-gate">
+          <h1>Нужно согласие взрослого</h1>
+          <p className="muted">
+            Профиль «{profile.name}» создан до того, как появилось согласие на обработку данных. Пока взрослый
+            его не подтвердит, занятия не начнутся.
+          </p>
+          <ul className="consent-points">
+            {CONSENT_POINTS.map((point) => <li key={point}>{point}</li>)}
+          </ul>
+          <p className="muted small">
+            <a href="/legal/privacy" target="_blank" rel="noreferrer">Обработка данных ребёнка</a> ·{' '}
+            <a href="/legal/terms" target="_blank" rel="noreferrer">Условия</a>
+          </p>
+          {consentError && <p role="alert">{consentError}</p>}
+          <button
+            type="button"
+            className="btn big"
+            disabled={consentSaving}
+            onClick={async () => {
+              if (consentSaving) return;
+              setConsentSaving(true); setConsentError('');
+              try {
+                const res = await apiFetch('/api/profile', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ profileId: profile.id, consentAccepted: true, consentVersion: CONSENT_VERSION }),
+                });
+                if (!res.ok) throw new Error('consent_failed');
+                setNeedsConsent(false);
+              } catch { setConsentError('Не удалось сохранить согласие. Проверьте соединение и попробуйте ещё раз.'); }
+              finally { setConsentSaving(false); }
+            }}
+          >
+            Подтверждаю согласие
+          </button>
+          <p className="muted small"><a href="/legal">Все документы</a></p>
+        </div>
+      </div>
+    );
+
+  /*
+   * Занятие закрыто оплатой.
+   *
+   * Экран говорит, что открыто бесплатно и что даёт подписка, и не заставляет
+   * платить немедленно: онбординг и первая встреча к этому моменту уже стоят
+   * впереди, и взрослый мог просто проскочить дальше. Кнопка «в кабинет» ведёт
+   * туда, где есть сумма, чек и возврат.
+   */
+  if (paywall && profile)
+    return (
+      <div className="wrap">
+        <div className="panel center paywall-card">
+          <h1>{paywall.title}</h1>
+          <p className="muted">{paywall.body}</p>
+          <p className="muted small">
+            Первая встреча открыта целиком. Начать её можно на главной — там же, где вы нажали сейчас.
+          </p>
+          <Link className="btn big" href="/parent">Кабинет и подписка</Link>{' '}
+          <button type="button" className="btn secondary" onClick={() => { setPaywall(null); setStage('home'); }}>Вернуться на главную</button>
+          <p className="muted small"><Link href="/offer">Что входит в подписку</Link></p>
+        </div>
+      </div>
+    );
 
   if (stage === 'home')
     return (
@@ -545,18 +680,11 @@ export default function Home() {
         )}
 
         <Room
-          avatar={{
-            accessory: accessoryVariantOf(player?.equipped.head ?? null),
-            body: bodyVariantOf(player?.equipped.body ?? null),
-          }}
+          scene={program?.weekArt}
+          hero={heroFace(profile?.band ?? '8-10')}
+          heroName={HERO_NAME[profile?.band ?? '8-10'] ?? 'Проводник'}
           pet={petVariantOf(player?.equipped.pet ?? null)}
           petLevel={player?.level ?? 1}
-          decor={{
-            rug: player?.equipped.room === 'room_rug',
-            lamp: player?.equipped.room === 'room_lamp',
-            poster: player?.equipped.room === 'room_poster',
-            plant: player?.equipped.room === 'room_plant',
-          }}
           bubble={greeting(program, player)}
           petMood={moodFor(program)}
         />
@@ -589,11 +717,36 @@ export default function Home() {
         {tab === 'home' && (
           <>
             <div className="panel mission-card">
-              {program?.weekArt && <img className="mission-week-art" src={program.weekArt} alt="" decoding="async" onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }} />}
+              {/* Герой линейки — часть интерфейса, а не наклейка: он называет,
+                  чья это версия программы. Возраст уже выбран в профиле. */}
+              <div className="mission-hero">
+                <img src={heroFace(profile?.band ?? '8-10')} alt="" />
+                <div>
+                  <b>{HERO_NAME[profile?.band ?? '8-10']} ведёт сегодня</b>
+                  <span>{BAND_LABEL[profile?.band ?? '8-10']} · {program?.weekTitle ?? 'Программа'}</span>
+                </div>
+              </div>
               <div className="mission-card-head">
                 <span className="chip">
+                  {/* Место недели уже показано сценой сверху — здесь только
+                      маленькая метка, чтобы не было двух одинаковых фото. */}
+                  {program?.weekArt && (
+                    <img
+                      className="chip-place"
+                      src={program.weekArt}
+                      alt=""
+                      decoding="async"
+                      onError={e => { if (!e.currentTarget.src.endsWith(DEFAULT_ART)) e.currentTarget.src = DEFAULT_ART; }}
+                    />
+                  )}
                   Неделя {program?.week ?? 1} · день {program?.day ?? 1}
                 </span>
+                {/* Год — вид сверху: ребёнок видит, к какому занятию относится
+                    день. Без этого 36 занятий существуют только в кабинете
+                    родителя, а ребёнок продолжает считать дни «из 60». */}
+                {lessonOfDayLabel(program?.completedDays ?? 0) && (
+                  <span className="chip">{lessonOfDayLabel(program?.completedDays ?? 0)}</span>
+                )}
                 <span className="chip">{program?.weekTitle ?? 'Программа'}</span>
               </div>
               <h2>{program?.dayTheme ?? 'Тренировка дня'}</h2>
@@ -686,7 +839,7 @@ export default function Home() {
     return <div className="wrap game">
       <Hud data={hud} compact />
       <div className="panel story-deck" aria-busy={storySending}>
-        <div className="story-deck-heading"><img src="/art/mascot-think.png" alt="" width={64} height={64} /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
+        <div className="story-deck-heading"><img src={heroFace(profile?.band ?? '8-10')} alt="" width={64} height={64} className="mascot-inline" /><div><span className="chip">История дня</span><h2>Какую историю откроем?</h2><p>Выбери одну карточку. Её можно будет продолжить после перерыва.</p></div></div>
         <div className="story-deck-cards">
           {storyOffer.map((card, index) => <button type="button" className="story-deck-card" key={card.id} disabled={storySending || Boolean(pendingStory && pendingStory !== card.id)} onClick={() => void chooseStory(card.id)}>
             <span className="story-deck-number">{index + 1}</span><strong>{card.title}</strong><span>{pendingStory === card.id ? 'Повторить выбор →' : 'Открыть →'}</span>
@@ -732,7 +885,7 @@ export default function Home() {
 
         {!(item?.type === 'task' && item.instance.kind !== 'social-practice') && (
           <div className="quest">
-            <img src="/art/mascot-think.png" alt="" width={64} height={64} />
+            <img src={heroFace(profile?.band ?? '8-10')} alt="" width={64} height={64} className="mascot-inline" />
             <div className="quest-text">
               {item?.type === 'task' && item.quest}
               {item?.type === 'scenario' && item.quest}
@@ -802,6 +955,7 @@ export default function Home() {
               }
             : null
         }
+        band={profile?.band}
         onReflect={() => { clearAcknowledged(); setStage('reflection'); }}
         onDone={() => { clearAcknowledged(); setStage('home'); }}
       />
@@ -831,66 +985,138 @@ function greeting(program: ProgramInfo | null, player: PlayerInfo | null): strin
   return `День ${program.day} недели ${program.week}: ${program.dayTheme}. Поехали!`;
 }
 
-function Onboarding({ onDone, onCancel }: { onDone: (name: string, age: number, timeZone: string) => Promise<void>; onCancel?: () => void }) {
+type OnboardingAnswer = {
+  name: string;
+  age: number;
+  timeZone: string;
+  consentAccepted: boolean;
+  consentVersion: string;
+  meetingLead: 'adult' | 'child';
+  householdAdult: 'parent' | 'other' | 'none';
+};
+
+/**
+ * Онбординг: ребёнок выбирает имя и возраст, взрослый — два ответа и согласие.
+ *
+ * Почему четыре экрана, а не один. Смешивать «как тебя зовут» и «согласны ли
+ * вы на обработку данных» в одной форме — значит получить галочку, которую
+ * никто не читал. Поэтому сначала ребёнок (имя, возраст, пояс), потом взрослый
+ * (кто ведёт встречу, есть ли дома взрослый), потом текст согласия целиком —
+ * и только затем профиль.
+ *
+ * Чего здесь нет: поля «почта родителя», пароля и номера телефона. Вход —
+ * через мессенджер, а почта спрашивается при оплате, потому что нужна для
+ * чека, а не для аккаунта.
+ */
+function Onboarding({ onDone, onCancel }: { onDone: (answer: OnboardingAnswer) => Promise<void>; onCancel?: () => void }) {
+  const [step, setStep] = useState<'child' | 'adult' | 'consent'>('child');
   const [name, setName] = useState('');
   const [age, setAge] = useState(8);
   const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
+  const [meetingLead, setMeetingLead] = useState<'adult' | 'child' | null>(null);
+  const [householdAdult, setHouseholdAdult] = useState<'parent' | 'other' | 'none' | null>(null);
+  const [consent, setConsent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const submit = async () => {
     if (saving) return;
+    if (!consent) { setError('Отметьте согласие: без него профиль ребёнка не создаётся.'); return; }
     setSaving(true); setError('');
-    try { await onDone(name.trim() || 'Друг', age, timeZone); }
-    catch { setError('Не удалось создать профиль. Проверьте соединение и попробуйте снова.'); }
-    finally { setSaving(false); }
+    try {
+      await onDone({
+        name: name.trim() || 'Друг', age, timeZone,
+        consentAccepted: true, consentVersion: CONSENT_VERSION,
+        meetingLead: meetingLead ?? 'adult', householdAdult: householdAdult ?? 'parent',
+      });
+    } catch (cause) {
+      setError(cause instanceof Error && cause.message === 'consent_required'
+        ? 'Согласие не принято: обновите страницу и попробуйте снова.'
+        : 'Не удалось создать профиль. Проверьте соединение и попробуйте снова.');
+    } finally { setSaving(false); }
   };
   return (
     <div className="wrap">
       <div className="panel center onboarding">
-        <img src="/art/hero.png" alt="" className="hero-art" />
-        <h1>Привет, я Лис!</h1>
-        <p className="muted">
-          В нашем районе 12 недель приключений: когнитивные тренажёры, жизненные ситуации
-          и целый город, который ты откроешь своими подвигами.
-        </p>
-        <h2>Как тебя зовут?</h2>
-        <p className="muted">Можно придумать ник — настоящие имя и фамилию вводить не нужно.</p>
-        <input
-          type="text"
-          value={name}
-          maxLength={24}
-          placeholder="Имя или ник"
-          onChange={(e) => setName(e.target.value)}
-        />
-        <h2>Сколько тебе лет?</h2>
-        <p className="muted">От возраста зависит, какие задания и ситуации тебе покажем.</p>
-        <div className="age-grid">
-          {Array.from({ length: 9 }, (_, i) => i + 5).map((a) => (
-            <button
-              key={a}
-              type="button"
-              className={`age-btn${age === a ? ' active' : ''}`}
-              onClick={() => {
-                setAge(a);
-                sfx.tap();
-              }}
-            >
-              {a}
+        <img src="/art/v2/places/yard.png" alt="" className="hero-art" />
+        {step === 'child' && (
+          <>
+            <h1>Привет, я Лис!</h1>
+            <p className="muted">
+              В нашем районе 12 тем и 36 встреч: короткие истории, задания и один разговор
+              в неделю с кем-то из взрослых.
+            </p>
+            <h2>Как тебя зовут?</h2>
+            <p className="muted">Можно придумать ник — настоящие имя и фамилию вводить не нужно.</p>
+            <input type="text" value={name} maxLength={24} placeholder="Имя или ник" onChange={(e) => setName(e.target.value)} />
+            <h2>Сколько тебе лет?</h2>
+            <p className="muted">От возраста зависит, какие задания и ситуации тебе покажем.</p>
+            <div className="age-grid">
+              {Array.from({ length: 9 }, (_, i) => i + 5).map((a) => (
+                <button key={a} type="button" className={`age-btn${age === a ? ' active' : ''}`} onClick={() => { setAge(a); sfx.tap(); }}>{a}</button>
+              ))}
+            </div>
+            <label htmlFor="profile-zone">Часовой пояс (выберите вместе с родителем)</label>
+            <select id="profile-zone" value={timeZone} onChange={e => setTimeZone(e.target.value)}>
+              {TIME_ZONES.map(zone => <option key={zone.id} value={zone.id}>{zone.label}</option>)}
+            </select>
+            <p className="muted">От него зависят календарные расчёты и границы недель в отчёте. Для существующих профилей используется Москва.</p>
+            <button type="button" className="btn big" onClick={() => setStep('adult')}>Дальше — вопросы для взрослого →</button>
+            {onCancel && <button type="button" className="btn ghost" onClick={onCancel}>Отмена</button>}
+          </>
+        )}
+        {step === 'adult' && (
+          <>
+            <h1>Два вопроса взрослому</h1>
+            <p className="muted">
+              Их задаёт взрослый, который будет заниматься с ребёнком. Ответы можно поменять в кабинете.
+            </p>
+            <h2>{MEETING_LEAD_QUESTION}</h2>
+            <div className="choice-list">
+              {MEETING_LEAD_CHOICES.map((choice) => (
+                <button key={choice.id} type="button" className={`choice${meetingLead === choice.id ? ' active' : ''}`} aria-pressed={meetingLead === choice.id} onClick={() => setMeetingLead(choice.id)}>
+                  <strong>{choice.label}</strong>
+                  <span className="muted small">{choice.detail}</span>
+                </button>
+              ))}
+            </div>
+            <h2>{HOUSEHOLD_QUESTION}</h2>
+            <div className="choice-list">
+              {HOUSEHOLD_CHOICES.map((choice) => (
+                <button key={choice.id} type="button" className={`choice${householdAdult === choice.id ? ' active' : ''}`} aria-pressed={householdAdult === choice.id} onClick={() => setHouseholdAdult(choice.id)}>
+                  <strong>{choice.label}</strong>
+                  <span className="muted small">{choice.detail}</span>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn big" disabled={!meetingLead || !householdAdult} onClick={() => setStep('consent')}>Дальше — согласие →</button>
+            <button type="button" className="btn ghost" onClick={() => setStep('child')}>← Назад</button>
+          </>
+        )}
+        {step === 'consent' && (
+          <>
+            <h1>Согласие законного представителя</h1>
+            <p className="muted">{consentSummary()}</p>
+            <ul className="consent-points">
+              {CONSENT_POINTS.map((point) => <li key={point}>{point}</li>)}
+            </ul>
+            <p className="muted small">
+              Подробно: <a href="/legal/privacy" target="_blank" rel="noreferrer">обработка данных ребёнка</a>,{' '}
+              <a href="/legal/terms" target="_blank" rel="noreferrer">условия</a>. Ссылки откроются в новой вкладке.
+            </p>
+            <label className="consent-check">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+              <span>Подтверждаю согласие и условия. Мне есть 18 лет, я родитель или законный представитель.</span>
+            </label>
+            {error && <p role="alert">{error}</p>}
+            <button type="button" className="btn big" disabled={saving || !consent} onClick={submit}>
+              {onCancel ? '🚀 Добавить ребёнка' : '🚀 В город!'}
             </button>
-          ))}
-        </div>
-        <label htmlFor="profile-zone">Часовой пояс (выберите вместе с родителем)</label>
-        <select id="profile-zone" value={timeZone} onChange={e => setTimeZone(e.target.value)}>
-          {TIME_ZONES.map(zone => <option key={zone.id} value={zone.id}>{zone.label}</option>)}
-        </select>
-        <p className="muted">От него зависят календарные расчёты и границы недель в отчёте. Для существующих профилей используется Москва.</p>
-        {error && <p role="alert">{error}</p>}
-        <button type="button" className="btn big" disabled={saving} onClick={submit}>
-          {onCancel ? '🚀 Добавить ребёнка' : '🚀 В город!'}
-        </button>
-        {onCancel && <button type="button" className="btn ghost" disabled={saving} onClick={onCancel}>Отмена</button>}
+            <button type="button" className="btn ghost" disabled={saving} onClick={() => setStep('adult')}>← Назад</button>
+          </>
+        )}
         <p className="muted legal">
-          Программа: 12 недель, 5 тренировок в неделю. В демо сохраняются ник, возраст, часовой пояс, идентификатор родителя и игровой прогресс. Профиль создаёт законный представитель. Не вводите реальные данные в демо.
+          Сохраняются ник, возраст, часовой пояс, ответы на два вопроса, дата согласия и игровой прогресс.
+          Профиль создаёт законный представитель. Не вводите настоящие имя и фамилию.
         </p>
       </div>
     </div>

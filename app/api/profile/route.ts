@@ -9,6 +9,9 @@ import { requireParent, ownedProfile } from '@/lib/auth';
 import { randomUUID } from 'node:crypto';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import type { Profile } from '@/lib/types';
+import { CONSENT_VERSION, hasConsent, newConsent } from '@/lib/legal/consent';
+import { parseOnboardingAnswers } from '@/lib/onboarding';
+import { recordFunnel } from '@/lib/events/funnel-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +24,17 @@ export const dynamic = 'force-dynamic';
  * независимый security-тест.
  */
 function publicProfile(profile: Profile) {
-  return { id: profile.id, name: profile.name, age: profile.age, band: profile.band, timeZone: profile.timeZone, createdAt: profile.createdAt };
+  return {
+    id: profile.id, name: profile.name, age: profile.age, band: profile.band, timeZone: profile.timeZone, createdAt: profile.createdAt,
+    /**
+     * Согласие и ответы онбординга отдаются наружу, потому что интерфейсу нужно
+     * решить: показать экран согласия или начать занятие. `householdAdult`
+     * влияет и на план встречи, который открывает взрослый.
+     */
+    consent: hasConsent(profile) ? { version: profile.guardianConsent!.version, at: profile.guardianConsent!.at, current: profile.guardianConsent!.version === CONSENT_VERSION } : null,
+    householdAdult: profile.householdAdult ?? null,
+    meetingLead: profile.meetingLead ?? null,
+  };
 }
 
 export async function GET(req: Request) {
@@ -57,6 +70,17 @@ export async function POST(req: Request) {
     initData?: string;
     timeZone?: string;
     addChild?: boolean;
+    /**
+     * Согласие законного представителя. Без него профиль не создаётся: это
+     * единственное место, где продукт может проверить, что взрослый видел
+     * текст. Профили, созданные до запуска, согласия не имеют и получают
+     * требование подтвердить его при первом входе.
+     */
+    consentAccepted?: boolean;
+    consentVersion?: string;
+    /** Ответы онбординга: кто ведёт встречу и есть ли дома взрослый. */
+    meetingLead?: string;
+    householdAdult?: string;
   };
   const { parentId } = auth;
   if (!Number.isInteger(body.age) || body.age! < 5 || body.age! > 13 || typeof body.name !== 'string' || body.name.trim().length > 24) return NextResponse.json({ error: 'invalid_profile' }, { status: 400 });
@@ -64,6 +88,22 @@ export async function POST(req: Request) {
   const timeZone = body.timeZone ?? DEFAULT_TIME_ZONE;
   const age = body.age!;
   const name = body.name.trim() || 'Друг';
+  /*
+   * Согласие обязано быть и обязано относиться к действующей редакции.
+   * Проверка стоит до транзакции: без неё в хранилище появится профиль
+   * ребёнка, на обработку данных которого согласия нет, и удалить его
+   * задним числом будет нечем.
+   *
+   * Исключение — повторный запрос по уже существующему профилю: старые
+   * клиенты вызывают POST дважды, и второй вызов не должен требовать
+   * согласия заново.
+   */
+  const addingChild = body.addChild === true;
+  const existingProfile = addingChild ? undefined : store.profileByParent(parentId);
+  if (!existingProfile) {
+    if (body.consentAccepted !== true) return NextResponse.json({ error: 'consent_required', version: CONSENT_VERSION }, { status: 403 });
+    if (body.consentVersion !== CONSENT_VERSION) return NextResponse.json({ error: 'consent_outdated', version: CONSENT_VERSION }, { status: 409 });
+  }
   return store.transaction(() => {
     const existing = store.profileByParent(parentId);
     // Повторный запрос без addChild возвращает того же ребёнка: так работают
@@ -73,9 +113,27 @@ export async function POST(req: Request) {
       ensureSkills(existing);
       return NextResponse.json({ profile: publicProfile(existing), created: false });
     }
-    const profile: Profile = { id: 'p_' + randomUUID(), parentId, name, age, band: bandOf(age), timeZone, createdAt: Date.now() };
+    const profile: Profile = {
+      id: 'p_' + randomUUID(), parentId, name, age, band: bandOf(age), timeZone, createdAt: Date.now(),
+      // Режим встречи — ответ взрослого на первом экране онбординга. Без него
+      // профиль попадал бы в умолчание «взрослый ведёт», и взрослый, выбравший
+      // короткие шаги, увидел бы план на 40 минут, который не заказывал.
+      ...(body.meetingLead === 'adult' || body.meetingLead === 'child' ? { meetingLead: body.meetingLead } : {}),
+      ...(body.householdAdult === 'parent' || body.householdAdult === 'other' || body.householdAdult === 'none' ? { householdAdult: body.householdAdult } : {}),
+    };
+    // Согласие пишется в тот же момент, что и профиль: разделить их значило бы
+    // получить окно, в котором ребёнок уже в базе, а согласия ещё нет.
+    if (!existingProfile) profile.guardianConsent = newConsent();
     store.addProfile(profile);
     ensureSkills(profile);
+    /*
+     * Два шага воронки пишутся здесь, потому что это единственное место, где
+     * известно и то, что взрослый дал согласие, и то, что профиль появился.
+     * В воронку уходит только идентификатор взрослого: имя и возраст ребёнка
+     * в статистике продаж не нужны.
+     */
+    if (!existingProfile) recordFunnel({ step: 'consent', ownerId: parentId, at: profile.createdAt });
+    recordFunnel({ step: 'profile', ownerId: parentId, at: profile.createdAt });
     return NextResponse.json({ profile: publicProfile(profile), created: true });
   });
 }
@@ -87,12 +145,36 @@ export async function PATCH(req: Request) {
   if (!rateLimit(clientKey(req, 'profile-update', auth.parentId), 30)) return NextResponse.json({ error: 'too_many_requests' }, { status: 429 });
   const parsed = await readJsonObject(req);
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: parsed.status });
-  const { profileId, timeZone } = parsed.value;
-  if (typeof profileId !== 'string' || !profileId || !isTimeZone(timeZone)) return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  const body = parsed.value as {
+    profileId?: unknown;
+    timeZone?: unknown;
+    /** Смена режима: кто ведёт встречу. */
+    meetingLead?: unknown;
+    /** Смена ответа о взрослом в семье. */
+    householdAdult?: unknown;
+    /** Повторное согласие на новую редакцию текста. */
+    consentAccepted?: unknown;
+    consentVersion?: unknown;
+  };
+  const { profileId, timeZone, meetingLead, householdAdult } = body;
+  if (typeof profileId !== 'string' || !profileId) return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  // Каждое поле проверяется отдельно: иначе неверный `meetingLead` мог бы
+  // пройти вместе с верным часовым поясом и молча не сохраниться.
+  if (timeZone !== undefined && !isTimeZone(timeZone)) return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  if (meetingLead !== undefined && meetingLead !== 'adult' && meetingLead !== 'child') return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  if (householdAdult !== undefined && !['parent', 'other', 'none'].includes(householdAdult as string)) return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  if (body.consentAccepted !== undefined && body.consentAccepted !== true) return NextResponse.json({ error: 'invalid_profile_update' }, { status: 400 });
+  if (body.consentAccepted === true && body.consentVersion !== CONSENT_VERSION) return NextResponse.json({ error: 'consent_outdated', version: CONSENT_VERSION }, { status: 409 });
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, profileId);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
-    profile.timeZone = timeZone;
+    if (timeZone !== undefined) profile.timeZone = timeZone;
+    if (meetingLead !== undefined) profile.meetingLead = meetingLead as 'adult' | 'child';
+    if (householdAdult !== undefined) profile.householdAdult = householdAdult as 'parent' | 'other' | 'none';
+    // Повторное согласие не переписывает дату первого: важна и та, и другая,
+    // но в модели хранится одна, и перезапись новой редакцией — более честный
+    // вариант, чем «согласие от 2024 года на текст 2026-го».
+    if (body.consentAccepted === true) profile.guardianConsent = newConsent();
     return NextResponse.json({ profile: publicProfile(profile) });
   });
 }

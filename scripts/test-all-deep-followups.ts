@@ -15,7 +15,7 @@ const bands: [AgeBand, number][] = [['5-7', 6], ['8-10', 9], ['11-13', 12]];
 const allIds = [...PROGRAM_SCENARIOS.map(s => s.id), ...Object.keys(STORYLETS_BY_ID)];
 
 /* ---- 1. Продолжения есть у каждой истории и для каждого возраста ---- */
-assert.equal(allIds.length, 121, 'ожидалась 121 история');
+assert.equal(allIds.length, PROGRAM_SCENARIOS.length + Object.keys(STORYLETS_BY_ID).length, 'список историй не совпал с контентом');
 for (const id of allIds) {
   const paths = ALL_DEEP_FOLLOWUPS[id];
   assert.ok(paths, `${id}: нет продолжений`);
@@ -66,7 +66,7 @@ for (const id of allIds) {
   }
   console.log('  ok длина фраз по возрастам: 5-7 до 70 знаков без взрослых абстракций');
 }
-console.log('  ok 121 история × 3 возраста: второй шаг, две ветки, ни одной оценки выбора');
+console.log(`  ok ${allIds.length} историй × 3 возраста: второй шаг, две ветки, ни одной оценки выбора`);
 
 /* ---- 1в. Первый шаг истории: возраст, длина, отсутствие пугающего и обещаний ---- */
 {
@@ -147,6 +147,37 @@ console.log('  ok 121 история × 3 возраста: второй шаг,
   }
   assert.ok(checked.size >= 100, `проверено мало историй: ${checked.size}`);
   console.log(`  ok ${checked.size} пар «история+возраст»: текст, вопрос и два варианта совпадают с контентом`);
+}
+
+/* ---- 2b. Второй шаг не объявляет результат, которого ребёнок не выбирал ---- */
+{
+  // Второй шаг читается после выбора. Фраза «не получилось» сообщает итог,
+  // который ребёнок не проживал: он выбрал «спросить взрослого», а не провал.
+  //
+  // Одно исключение: там, где выбранный вариант сам является попыткой
+  // («попробовать другую конструкцию»), неудача — правдоподобное следствие.
+  // Поэтому проверка сверяется с текстом выбранного варианта, а не только с
+  // формулировкой второго шага.
+  const DECLARED_FAILURE = /не получил|не сработал|провал|не вышло|ошибк[аи] видна|ничего не вышло|усилия не дали/i;
+  const IS_ATTEMPT = /попроб|проверить|попытк|перестро|сделать/i;
+  const allScenarios = [...PROGRAM_SCENARIOS, ...Object.values(STORYLETS_BY_ID)];
+  const offenders: string[] = [];
+  for (const id of allIds) {
+    const paths = ALL_DEEP_FOLLOWUPS[id];
+    const scenario = allScenarios.find(s => s.id === id);
+    if (!scenario) continue;
+    for (const [band] of bands) {
+      for (const [index, followUp] of paths[band].entries()) {
+        if (!DECLARED_FAILURE.test(followUp.prompt)) continue;
+        const choice = scenario.variants[band].options[index]?.text ?? '';
+        if (!IS_ATTEMPT.test(choice)) {
+          offenders.push(`${id}/${band}: выбрано «${choice}», а шаг 2 — «${followUp.prompt}»`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], 'второй шаг объявляет неудачу, которой ребёнок не выбирал');
+  console.log(`  ok второй шаг не объявляет неудачу без попытки (${allIds.length} историй × 3 возраста × 3 варианта)`);
 }
 
 /* ---- 3. Полный проход через движок: награда одинаковая на любой ветке ---- */

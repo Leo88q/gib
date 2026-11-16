@@ -37,6 +37,7 @@ export const RATE_LIMIT_SCOPES = [
   'session',
   'subscribe',
   'subscribe-post',
+  'subscription',
   'telegram-report',
 ] as const;
 

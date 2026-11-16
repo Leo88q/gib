@@ -67,6 +67,9 @@ export async function GET(req: Request) {
       const globalIndex = (w.week - 1) * 5 + (d.day - 1);
       return {
         day: d.day,
+        // Сквозной номер дня нужен, чтобы посчитать прогресс по годовой сетке
+        // (36 занятий): занятие — это набор дней, а не номер недели.
+        index: globalIndex,
         theme: d.theme,
         title: sc ? sc.variants[profile.band].title : '',
         focus: d.focus,

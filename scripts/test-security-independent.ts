@@ -150,7 +150,14 @@ async function main() {
 
     // Заголовок не подписи: подсунуть «parentId» в теле нельзя.
     const impersonate = await call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(5001)), body: JSON.stringify({ parentId: 'demo:someone', name: 'Вор', age: 8 }) });
-    assert.equal(impersonate.status === 200 || impersonate.status === 400, true, 'подмена parentId в теле не меняет владельца');
+    /*
+     * С появлением согласия такой запрос упирается в 403 раньше, чем в разбор
+     * полей: согласия в теле нет. Значит, допустимы ответы «нет согласия»,
+     * «неверные данные» и «профиль уже есть», но не 5xx и не создание
+     * владельца из тела.
+     */
+    assert.ok([200, 400, 403].includes(impersonate.status), `подмена parentId в теле: неожиданный ответ ${impersonate.status}`);
+    assert.ok(!impersonate.body.includes('demo:someone'), 'чужой идентификатор владельца не превратился в запись');
     const firstProfile = await call('/api/profile', { headers: telegram(5001) });
     // Идентификатор владельца (Telegram ID) — не данные для клиента: он не
     // нужен интерфейсу, зато связывает профиль ребёнка с аккаунтом взрослого.
@@ -158,8 +165,14 @@ async function main() {
     ok('подпись: изменения, чужой токен, просрочка, будущее и мусор отвергаются');
 
     // 2. IDOR: профиль ребёнка A не виден ребёнку B.
-    const created = await call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(5001)), body: JSON.stringify({ name: 'Первый', age: 7 }) });
-    assert.equal(created.status, 200, `профиль создан: ${created.status}`);
+    /*
+     * Согласие законного представителя требуется так же и здесь: без него
+     * профиль не создаётся ни у кого, включая владельца с валидной подписью.
+     * Поэтому в теле есть версия текста, на которую взрослый согласился.
+     */
+    const consent = (await import('../lib/legal/consent.ts')).CONSENT_VERSION;
+    const created = await call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(5001)), body: JSON.stringify({ name: 'Первый', age: 7, consentAccepted: true, consentVersion: consent }) });
+    assert.equal(created.status, 200, `профиль создан: ${created.status} ${created.body.slice(0, 160)}`);
     const profileId = created.json?.profile?.id;
     assert.ok(profileId, 'в ответе есть id профиля');
 
@@ -222,9 +235,10 @@ async function main() {
 
     // 7. Гонка: параллельные POST не создают второго ребёнка.
     const racer = 6001;
-    await call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(racer)), body: JSON.stringify({ name: 'Гонка', age: 9 }) });
+    const raceBody = JSON.stringify({ name: 'Гонка', age: 9, consentAccepted: true, consentVersion: consent });
+    await call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(racer)), body: raceBody });
     const parallel = await Promise.all(
-      Array.from({ length: 8 }, () => call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(racer)), body: JSON.stringify({ name: 'Гонка', age: 9 }) })),
+      Array.from({ length: 8 }, () => call('/api/profile', { method: 'POST', headers: jsonHeaders(telegram(racer)), body: raceBody })),
     );
     const ids = new Set(parallel.map(r => r.json?.profile?.id).filter(Boolean));
     assert.equal(ids.size, 1, `параллельные запросы вернули один профиль: ${[...ids].join(', ')}`);

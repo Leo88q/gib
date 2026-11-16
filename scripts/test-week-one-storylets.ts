@@ -10,7 +10,7 @@ const extra=['w1d2_postcard','w1d3_garden','w1d4_bridge','w1d5_puppet','w2d1_clu
 for(const [band,age] of [['5-7',6],['8-10',9],['11-13',12]] as [AgeBand,number][]) for(let day=1;day<=59;day++) {
  const profile:Profile={id:'p',parentId:'owner',name:'Тест',age,band,createdAt:1};
  const make=()=>makeSessionMemory({profile,skills:[],sessions:[],playerStates:[],programStates:[{profileId:'p',completedDays:day,lastDayIndex:day-1,startedAt:1}]});
- const cards=selectStoryCards(day,band,[],'seed',DAY_STORY_CARDS); assert.equal(cards.length,2); assert.ok(cards.some(c=>c.scenarioId===extra[day-1]));
+ const cards=selectStoryCards(day,band,[],'seed',DAY_STORY_CARDS); assert.ok(cards.length>=2 && cards.length<=3); assert.ok(cards.some(c=>c.scenarioId===extra[day-1]));
  const variant=STORYLETS_BY_ID[extra[day-1]].variants[band]; assert.equal(variant.options.length,3); assert.ok(!JSON.stringify(variant).includes('quality'));
  assert.ok(hasSupportPractice(extra[day-1])); const practice=makeSupportPractice(band,extra[day-1]); assert.equal(practice.rounds?.length,3);assert.ok(practice.rounds?.every(r=>r.prompt && r.options.length===3 && new Set(r.options).size===3));
  for(const card of cards) {
@@ -34,3 +34,4 @@ for(const [band,age] of [['5-7',6],['8-10',9],['11-13',12]] as [AgeBand,number][
  }
 }
 console.log('  ok 59 new stories × 3 ages × both choices: frozen snapshots, resume, 27 outcomes and skip');
+console.log('  ok в каждом дне от двух до трёх историй: основная, дополнительная и сцены под непокрытые навыки');

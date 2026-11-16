@@ -7,7 +7,8 @@ import { validateStore } from './store-validation.ts';
 import type { StoredEvent } from './events/journal.ts';
 import { pruneExpired } from './events/journal.ts';
 import { WRITE_LOCK, ensureSchemaSync, openBridge, readState, writeState, type StateShape } from './postgres/state-backend.ts';
-import { SCHEMA_V1, SCHEMA_V2 } from './postgres/schema.ts';
+import { storeModeOf } from './store-mode.ts';
+import { SCHEMA_V1, SCHEMA_V2, SCHEMA_V3 } from './postgres/schema.ts';
 
 type DB = {
   profiles: Profile[];
@@ -25,14 +26,24 @@ type DB = {
   familySettings: { parentId: string; goalTarget: number }[];
   /** Настройки уведомлений взрослому: по умолчанию их нет. */
   notificationSettings: { parentId: string; settings: import('./family/notifications.ts').NotificationSettings }[];
+  /**
+   * Группы педагога и членство детей. Третья роль продукта: педагог ведёт
+   * группу, ребёнок попадает в неё только через членство, а не по списку
+   * идентификаторов. Отдельная коллекция, а не поле профиля: у одного ребёнка
+   * может быть группа и в этом году, и в следующем, а профиль остаётся один.
+   */
+  groups: import('./teacher/access.ts').Group[];
+  memberships: import('./teacher/access.ts').Membership[];
 };
 
 const FILE = process.env.GIB_DATA_FILE || path.join(process.cwd(), 'data', 'db.json');
 
 let cache: DB | null = null;
 let transactionDepth = 0;
-const storeMode = process.env.GIB_STORE || 'json';
-if (storeMode !== 'json' && storeMode !== 'sqlite' && storeMode !== 'postgres') throw new Error('Unsupported GIB_STORE mode');
+// Режим читается общим правилом (`lib/store-mode.ts`): то же самое значение
+// проверяет готовность и заглушка запуска, поэтому «store думает одно, а
+// /api/ready другое» больше невозможно.
+const storeMode = storeModeOf();
 const sqliteEnabled = storeMode === 'sqlite';
 /**
  * PostgreSQL — полноценный режим хранилища, а не эксперимент.
@@ -48,7 +59,7 @@ let pgReady = false;
 function postgres() {
   const bridge = openBridge();
   if (!pgReady) {
-    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2 });
+    ensureSchemaSync(bridge, { v1: SCHEMA_V1, v2: SCHEMA_V2, v3: SCHEMA_V3 });
     pgReady = true;
   }
   return bridge;
@@ -97,6 +108,8 @@ function empty(): DB {
     parentPins: [],
     familySettings: [],
     notificationSettings: [],
+    groups: [],
+    memberships: [],
   };
 }
 
@@ -231,6 +244,11 @@ const implementation = {
   profileByParent: (parentId: string) => load().profiles.find((p) => p.parentId === parentId),
   /** Все профили одного владельца: семья может вести несколько детей. */
   profilesByParent: (parentId: string) => load().profiles.filter((p) => p.parentId === parentId),
+  /**
+   * Все профили: только для счётчиков эксплуатации (воронка, готовность).
+   * Не для выдачи данных: чтение конкретного ребёнка идёт через владельца.
+   */
+  allProfiles: () => load().profiles,
   parentPin: (parentId: string) => load().parentPins.find((row) => row.parentId === parentId)?.pin,
   removeParentPin(parentId: string) {
     const db = load();
@@ -251,6 +269,26 @@ const implementation = {
     const existing = list.find((row) => row.parentId === parentId);
     if (existing) existing.goalTarget = goalTarget;
     else list.push({ parentId, goalTarget });
+    persist();
+  },
+  groups: () => load().groups,
+  group: (id: string) => load().groups.find((row) => row.id === id),
+  /** Группы, которые ведёт этот педагог. */
+  groupsByTeacher: (teacherId: string) => load().groups.filter((row) => row.teacherId === teacherId),
+  memberships: () => load().memberships,
+  /** Дети группы — через членство, а не по прямому списку. */
+  membersOfGroup: (groupId: string) => load().memberships.filter((row) => row.groupId === groupId),
+  addGroup(group: import('./teacher/access.ts').Group) {
+    load().groups.push(group);
+    persist();
+  },
+  addMembership(membership: import('./teacher/access.ts').Membership) {
+    load().memberships.push(membership);
+    persist();
+  },
+  removeMembership(groupId: string, profileId: string) {
+    const db = load();
+    db.memberships = db.memberships.filter((row) => !(row.groupId === groupId && row.profileId === profileId));
     persist();
   },
   setParentPin(parentId: string, pin: import('./family/roles.ts').ParentPin) {
@@ -365,6 +403,8 @@ const implementation = {
     persist();
   },
   payments: (profileId: string) => load().payments.filter(p => p.profileId === profileId),
+  /** Все платежи: нужны сверке возвратов, где известен только id возврата. */
+  allPayments: () => load().payments,
   paymentByProviderId: (id: string) => load().payments.find(p => p.providerId === id),
   savePayment(payment: Payment) {
     const payments = load().payments;

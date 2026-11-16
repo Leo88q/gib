@@ -1,28 +1,48 @@
 @font-face { font-family: 'OpenDyslexic'; src: url('/fonts/opendyslexic-regular.woff2') format('woff2'); font-style: normal; font-weight: 400; font-display: swap; }
 @font-face { font-family: 'OpenDyslexic'; src: url('/fonts/opendyslexic-bold.woff2') format('woff2'); font-style: normal; font-weight: 700; font-display: swap; }
 /* ==========================================================================
-   ГИБ — дизайн-система «района Лис»: комикс-панели, толстые контуры,
-   жёсткие тени, палитра и анимации. Никаких стоковых тем.
+   ГИБ — дизайн-система «мягкий объём»: тёплая бумага, мягкие тени, один
+   акцент на экран. Палитра ниже совпадает с lib/design/tokens.ts, правила —
+   в design/style-passport.md.
    ========================================================================== */
 
 :root {
-  --ink: #1b1b2f;
-  --ink-soft: #3a3a55;
-  --cream: #fff6e5;
+  /* Палитра «мягкий объём»: источник правды — lib/design/tokens.ts.
+     Значения продублированы здесь, потому что CSS и TS не импортируют друг
+     друга; расхождение ловит scripts/test-design-tokens.ts (он читает этот
+     блок и сверяет с токенами). */
+  --ink: #241d31;
+  --ink-soft: #4e4658;
+  --cream: #fdf4e9;
   --paper: #ffffff;
-  --yellow: #ffd23f;
-  --orange: #ff7a3d;
-  --pink: #ff5d8f;
-  --mint: #3ec9a7;
-  --sky: #3aa0ff;
-  --violet: #8b5cf6;
-  --lime: #9be564;
-  --ok: #1f9d68;
-  --bad: #e2445c;
-  --muted: #6f6f8c;
+  /* Тонкий контур карточек и разделителей. Без него `var(--line)` в правилах
+     подставлял пустоту и рамки просто исчезали. */
+  --line: #ece0d2;
+  /* Акценты: три героя и награда. Остальные — приглушённые «районные» тона,
+     чтобы экран не рассыпался на семь цветов. */
+  --yellow: #f2b544;
+  --orange: #ec6f38;
+  --pink: #c2647a;
+  --mint: #2e9e80;
+  --sky: #4f6fa8;
+  --violet: #5a68c6;
+  --lime: #8fa86b;
+  --ok: #17805a;
+  --bad: #b03449;
+  --muted: #635c74;
+  /* Ссылки и мелкие значки: контраст к кремовому фону ≥ 4.5:1. */
+  /* Мягкие подложки: плашки, чипы, фоны блоков. Появились при переносе
+     литеральных hex-ов из правил на токены. */
+  --lis-soft: #ffe6d8;
+  --mint-soft: #dff2ea;
+  --sky-soft: #e6e8fa;
+  --gold-soft: #fdefd0;
+  --rose-soft: #fbe4e8;
+  --link: #1e5a94;
+  --glyph: #8a5a12;
   --radius: 20px;
-  --shadow: 5px 5px 0 var(--ink);
-  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow: 0 24px 48px -30px rgba(36, 29, 49, 0.35), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --shadow-sm: 0 14px 28px -22px rgba(36, 29, 49, 0.35);
   --font: 'Nunito', 'Trebuchet MS', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -43,7 +63,7 @@ body {
 }
 
 body {
-  background-image: radial-gradient(rgba(27, 27, 47, 0.07) 1.6px, transparent 1.6px);
+  background-image: radial-gradient(rgba(36, 29, 49, 0.07) 1.6px, transparent 1.6px);
   background-size: 22px 22px;
 }
 
@@ -67,8 +87,19 @@ h3 {
   font-size: 20px;
 }
 
+/*
+  Ссылки. `--sky` на кремовом фоне даёт 2.56:1 — вдвое ниже нормы, текст
+  нечитаем, а ссылка в тексте — это единственный способ уйти со страницы.
+  Тёмный оттенок того же синего: 7.4:1 на кремовом и 8.1:1 на белом.
+*/
 a {
-  color: var(--sky);
+  color: var(--link);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--mint); outline-offset: 2px;
 }
 
 .wrap {
@@ -93,7 +124,7 @@ a {
 
 .panel {
   background: var(--paper);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
@@ -126,7 +157,7 @@ a {
   font-weight: 900;
   color: var(--ink);
   background: var(--yellow);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -134,7 +165,7 @@ a {
 }
 
 .btn:hover {
-  background: #ffdd63;
+  background: var(--gold-soft);
 }
 
 .btn:active {
@@ -154,16 +185,16 @@ a {
 }
 
 .btn.big:hover {
-  background: #4fdcba;
+  background: var(--mint-soft);
 }
 
 .btn.secondary {
   background: var(--sky);
-  color: #fff;
+  color: var(--paper);
 }
 
 .btn.secondary:hover {
-  background: #55b0ff;
+  background: var(--sky);
 }
 
 .btn.ghost {
@@ -185,7 +216,7 @@ a {
   align-items: center;
   gap: 6px;
   padding: 5px 11px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--paper);
   font-size: 14px;
@@ -209,21 +240,21 @@ a {
 
 .chip.combo {
   /* Оранжевый с белым давал 2.6:1; затемнённый оттенок держит ≥5.5:1 и остаётся тёплым. */
-  background: #b8340a;
-  color: #fff;
+  background: var(--bad);
+  color: var(--paper);
 }
 .chip.coins {
   background: var(--yellow);
 }
 .chip.stars {
-  background: #fff2c4;
+  background: var(--cream);
 }
 .chip.streak {
-  background: #ffdede;
+  background: var(--rose-soft);
 }
 .chip.xp {
   background: var(--violet);
-  color: #fff;
+  color: var(--paper);
 }
 
 /* --------------------------------- HUD --------------------------------- */
@@ -233,7 +264,7 @@ a {
   align-items: center;
   gap: 10px;
   background: var(--paper);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 18px;
   box-shadow: var(--shadow-sm);
   padding: 8px 10px;
@@ -260,10 +291,10 @@ a {
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--violet);
-  color: #fff;
+  color: var(--paper);
   font-weight: 900;
   font-size: 18px;
   animation: pop 0.4s ease;
@@ -285,9 +316,9 @@ a {
 
 .xp-bar {
   height: 9px;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #ececf5;
+  background: var(--cream);
   overflow: hidden;
   margin-top: 3px;
 }
@@ -308,7 +339,7 @@ a {
 }
 
 .hud-sound {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   background: var(--paper);
   border-radius: 12px;
   width: 36px;
@@ -324,65 +355,111 @@ a {
 
 /* -------------------------------- комната ------------------------------ */
 
+/*
+  Сцена вместо рисунка.
+
+  Плоская комната с контурами 4 px спорила с «мягким объёмом»: там объём даёт
+  свет, а не линия. Фоном идёт фотография места района (16:9), поверх — только
+  две живые вещи: проводник линейки и питомец ребёнка. Предметы комнаты
+  переехали плитками в «Гардероб», их рисует не сцена, а карточка.
+*/
 .room {
   position: relative;
-  background: #dff3ff;
-  border: 3px solid var(--ink);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: 26px;
   overflow: hidden;
-  padding-bottom: 6px;
+  background: var(--cream);
+  box-shadow: var(--shadow);
 }
 
-.room-svg {
+.room-scene {
   display: block;
   width: 100%;
-  height: auto;
-}
-
-.room-hero {
-  animation: bob 3.4s ease-in-out infinite;
-  transform-origin: 160px 190px;
-}
-
-.room-pet {
-  animation: hop 2.6s ease-in-out infinite;
-}
-
-.room-mascot {
-  position: absolute;
-  right: 6px;
-  bottom: 4px;
-  width: 34%;
-  max-width: 150px;
-  filter: drop-shadow(3px 4px 0 rgba(27, 27, 47, 0.25));
-  animation: bob 2.6s ease-in-out infinite;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--cream);
 }
 
 .room-bubble {
   position: absolute;
-  left: 10px;
-  top: 10px;
-  max-width: 62%;
-  background: #fff;
-  border: 3px solid var(--ink);
+  left: 12px;
+  top: 12px;
+  max-width: 66%;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 18px;
   padding: 9px 13px;
   font-weight: 800;
   font-size: 15px;
+  line-height: 1.25;
+  color: var(--ink);
   box-shadow: var(--shadow-sm);
   animation: pop 0.45s ease;
 }
 
-.room-bubble::after {
+.room-cast {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.room-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.room-guide img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 8%;
+  background: var(--cream);
+}
+
+.room-pet {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  padding: 6px 6px 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Метка настроения — цвет и точка, без лица «с настроением» на фотографии. */
+.room-pet::after {
   content: '';
   position: absolute;
-  left: 22px;
-  bottom: -12px;
-  width: 0;
-  height: 0;
-  border: 6px solid transparent;
-  border-top-color: var(--ink);
+  right: 4px;
+  top: 4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--pet-mood, var(--mint));
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.room-pet svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* --------------------------------- табы -------------------------------- */
@@ -391,7 +468,7 @@ a {
   display: flex;
   gap: 6px;
   background: var(--paper);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   padding: 6px;
@@ -426,21 +503,9 @@ a {
 /* ----------------------------- карточка миссии ------------------------- */
 
 .mission-card {
-  background: linear-gradient(180deg, #fffdf5, #fff4d9);
+  background: linear-gradient(180deg, var(--cream), var(--cream));
 }
 
-.mission-week-art {
-  display: block;
-  width: 100%;
-  max-height: 260px;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  object-position: center 55%;
-  border: 3px solid var(--ink);
-  border-radius: 18px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 14px;
-}
 
 .mission-card-head {
   display: flex;
@@ -458,9 +523,9 @@ a {
 .week-dots .dot {
   width: 26px;
   height: 26px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: #fff;
+  background: var(--paper);
 }
 
 .week-dots .dot.done {
@@ -468,7 +533,9 @@ a {
 }
 
 .week-dots .dot.now {
-  background: var(--orange);
+  /* Один акцент: «сегодня» — это кольцо, а не второй цвет в строке. */
+  background: var(--paper);
+  border: 2px solid var(--mint);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -484,14 +551,14 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 10px;
-  background: #fbfbfd;
+  background: var(--cream);
 }
 
 .mission.done {
-  background: #eafaf3;
+  background: var(--mint-soft);
 }
 
 .mission.claimed {
@@ -505,7 +572,7 @@ a {
   flex: 0 0 42px;
   display: grid;
   place-items: center;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
 }
@@ -529,9 +596,9 @@ a {
 
 .mission-bar {
   height: 8px;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #ececf5;
+  background: var(--cream);
   margin-top: 6px;
   overflow: hidden;
 }
@@ -559,11 +626,11 @@ a {
 }
 
 .badge-card {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 10px;
   text-align: center;
-  background: #f3f3f7;
+  background: var(--cream);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -573,7 +640,7 @@ a {
 
 .badge-card.on {
   opacity: 1;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   animation: pop 0.4s ease;
 }
@@ -584,17 +651,17 @@ a {
   margin: 0 auto 4px;
   display: grid;
   place-items: center;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 50%;
   font-size: 26px;
-  background: #d8d8e2;
+  background: var(--line);
 }
 
 .badge-card.bronze .badge-medal {
-  background: #ffcf9e;
+  background: var(--gold-soft);
 }
 .badge-card.silver .badge-medal {
-  background: #dfe3ea;
+  background: var(--line);
 }
 .badge-card.gold .badge-medal {
   background: var(--yellow);
@@ -606,11 +673,11 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 2.5px dashed var(--ink);
+  border: 1px dashed var(--line);
   border-radius: 16px;
   padding: 10px;
   margin-bottom: 14px;
-  background: #fffdf6;
+  background: var(--cream);
   flex-wrap: wrap;
 }
 
@@ -640,10 +707,10 @@ a {
 }
 
 .shop-item {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 10px;
-  background: #fff;
+  background: var(--paper);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -652,7 +719,7 @@ a {
 }
 
 .shop-item.on {
-  background: #eafaf3;
+  background: var(--mint-soft);
   box-shadow: var(--shadow-sm);
 }
 
@@ -662,7 +729,7 @@ a {
   display: grid;
   place-items: center;
   font-size: 24px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
   margin-bottom: 4px;
@@ -682,9 +749,9 @@ a {
 .step-bar .step {
   flex: 1;
   height: 12px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--paper);
 }
 
 .step-bar .step.done {
@@ -692,7 +759,8 @@ a {
 }
 
 .step-bar .step.now {
-  background: var(--orange);
+  background: var(--mint);
+  box-shadow: 0 0 0 2px var(--mint-soft);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -702,10 +770,10 @@ a {
   font-weight: 900;
   font-size: 17px;
   padding: 11px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   background: linear-gradient(90deg, var(--orange), var(--pink));
-  color: #fff;
+  color: var(--paper);
   box-shadow: var(--shadow-sm);
   animation: shake 0.5s ease;
 }
@@ -715,7 +783,7 @@ a {
   align-items: center;
   gap: 10px;
   background: var(--paper);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   padding: 10px 12px;
@@ -762,9 +830,9 @@ a {
 
 .cell {
   aspect-ratio: 1;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   font-size: 22px;
   font-weight: 900;
@@ -787,12 +855,12 @@ a {
 }
 
 .cell.wrong {
-  background: #ffd7dc;
+  background: var(--rose-soft);
 }
 
 .shape {
   border-radius: 10px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
 }
 
 .shape.circle {
@@ -836,9 +904,9 @@ a {
 
 .card-shape {
   aspect-ratio: 1;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   display: grid;
   place-items: center;
@@ -858,9 +926,9 @@ a {
 .option {
   text-align: left;
   padding: 14px 16px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   font-family: var(--font);
   font-size: 17px;
@@ -871,7 +939,7 @@ a {
 }
 
 .option:hover {
-  background: #fff7dd;
+  background: var(--cream);
 }
 
 .option:active {
@@ -884,7 +952,7 @@ a {
 }
 
 .option.wrong {
-  background: #ffd7dc;
+  background: var(--rose-soft);
 }
 
 .keypad {
@@ -897,9 +965,9 @@ a {
 
 .key {
   padding: 15px 0;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   font-family: var(--font);
   font-size: 22px;
@@ -933,10 +1001,10 @@ a {
 }
 
 .feedback .box {
-  background: #fff;
-  border: 4px solid var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
   border-radius: 26px;
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: var(--shadow-sm);
   padding: 20px;
   max-width: 440px;
   width: 100%;
@@ -964,7 +1032,8 @@ a {
 
 .badge-ping {
   font-weight: 900;
-  color: var(--violet);
+  /* Было --violet: 3.95:1. Плюс мигание — при «уменьшить движение» ниже. */
+  color: var(--link);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -1016,10 +1085,10 @@ a {
 }
 
 .reward-num {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--paper);
   min-width: 78px;
 }
 
@@ -1035,23 +1104,23 @@ a {
 }
 
 .reward-num.xp {
-  background: #efe7ff;
+  background: var(--sky-soft);
 }
 .reward-num.coins {
-  background: #fff5cf;
+  background: var(--gold-soft);
 }
 .reward-num.tasks {
-  background: #e6f7ef;
+  background: var(--mint-soft);
 }
 .reward-num.combo {
-  background: #ffe9d8;
+  background: var(--lis-soft);
 }
 
 .levelup {
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   background: linear-gradient(90deg, var(--violet), var(--sky));
-  color: #fff;
+  color: var(--paper);
   padding: 10px;
   font-weight: 800;
   margin-bottom: 12px;
@@ -1108,12 +1177,12 @@ a {
 input[type='text'] {
   width: 100%;
   padding: 14px 16px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   font-family: var(--font);
   font-size: 18px;
   font-weight: 700;
-  background: #fffdf6;
+  background: var(--cream);
   box-shadow: var(--shadow-sm);
   margin-bottom: 8px;
 }
@@ -1131,9 +1200,9 @@ input[type='text']:focus {
 
 .age-btn {
   padding: 14px 0;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
   font-family: var(--font);
   font-size: 19px;
@@ -1142,8 +1211,8 @@ input[type='text']:focus {
 }
 
 .age-btn.active {
-  background: #b8340a;
-  color: #fff;
+  background: var(--bad);
+  color: var(--paper);
 }
 
 .legal {
@@ -1154,10 +1223,10 @@ input[type='text']:focus {
 /* --------------------------- кабинет родителя ------------------------- */
 
 .stat {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 10px;
-  background: #fff;
+  background: var(--paper);
   text-align: center;
 }
 
@@ -1189,9 +1258,9 @@ input[type='text']:focus {
 
 .progress {
   height: 16px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: var(--paper);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -1203,11 +1272,11 @@ input[type='text']:focus {
 }
 
 .week-block {
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   margin-bottom: 10px;
   overflow: hidden;
-  background: #fff;
+  background: var(--paper);
 }
 
 .week-head {
@@ -1222,9 +1291,9 @@ input[type='text']:focus {
   width: 44px;
   height: 44px;
   flex: 0 0 44px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #ffe9c9 center/cover no-repeat;
+  background: var(--gold-soft) center/cover no-repeat;
   display: grid;
   place-items: center;
 }
@@ -1233,8 +1302,8 @@ input[type='text']:focus {
   font-weight: 900;
   font-size: 16px;
   color: var(--ink);
-  background: #fffdf3;
-  border: 2px solid var(--ink);
+  background: var(--cream);
+  border: 1px solid var(--line);
   border-radius: 999px;
   min-width: 26px;
   text-align: center;
@@ -1268,7 +1337,7 @@ input[type='text']:focus {
   height: 26px;
   border-radius: 50%;
   flex: 0 0 26px;
-  background: linear-gradient(135deg, #ffe9c9, #ffd6a5) center/cover no-repeat;
+  background: linear-gradient(135deg, var(--gold-soft), #ffd6a5) center/cover no-repeat;
 }
 
 .plan {
@@ -1276,7 +1345,7 @@ input[type='text']:focus {
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1.5px dashed #d8d8e6;
+  border-bottom: 1px dashed var(--line);
 }
 
 .plan:last-child {
@@ -1289,16 +1358,16 @@ input[type='text']:focus {
   flex: 0 0 26px;
   display: grid;
   place-items: center;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: #fff;
+  background: var(--paper);
   font-weight: 900;
   font-size: 14px;
 }
 
 .plan.current .badge {
   background: var(--orange);
-  color: #fff;
+  color: var(--paper);
 }
 
 .price {
@@ -1311,7 +1380,7 @@ input[type='text']:focus {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--yellow);
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
   font-weight: 800;
   font-size: 14px;
 }
@@ -1430,7 +1499,7 @@ input[type='text']:focus {
 
 .card {
   background: var(--paper);
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px;
@@ -1468,8 +1537,8 @@ input[type='text']:focus {
   height: 42px;
   flex: 0 0 42px;
   border-radius: 50%;
-  border: 2.5px solid var(--ink);
-  background: #fff center/cover no-repeat;
+  border: 1px solid var(--line);
+  background: var(--paper) center/cover no-repeat;
 }
 
 .skill-icon.small {
@@ -1492,7 +1561,7 @@ input[type='text']:focus {
 /* радар навыков для родителя */
 .radar {
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
   margin: 0 auto;
   display: block;
 }
@@ -1512,60 +1581,60 @@ input[type='text']:focus {
 }
 
 /* Игровой набор поддержки внутри каждой истории */
-.support-kit { margin-top: 22px; border: 3px solid #252139; border-radius: 20px; background: #fff5d8; overflow: hidden; box-shadow: 3px 3px 0 #252139; }
-.support-toggle { width: 100%; padding: 14px; border: 0; background: #ffcf58; color: #252139; font: inherit; font-weight: 900; text-align: left; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.support-kit { margin-top: 22px; border: 1px solid var(--line); border-radius: 20px; background: var(--gold-soft); overflow: hidden; box-shadow: var(--shadow-sm); }
+.support-toggle { width: 100%; padding: 14px; border: 0; background: var(--gold-soft); border-bottom: 1px solid var(--line); color: var(--ink); font: inherit; font-weight: 900; text-align: left; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
 .support-toggle span { font-size: .8em; }
 .support-content { padding: 14px; }
 .support-content p { line-height: 1.45; }
 .support-menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
-.support-menu button { min-height: 68px; border: 2px solid #252139; border-radius: 13px; background: #fff; color: #252139; font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; }
+.support-menu button { min-height: 68px; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--ink); font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; }
 .support-menu button span { display: block; font-size: 1.5rem; }
-.support-menu button[aria-pressed="true"] { background: #a9e4d5; box-shadow: 2px 2px 0 #252139; }
-.support-game { background: white; border: 2px solid #252139; border-radius: 16px; padding: 14px; }
+.support-menu button[aria-pressed="true"] { background: var(--mint-soft); box-shadow: var(--shadow-sm); }
+.support-game { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
 .support-game h3 { margin: 0 0 8px; }
 .bubble-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.bubble { border: 2px solid #528dc6; border-radius: 50%; aspect-ratio: 1; background: #d7f3ff; font-size: 1.8rem; cursor: pointer; }
-.bubble.popped { background: #fff3cc; border-style: dashed; color: #be8b15; }
+.bubble { border: 1px solid var(--sky); border-radius: 50%; aspect-ratio: 1; background: var(--sky-soft); font-size: 1.8rem; cursor: pointer; }
+.bubble.popped { background: var(--gold-soft); border-style: dashed; color: var(--glyph); }
 .rainbow-picture { font-size: 4rem; text-align: center; }
-.cloud-button { padding: 12px 20px; border: 3px solid #252139; border-radius: 30px; background: #d7f3ff; font: inherit; font-weight: 800; cursor: pointer; }
+.cloud-button { padding: 12px 20px; border: 1px solid var(--line); border-radius: 30px; background: var(--sky-soft); font: inherit; font-weight: 800; cursor: pointer; }
 .rainbow-progress, .paint-palette { display: flex; gap: 8px; margin: 12px 0; }
 .rainbow-progress span { flex: 1; height: 12px; border-radius: 8px; }
-.paint-palette button { width: 38px; height: 38px; border: 2px solid #252139; border-radius: 50%; cursor: pointer; }
-.paint-palette button[aria-pressed="true"] { outline: 3px solid #252139; outline-offset: 2px; }
+.paint-palette button { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; cursor: pointer; }
+.paint-palette button[aria-pressed="true"] { outline: 2px solid var(--mint); outline-offset: 2px; }
 .paint-house { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 14px 0; }
-.paint-house button { min-height: 60px; border: 3px solid #252139; border-radius: 12px; color: #252139; font: inherit; font-weight: 800; cursor: pointer; }
-.scenario-selected { outline: 3px solid #252139; background: #d3f5e8 !important; }
-.scenario-confirm { margin-top: 14px; border-radius: 15px; padding: 12px; background: #edf9f4; }
-.support-art { width: 100%; max-height: 185px; object-fit: cover; border: 2px solid #252139; border-radius: 14px; }
-.support-hint { font-weight: 800; color: #514372; }
-.story-speech { display: flex; align-items: flex-start; gap: 10px; border: 2px solid #252139; border-radius: 16px; background: #edf9f4; padding: 12px; margin: 10px 0; }
+.paint-house button { min-height: 60px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); font: inherit; font-weight: 800; cursor: pointer; }
+.scenario-selected { outline: 2px solid var(--mint); outline-offset: 1px; background: var(--mint-soft) !important; }
+.scenario-confirm { margin-top: 14px; border-radius: 15px; padding: 12px; background: var(--mint-soft); }
+.support-art { width: 100%; max-height: 185px; object-fit: cover; border: 1px solid var(--line); border-radius: 14px; }
+.support-hint { font-weight: 800; color: var(--ink-soft); }
+.story-speech { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--mint-soft); padding: 12px; margin: 10px 0; }
 .story-speech span { font-size: 2rem; }
 .story-speech p { margin: 0; }
-.story-restart { margin-top: 12px; background: none; border: 0; color: #514372; font: inherit; text-decoration: underline; cursor: pointer; }
+.story-restart { margin-top: 12px; background: none; border: 0; color: var(--ink-soft); font: inherit; text-decoration: underline; cursor: pointer; }
 .read-aloud { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 8px 0 14px; }
-.read-aloud button, .story-reflect-btn { border: 2px solid #252139; border-radius: 12px; padding: 8px 12px; background: #e4eaff; color: #252139; font: inherit; font-weight: 800; cursor: pointer; }
-.read-aloud small { color: #554f61; font-size: .7rem; line-height: 1.3; }
-.story-reflect-btn { margin: 0 0 12px; background: #ffdf8d; }
-.reflection-box { margin: 0 0 14px; padding: 12px; background: #fff8dc; border: 2px solid #252139; border-radius: 14px; }
+.read-aloud button, .story-reflect-btn { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: var(--sky-soft); color: var(--ink); font: inherit; font-weight: 800; cursor: pointer; }
+.read-aloud small { color: var(--ink-soft); font-size: .7rem; line-height: 1.3; }
+.story-reflect-btn { margin: 0 0 12px; background: var(--gold-soft); }
+.reflection-box { margin: 0 0 14px; padding: 12px; background: var(--gold-soft); border: 1px solid var(--line); border-radius: 14px; }
 .reflection-choices { display: flex; flex-wrap: wrap; gap: 8px; }
-.reflection-choices button { border: 2px solid #252139; border-radius: 12px; padding: 8px; background: white; color: #252139; font: inherit; cursor: pointer; }
-.reflection-choices button[aria-pressed="true"] { background: #a9e4d5; }
+.reflection-choices button { border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: white; color: var(--ink); font: inherit; cursor: pointer; }
+.reflection-choices button[aria-pressed="true"] { background: var(--mint-soft); }
 .reflection-reply { padding: 8px; background: white; border-radius: 10px; }
-.request-error { padding: 12px; background: #fff0e7; color: #712b27; border: 2px solid #712b27; border-radius: 12px; }
+.request-error { padding: 12px; background: var(--lis-soft); color: var(--bad); border: 2px solid var(--bad); border-radius: 12px; }
 .request-error button { font: inherit; font-weight: bold; }
-.bubble-canvas { width: 100%; aspect-ratio: 360 / 280; border: 2px solid #252139; border-radius: 16px; overflow: hidden; background: #f5fbff; }
+.bubble-canvas { width: 100%; aspect-ratio: 360 / 280; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #f5fbff; }
 .bubble-canvas canvas { max-width: 100%; }
 .bubble-mode { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.bubble-mode button { border: 2px solid #252139; border-radius: 12px; padding: 8px 10px; background: #fff; color: #252139; font: inherit; font-weight: 700; cursor: pointer; }
-.bubble-mode button[aria-pressed="true"] { background: #a9e4d5; }
-.blockly-board { width: 100%; height: 300px; border: 2px solid #252139; border-radius: 14px; overflow: hidden; background: #f4f7ff; }
+.bubble-mode button { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.bubble-mode button[aria-pressed="true"] { background: var(--mint-soft); }
+.blockly-board { width: 100%; height: 300px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #f4f7ff; }
 
 #profile-zone, #parent-zone {
   display: block;
   width: 100%;
   margin: 8px 0 12px;
   padding: 12px;
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--paper);
   color: var(--ink);
@@ -1579,7 +1648,7 @@ input[type='text']:focus {
   aspect-ratio: 1;
   object-fit: cover;
   margin: 8px auto 14px;
-  border: 2.5px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
 }
@@ -1587,53 +1656,53 @@ input[type='text']:focus {
 /* Игровые карточки плана и текстовые обозначения сигналов */
 .task-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .order-board { display: grid; gap: 10px; margin: 16px 0; }
-.order-card { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 3px solid var(--ink); border-radius: 15px; background: #fff8df; padding: 10px; font: inherit; color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; }
-.order-card.selected { background: #d3f5e8; outline: 3px solid var(--ink); }
-.order-number { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 2px solid var(--ink); border-radius: 50%; background: var(--yellow); font-weight: 900; }
-.cell.signal-cell { font-size: clamp(11px, 3vw, 15px); color: #1b1b2f; overflow-wrap: anywhere; }
+.order-card { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 15px; background: var(--cream); padding: 10px; font: inherit; color: var(--ink); box-shadow: var(--shadow-sm); cursor: pointer; }
+.order-card.selected { background: var(--mint-soft); outline: 2px solid var(--mint); }
+.order-number { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--yellow); font-weight: 900; }
+.cell.signal-cell { font-size: clamp(11px, 3vw, 15px); color: var(--ink); overflow-wrap: anywhere; }
 .cell.signal-cell.green { background: #55d79b; }
 .cell.signal-cell.red { background: #ff8390; }
 .cell.signal-cell.blue { background: #9ebeff; }
 .cell.signal-cell.yellow { background: #ffdf75; }
 .cell.signal-cell.purple { background: #cbb5ff; }
 .cell.signal-cell.orange { background: #ffbf87; }
-.cell.signal-cell.picked { outline: 4px solid #252139; outline-offset: 2px; }
+.cell.signal-cell.picked { outline: 2px solid var(--mint); outline-offset: 2px; }
 .task-help { margin: 12px 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.order-card:focus-visible, .cell:focus-visible, .card-shape:focus-visible, .option:focus-visible { outline: 3px solid #252139; outline-offset: 3px; }
+.order-card:focus-visible, .cell:focus-visible, .card-shape:focus-visible, .option:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
 
 /* Узкие экраны и масштабирование: содержимое не выходит за пределы карточек. */
 .grid > * { min-width: 0; }
 .cell .shape { margin: auto; }
 .feedback .box { max-height: calc(100dvh - 32px); overflow-y: auto; }
 
-.plan-preview { margin: 16px 0; padding: 14px; background: #fff8df; border: 3px solid var(--ink); border-radius: 16px; }
+.plan-preview { margin: 16px 0; padding: 14px; background: var(--cream); border: 1px solid var(--line); border-radius: 16px; }
 .plan-preview ol { margin: 0; padding-left: 26px; }
 .plan-preview li { padding: 6px 0; }
 .plan-controls { display: inline-flex; gap: 6px; margin-left: 8px; }
-.plan-controls button { min-width: 40px; min-height: 40px; border: 2px solid var(--ink); border-radius: 10px; background: white; color: var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
+.plan-controls button { min-width: 40px; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); font: inherit; font-weight: 900; cursor: pointer; }
 .plan-controls button:disabled { opacity: .4; cursor: default; }
-.plan-controls button:focus-visible { outline: 3px solid #252139; outline-offset: 3px; }
+.plan-controls button:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
 
-.logic-board { padding: 14px; margin: 12px 0 18px; background: #e4f6fc; border: 3px solid var(--ink); border-radius: 18px; box-shadow: var(--shadow-sm); }
+.logic-board { padding: 14px; margin: 12px 0 18px; background: #e4f6fc; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
 .logic-tiles { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
-.logic-tile { display: grid; place-items: center; min-width: 48px; min-height: 48px; padding: 5px 8px; border: 3px solid var(--ink); border-radius: 12px; color: var(--ink); background: #fff; font-size: 22px; font-weight: 900; }
+.logic-tile { display: grid; place-items: center; min-width: 48px; min-height: 48px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--paper); font-size: 22px; font-weight: 900; }
 .logic-tile.mystery { background: #ffd96c; border-style: dashed; }
 .logic-counter p { margin: 12px 0 6px; }
 .coin-group { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0; font-weight: 800; }
 .coin-group > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .count-coin { width: 44px; height: 44px; border: 3px solid #735000; border-radius: 50%; background: #ffd64c; color: #674500; font-size: 20px; font-weight: 900; cursor: pointer; }
 .count-coin.marked { background: #a2edb9; border-color: #147349; color: #07532f; }
-.count-coin:focus-visible { outline: 3px solid #252139; outline-offset: 3px; }
+.count-coin:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
 
-.match-sample { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 16px; padding: 10px; border: 3px dashed var(--ink); border-radius: 16px; background: #fff8df; }
+.match-sample { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 16px; padding: 10px; border: 1px dashed var(--line); border-radius: 16px; background: var(--cream); }
 .match-sample .shape { flex: 0 0 46px; }
 .shape-cell { position: relative; }
-.shape-check { position: absolute; right: 1px; top: 1px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #174b31; background: #d5ffe4; color: #174b31; font-size: 15px; line-height: 1; }
+.shape-check { position: absolute; right: 1px; top: 1px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ok); background: #d5ffe4; color: var(--ok); font-size: 15px; line-height: 1; }
 
-.memory-badge { position: absolute; right: 1px; top: 1px; display: grid; place-items: center; min-width: 25px; height: 25px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; color: #1b1b2f; font-size: 16px; line-height: 1; }
+.memory-badge { position: absolute; right: 1px; top: 1px; display: grid; place-items: center; min-width: 25px; height: 25px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 16px; line-height: 1; }
 
-.switch-rule { margin: 12px 0; padding: 12px; border: 3px solid var(--ink); border-radius: 15px; background: #ffdf8d; font-size: 1.1rem; font-weight: 900; }
+.switch-rule { margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 15px; background: var(--gold-soft); font-size: 1.1rem; font-weight: 900; }
 .switch-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
 
 /* Settings use the same local palette; text changes don't disable zoom. */
@@ -1642,93 +1711,109 @@ html[data-large-text="true"] body { font-size: 20px; }
 html[data-large-text="true"] .option, html[data-large-text="true"] .btn, html[data-large-text="true"] input, html[data-large-text="true"] select, html[data-large-text="true"] textarea { font-size: 20px; }
 html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, html[data-reduce-motion="true"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 .reading-settings-wrap { max-width: 620px; margin: 0 auto; padding: 8px 12px 0; }
-.reading-settings { border: 2px solid var(--ink); background: #fff8df; border-radius: 14px; padding: 8px 12px; }
+.reading-settings { border: 1px solid var(--line); background: var(--cream); border-radius: 14px; padding: 8px 12px; }
 .reading-settings summary { cursor: pointer; font-weight: 800; }
 .reading-settings fieldset { border: 0; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
 .reading-settings legend { font-weight: 800; }
-.reading-settings select { font: inherit; color: #1b1b2f; background: #fff; border: 2px solid #1b1b2f; border-radius: 10px; padding: 8px; }
+.reading-settings select { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
 .reading-check { display: flex; align-items: center; gap: 8px; }
 .reading-check input { width: 22px; height: 22px; }
 .reading-settings small { display: block; }
 
 .feelings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 12px 0; }
-.feelings-grid button { min-height: 100px; border: 2px solid #252139; border-radius: 14px; background: #fff6e5; color: #252139; font: inherit; font-weight: 700; padding: 8px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.feelings-grid button[aria-pressed="true"] { background: #a9e4d5; box-shadow: 3px 3px 0 #252139; outline: 2px solid #252139; outline-offset: 2px; }
-.feelings-grid button:focus-visible { outline: 3px solid #6d35b5; outline-offset: 3px; }
+.feelings-grid button { min-height: 100px; border: 1px solid var(--line); border-radius: 14px; background: #fff6e5; color: var(--ink); font: inherit; font-weight: 700; padding: 8px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.feelings-grid button[aria-pressed="true"] { background: var(--mint-soft); box-shadow: var(--shadow-sm); outline: 2px solid var(--mint); outline-offset: 2px; }
+.feelings-grid button:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
 .feelings-grid img { width: 56px; height: 56px; }
 .feelings-status { min-height: 2.5em; }
 
 /* Story cards are ordinary buttons: touch, keyboard and reduced motion work. */
-.story-deck { background: #fff5df; border: 3px solid #302336; border-radius: 24px; box-shadow: 5px 6px 0 #302336; }
+.story-deck { background: var(--cream); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow-sm); }
 .story-deck-heading { display: flex; align-items: center; gap: 14px; }
 .story-deck-heading img { width: 84px; height: 84px; object-fit: contain; flex: none; }
 .story-deck-heading h2 { margin: 8px 0; }
 .story-deck-heading p { margin: 0 0 12px; }
 .story-deck-cards { display: grid; gap: 12px; margin: 16px 0; }
-.story-deck-card { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 12px; border: 3px solid #302336; border-radius: 16px; background: #bcebdd; color: #302336; text-align: left; font: inherit; box-shadow: 3px 4px 0 #302336; cursor: pointer; }
-.story-deck-card:nth-child(2) { background: #ffd58d; }
-.story-deck-card:nth-child(3) { background: #d7d2ff; }
+.story-deck-card { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--mint-soft); color: var(--ink); text-align: left; font: inherit; box-shadow: var(--shadow-sm); cursor: pointer; }
+.story-deck-card:nth-child(2) { background: var(--gold-soft); }
+.story-deck-card:nth-child(3) { background: var(--sky-soft); }
 .story-deck-card:focus-visible { outline: 4px solid #1264c4; outline-offset: 4px; }
 .story-deck-card:disabled { opacity: .6; cursor: not-allowed; }
 .story-deck-card strong { flex: 1; }
-.story-deck-number { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border: 2px solid #302336; border-radius: 50%; background: #fff; font-weight: 900; }
+.story-deck-number { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); font-weight: 900; }
 
-.support-round { border: 3px solid #302336; border-radius: 18px; background: #fff7e4; margin: 16px 0; padding: 12px; }
+.support-round { border: 1px solid var(--line); border-radius: 18px; background: var(--cream); margin: 16px 0; padding: 12px; }
 .support-round legend { font-weight: 800; padding: 0 5px; }
 .support-round-options { display: grid; gap: 8px; margin-top: 10px; }
-.support-round-options button { width: 100%; min-height: 48px; border: 2px solid #302336; border-radius: 12px; background: #fff; color: #302336; text-align: left; font: inherit; padding: 10px; cursor: pointer; }
-.support-round-options button.selected { background: #a8e3d3; box-shadow: inset 0 0 0 2px #302336; }
+.support-round-options button { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); text-align: left; font: inherit; padding: 10px; cursor: pointer; }
+.support-round-options button.selected { background: var(--mint-soft); box-shadow: inset 0 0 0 2px var(--mint); }
 .support-round-options button:focus-visible { outline: 4px solid #1264c4; outline-offset: 3px; }
 
 .day-welcome-heading { display: flex; align-items: center; gap: 16px; }
 .day-welcome-heading img { width: 86px; height: 86px; object-fit: contain; flex: none; }
 .day-welcome-heading h1 { margin: 8px 0; }
-.day-feelings-toggle { display: block; width: 100%; text-align: left; border: 3px solid #252139; border-radius: 16px; background: #e7f7f1; color: #252139; padding: 15px; font: inherit; font-weight: 800; cursor: pointer; }
+.day-feelings-toggle { display: block; width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 16px; background: var(--mint-soft); color: var(--ink); padding: 15px; font: inherit; font-weight: 800; cursor: pointer; }
 .day-welcome .feelings-game { margin-top: 12px; }
 .day-welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .reflection-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; }
-.reflection-options button { min-height: 90px; border: 3px solid #252139; border-radius: 16px; background: #fff7e4; color: #252139; font: inherit; font-weight: bold; cursor: pointer; }
+.reflection-options button { min-height: 90px; border: 1px solid var(--line); border-radius: 16px; background: var(--cream); color: var(--ink); font: inherit; font-weight: bold; cursor: pointer; }
 .reflection-options button span { display: block; font-size: 1.8rem; }
-.reflection-options button[aria-pressed='true'] { background: #a8e3d3; box-shadow: inset 0 0 0 2px #252139; }
+.reflection-options button[aria-pressed='true'] { background: var(--mint-soft); box-shadow: inset 0 0 0 2px var(--mint); }
 .day-feelings-toggle:focus-visible, .reflection-options button:focus-visible { outline: 4px solid #1264c4; outline-offset: 3px; }
-.skip-confirm { margin: 12px 0; padding: 12px; border-radius: 14px; background: #f7eedc; }
+.skip-confirm { margin: 12px 0; padding: 12px; border-radius: 14px; background: var(--gold-soft); }
 .skip-confirm button { margin: 4px; }
 .practice-map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
-.practice-map-topic { display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid #302336; border-radius: 16px; background: #fff8e9; }
+.practice-map-topic { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--cream); }
 .practice-map-topic img { width: 56px; height: 56px; object-fit: contain; flex: none; }
 .practice-map-topic h3 { margin: 0 0 6px; font-size: 1rem; }
 .practice-map-topic p { margin: 0; }
+/* Второй уровень карты: 48 умений по темам. Метка «встречалось» — не оценка,
+   поэтому в оформлении нет шкал, процентов и цветов «успеха». */
+.skills-level { margin-top: 20px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.skills-level h3 { margin: 0 0 6px; }
+.skills-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 10px; margin-top: 10px; }
+.skills-group { border: 1px solid var(--line); border-radius: 16px; background: var(--cream); overflow: hidden; }
+.skills-group-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.skills-group-head img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.skills-group-title { flex: 1; font-weight: 700; }
+.skills-group-count { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
+.skills-group.has { background: var(--cream); }
+.skills-list { list-style: none; margin: 0; padding: 4px 12px 12px; display: grid; gap: 6px; }
+.skills-list li { display: flex; align-items: baseline; gap: 8px; font-size: .95rem; color: var(--ink-soft); }
+.skills-list li.met { color: var(--ink); }
+.skills-list li small { font-size: .8rem; }
+@media (prefers-reduced-motion: reduce) { .skills-group-head { transition: none; } }
 .family-controls { border: 0; padding: 0; margin: 0; min-width: 0; }
 .family-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
-.family-card { border: 2px solid #302336; border-radius: 16px; padding: 14px; background: #fff8e9; }
+.family-card { border: 1px solid var(--line); border-radius: 16px; padding: 14px; background: var(--cream); }
 .family-card h3 { margin: 0 0 6px; }
 .family-card button { margin: 4px 8px 0 0; }
 
 /* The idea notebook uses the same unscored task data, with one situation per page. */
-.idea-notebook { background: #e5a75a; border: 3px solid #38283b; border-radius: 22px; padding: 12px; box-shadow: 4px 5px 0 #38283b; margin: 18px 0; }
-.idea-notebook-top { display: flex; justify-content: space-between; gap: 8px; color: #38283b; padding: 2px 5px 10px; }
+.idea-notebook { background: var(--lis-soft); border: 1px solid var(--line); border-radius: 22px; padding: 12px; box-shadow: var(--shadow-sm); margin: 18px 0; }
+.idea-notebook-top { display: flex; justify-content: space-between; gap: 8px; color: var(--ink); padding: 2px 5px 10px; }
 .idea-pages { display: flex; flex-wrap: wrap; gap: 6px; }
-.idea-page { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 6px 9px; border: 2px solid #38283b; border-radius: 11px; background: #fff7e4; color: #38283b; font: inherit; font-weight: 700; cursor: pointer; }
-.idea-page.filled { background: #c4e9d8; }
-.idea-page.current { box-shadow: inset 0 0 0 2px #38283b; }
+.idea-page { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 11px; background: var(--cream); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.idea-page.filled { background: var(--mint-soft); }
+.idea-page.current { box-shadow: inset 0 0 0 2px var(--mint); }
 .idea-page:disabled { opacity: .55; cursor: default; }
-.idea-progress { color: #38283b; font-weight: 700; margin: 10px 2px 0; }
-.idea-notebook .support-round { margin: 8px 0 0; padding: 14px; background: #fff7e4; }
+.idea-progress { color: var(--ink); font-weight: 700; margin: 10px 2px 0; }
+.idea-notebook .support-round { margin: 8px 0 0; padding: 14px; background: var(--cream); }
 .idea-prompt { font-weight: 800; font-size: 1.1rem; margin: 8px 0; }
 .idea-hint { margin: 12px 0 4px; }
 .idea-notebook .support-round-options button { display: flex; align-items: center; gap: 10px; padding: 12px; min-height: 52px; }
-.idea-option-mark { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border: 2px solid #38283b; border-radius: 50%; background: #ffe0a2; font-weight: 900; }
+.idea-option-mark { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; background: #ffe0a2; font-weight: 900; }
 .idea-navigation { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.idea-summary { margin-top: 8px; padding: 16px; background: #fff7e4; border: 3px solid #38283b; border-radius: 18px; }
+.idea-summary { margin-top: 8px; padding: 16px; background: var(--cream); border: 1px solid var(--line); border-radius: 18px; }
 .idea-summary h3 { margin-top: 0; }
 .idea-summary ol { padding-left: 1.4em; }
 .idea-summary li { padding: 7px 0; }
 .idea-summary li p { margin: 6px 0; }
-.idea-edit { min-height: 44px; padding: 6px 12px; color: #263b65; background: #fff; border: 2px solid #38283b; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.idea-edit { min-height: 44px; padding: 6px 12px; color: #263b65; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
 .idea-page:focus-visible, .idea-edit:focus-visible { outline: 4px solid #1264c4; outline-offset: 3px; }
 
-.story-continuation { background: #fff7e4; border: 2px solid #38283b; border-radius: 16px; padding: 14px; line-height: 1.5; text-align: left; }
-.story-second-page { margin-top: 16px; padding: 16px; border: 3px solid #38283b; border-radius: 18px; background: #fff7e4; }
+.story-continuation { background: var(--cream); border: 1px solid var(--line); border-radius: 16px; padding: 14px; line-height: 1.5; text-align: left; }
+.story-second-page { margin-top: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--cream); }
 .story-second-text { font-size: 1.1rem; line-height: 1.5; font-weight: 700; }
 .story-second-page > .btn { margin: 8px 8px 0 0; }
 
@@ -1740,37 +1825,38 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 .exercise-window {
   margin: 14px 0 16px;
   padding: 14px;
-  border: 3px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: 22px;
-  background: linear-gradient(#fffdf6, #fff3d6);
+  background: linear-gradient(var(--cream), var(--gold-soft));
   box-shadow: var(--shadow);
   position: relative;
 }
 .exercise-window-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
 .exercise-window-title { margin: 0; font-size: 1.05rem; letter-spacing: .02em; }
-.exercise-window-glyph { color: var(--orange); font-size: 1.1rem; }
+/* Было --orange: 2.41:1 на кремовом — значок не видно. */
+.exercise-window-glyph { color: var(--glyph); font-size: 1.1rem; }
 .exercise-instruction { margin: 0 0 10px; font-weight: 700; color: var(--ink-soft); }
 .exercise-window .read-aloud { margin: 4px 0 10px; }
 .exercise-stage { margin-top: 6px; }
-.exercise-progress { height: 12px; border: 2px solid var(--ink); border-radius: 99px; background: #fff; overflow: hidden; }
+.exercise-progress { height: 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--paper); overflow: hidden; }
 .exercise-progress > span { display: block; height: 100%; background: var(--mint); transition: width .2s ease; }
 .exercise-progress-text { margin: 6px 0 0; font-size: .92rem; font-weight: 700; }
 .exercise-status { margin: 8px 0 0; font-weight: 700; }
-.exercise-restored { margin: 10px 0; padding: 8px 10px; border: 2px dashed var(--ink); border-radius: 12px; background: #e9fbf3; font-weight: 700; }
+.exercise-restored { margin: 10px 0; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 12px; background: var(--mint-soft); font-weight: 700; }
 .exercise-undo { margin-top: 12px; }
 .exercise-actions { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
 @media (min-width: 520px) { .exercise-actions { flex-direction: row; } .exercise-actions > * { flex: 1; } }
 
 /* Пол и рамка «театра» для заданий на память: цели крупные, вспышки заметны без анимации. */
 .memory-stage { padding: 8px; border: 3px dashed var(--ink-soft); border-radius: 18px; background: #fffdf7; }
-.cell.theater { position: relative; min-height: 52px; border-radius: 18px; background: #fff; }
+.cell.theater { position: relative; min-height: 52px; border-radius: 18px; background: var(--paper); }
 .cell.theater::after {
   content: ''; position: absolute; inset: 7px; border: 2px dashed rgba(27, 27, 47, .18); border-radius: 13px; pointer-events: none;
 }
 .cell.theater.lit { background: var(--yellow); }
 .cell-glow { position: absolute; inset: 0; display: grid; place-items: center; font-size: 28px; color: #7a5100; }
 .big-targets > .cell, .big-targets > .card-shape, .big-targets > .signal-cell { min-height: 64px; }
-.memory-badge { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; min-width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; color: #1b1b2f; font-size: 16px; font-weight: 900; line-height: 1; z-index: 1; }
+.memory-badge { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; min-width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 16px; font-weight: 900; line-height: 1; z-index: 1; }
 
 /* Опасные ситуации: список историй отдельно от игрушек набора поддержки. */
 .safety-picker .safety-story-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1780,29 +1866,29 @@ html[data-reduce-motion="true"] *, html[data-reduce-motion="true"] *::before, ht
 
 /* Варианты ответа: видимая метка выбора, цветовая заплатка для Stroop. */
 .options .option { display: flex; align-items: center; gap: 10px; min-height: 52px; }
-.option-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; font-weight: 900; }
+.option-mark { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); font-weight: 900; }
 .option[aria-checked="true"] .option-mark { background: var(--mint); }
-.option-swatch { flex: none; width: 26px; height: 26px; margin-left: auto; border: 2px solid var(--ink); border-radius: 50%; }
+.option-swatch { flex: none; width: 26px; height: 26px; margin-left: auto; border: 1px solid var(--line); border-radius: 50%; }
 
-.rule-banner { margin: 0 0 12px; padding: 10px 12px; border: 3px solid var(--ink); border-radius: 14px; background: #ffdf8d; }
+.rule-banner { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--gold-soft); }
 .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .switch-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .order-drag { margin-left: auto; font-size: 1.2rem; color: var(--ink-soft); }
 
 /* Сигналы go/no-go: лампа и подпись, отметка видна без цвета. */
 .signals { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 380px; margin: 0 auto; }
-.signal-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; font-size: clamp(11px, 3vw, 15px); color: #1b1b2f; }
-.signal-lamp { width: 26px; height: 26px; border: 3px solid #1b1b2f; border-radius: 50%; background: rgba(255, 255, 255, .75); }
+.signal-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px; font-size: clamp(11px, 3vw, 15px); color: var(--ink); }
+.signal-lamp { width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 50%; background: rgba(255, 255, 255, .75); }
 .signal-label { font-weight: 800; overflow-wrap: anywhere; text-align: center; }
 .signal-check { position: absolute; right: 4px; top: 2px; font-size: 1.2rem; }
-.signal-cell.picked { box-shadow: inset 0 0 0 4px #1b1b2f; }
+.signal-cell.picked { box-shadow: inset 0 0 0 4px var(--ink); }
 
 /* Ввод цифр: слоты одинаковой ширины, крупная клавиатура. */
 .digit-display { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
 .digit-display:focus-visible { outline: 4px solid #1264c4; outline-offset: 4px; }
-.digit-slot { display: grid; place-items: center; min-width: 46px; height: 58px; padding: 0 6px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; font-size: 30px; font-weight: 900; }
-.digit-slot.empty { color: #b9b4c9; }
-.digit-display.typing .digit-slot { background: #fff7dd; }
+.digit-slot { display: grid; place-items: center; min-width: 46px; height: 58px; padding: 0 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); font-size: 30px; font-weight: 900; }
+.digit-slot.empty { color: var(--muted); }
+.digit-display.typing .digit-slot { background: var(--cream); }
 
 /* Уменьшение движения: убираем подпрыгивания, но не саму игру. */
 @media (prefers-reduced-motion: reduce) {
@@ -1817,8 +1903,8 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 
 /* Пауза без потери прогресса: серверная сессия остаётся активной, черновики — во вкладке. */
 .exercise-toolbar { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
-.exercise-pause { align-self: flex-start; min-height: 44px; padding: 8px 14px; border: 2px solid var(--ink); border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.exercise-pause:hover { background: #fff7dd; }
+.exercise-pause { align-self: flex-start; min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+.exercise-pause:hover { background: var(--cream); }
 .exercise-pause:focus-visible { outline: 3px solid #1264c4; outline-offset: 3px; }
 .exercise-toolbar .small { font-size: .9rem; margin: 4px 0 0; }
 /* Пояснение к паузе свёрнуто: на маленьком экране важнее сама игра. */
@@ -1836,13 +1922,13 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .child-switch .child-chip {
   cursor: pointer;
   min-height: 44px;
-  background: #fff;
+  background: var(--paper);
   color: var(--ink, #1f2933);
   border: 2px solid #cfd8e3;
 }
 .child-switch .child-chip.on {
-  border-color: #1f6f43;
-  box-shadow: inset 0 0 0 2px #1f6f43;
+  border-color: var(--ok);
+  box-shadow: inset 0 0 0 2px var(--ok);
 }
 .family-goal {
   background: #eef7ee;
@@ -1876,7 +1962,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
   justify-content: center;
   font-size: 10px;
 }
-.activity-day.on { background: #bfe7cf; border: 1px solid #1f6f43; }
+.activity-day.on { background: var(--mint-soft); border: 1px solid var(--ok); }
 .activity-day.review { background: #dbeafe; border: 1px solid #1d4ed8; }
 
 /* Код взрослого: ворота кабинета и настройка PIN. */
@@ -1892,9 +1978,9 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 
 /* Общая цель семьи: одно число на семью, без имён и сравнения. */
 .family-goal-panel h2 { font-size: 20px; margin: 0 0 8px; }
-.family-goal-bar { height: 16px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper); overflow: hidden; margin: 10px 0; }
-.family-goal-bar span { display: block; height: 100%; background: #bfe7cf; transition: width .3s ease; }
-.family-goal-panel select { width: 100%; max-width: 220px; font: inherit; padding: 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); }
+.family-goal-bar { height: 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); overflow: hidden; margin: 10px 0; }
+.family-goal-bar span { display: block; height: 100%; background: var(--mint-soft); transition: width .3s ease; }
+.family-goal-panel select { width: 100%; max-width: 220px; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .family-goal-panel label { display: block; margin: 12px 0 6px; font-weight: bold; }
 @media (prefers-reduced-motion: reduce) { .family-goal-bar span { transition: none; } }
 
@@ -1902,7 +1988,7 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .data-controls h2 { font-size: 20px; margin: 0 0 8px; }
 .data-controls h3 { font-size: 16px; margin: 16px 0 6px; }
 .data-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
-.data-counts > div { border: 2px solid var(--ink); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
+.data-counts > div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
 .data-counts dt { font-size: 13px; }
 .data-counts dd { margin: 2px 0 0; font-size: 20px; font-weight: bold; }
 .data-decisions { padding-left: 18px; }
@@ -1920,6 +2006,1339 @@ html[data-reduce-motion="true"] .exercise-progress > span { transition: none; }
 .review-choices .btn { text-align: left; }
 
 /* Выключатель повторов в кабинете: решение взрослого, без оценки ребёнка. */
-.review-toggle { margin-top: 12px; border-top: 2px dashed var(--ink); padding-top: 10px; }
+.review-toggle { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
 .review-toggle label { font-weight: bold; margin-right: 8px; }
 .review-toggle input[type="checkbox"] { width: 22px; height: 22px; vertical-align: middle; }
+
+/* ------------------------ методические подсказки ----------------------- */
+
+/*
+  Подсказка педагогу — не украшение карточки, а рабочий инструмент, который
+  читают за две минуты до занятия. Поэтому у неё своя рамка: без неё текст
+  сливается с посещаемостью и педагог его пролистывает.
+
+  Тревожный сигнал (три отказа подряд) отличается формой и цветом, а не только
+  словом: цвет помогает найти взглядом, но смысл остаётся в тексте — при
+  дальтонизме рамка всё равно видна.
+*/
+.teacher-hint {
+  border-left: 3px solid var(--sky);
+  padding: 6px 0 6px 10px;
+  margin: 6px 0 2px;
+  font-size: 13px;
+}
+
+.teacher-hint p {
+  margin: 2px 0;
+}
+
+.teacher-hint summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.teacher-hint-alert {
+  border-left: 3px solid var(--orange);
+  background: #fff4ec;
+  border-radius: 0 10px 10px 0;
+  padding: 8px 10px 8px 12px;
+}
+
+.teacher-hint-alert strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.teacher-method {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+
+.teacher-method summary {
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.teacher-method h3 {
+  font-size: 14px;
+  margin: 14px 0 4px;
+}
+
+.teacher-method details {
+  margin: 4px 0 4px 6px;
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+}
+
+.teacher-method details summary {
+  cursor: pointer;
+}
+
+/* Страница занятия для родителя: ценность рядом с отчётом о посещении. */
+.lesson-page {
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+
+.lesson-page h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.lesson-page ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.lesson-page li {
+  margin: 3px 0;
+}
+
+/* ------------------------- кабинет педагога --------------------------- */
+
+/*
+  Кабинет педагога — рабочее место, а не витрина: его открывают на минуту
+  перед занятием и на минуту после. Поэтому рамки, отбивки и плотность выше,
+  чем у детских экранов, а кнопки мельче: взрослому не нужен палец в 48 px,
+  ему нужен план на одном экране телефона.
+
+  Раньше этих правил не было вовсе — планы, ученики и переключатели выводились
+  простым текстом в общий поток. Тест test-method-ui-styles следит, чтобы так
+  не повторилось.
+*/
+.teacher-plan,
+.teacher-group,
+.teacher-student {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.teacher-plan h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+/* Блок встречи — по нему педагог ведёт занятие с листа. */
+.teacher-block {
+  border-left: 3px solid var(--mint);
+  padding: 4px 0 4px 10px;
+  margin: 8px 0;
+}
+
+.teacher-block strong {
+  font-size: 14px;
+}
+
+.teacher-block p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+/*
+  Присловье встречи и правила телесных упражнений.
+
+  Оба блока читаются перед занятием, а не после, поэтому стоят выше блоков
+  плана и отличаются от них цветом: присловье — рамка для группы, правила —
+  то, что проверяют руками. Без отдельного оформления они сливаются с текстом
+  плана, и педагог их пропускает.
+*/
+.teacher-frame {
+  border-left: 3px solid var(--link);
+  background: #f4f8fd;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.teacher-freeze {
+  border-left: 3px solid var(--violet);
+  background: #f7f4fe;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.teacher-safety {
+  border-left: 3px solid var(--glyph);
+  background: #fff8f0;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.teacher-safety ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.teacher-safety li {
+  margin: 3px 0;
+}
+
+/* Строка ученика: имя слева, кнопка справа, даже на узком экране. */
+.teacher-student {
+  padding: 10px 12px;
+}
+
+.teacher-student .row {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.teacher-student .row > .btn {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.teacher-group .chip {
+  font-weight: 700;
+}
+
+/* Кнопки кабинета не должны занимать всю ширину, как детские. */
+.btn.small,
+.teacher-plan .btn,
+.teacher-group .btn {
+  width: auto;
+  padding: 8px 13px;
+  font-size: 13px;
+  border-width: 2.5px;
+  border-radius: 12px;
+}
+
+.btn.primary {
+  background: var(--mint);
+}
+
+.btn.primary:hover {
+  background: var(--mint-soft);
+}
+
+.input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+/* Переключатель недели в календаре: строка, а не кнопка на всю ширину. */
+.week-toggle {
+  width: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.week-toggle:hover {
+  background: var(--cream);
+}
+
+.lesson-list {
+  margin: 4px 0 10px;
+  padding-left: 2px;
+}
+
+/* Действия у занятия: две кнопки рядом, а не столбиком. */
+.lesson-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+/* ---------------------------- печать планов ---------------------------- */
+
+/*
+  Педагог печатает планы встреч и ведёт по листу: проектора в классе часто
+  нет. На экране печатная версия скрыта целиком — она нужна только на бумаге,
+  и без этого правила 36 планов удлиняли бы кабинет в двенадцать раз.
+
+  В печати наоборот: остаются только планы. Кнопки, подсказки, посещаемость и
+  всё, что относится к экрану, убирается — иначе на бумагу уходят кнопки
+  «Отметить» и раскрытые рабочие детали.
+*/
+.print-only {
+  display: none;
+}
+
+/* Год на экране: список планов под раскрытием, чтобы не занимать кабинет. */
+.teacher-all-plans {
+  margin-top: 6px;
+}
+
+.teacher-all-plans p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+/* Печатная версия года: на экране не показывается никогда. */
+.print-plans {
+  display: none;
+}
+
+@media print {
+  .no-print,
+  .btn,
+  .teacher-hint,
+  .teacher-method,
+  .teacher-group,
+  .lesson-page,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  /* Печать чёрным по белому: цветные рамки на чёрно-белом принтере — серые. */
+  body,
+  .page {
+    background: var(--paper) !important;
+    color: #000;
+  }
+
+  .print-plan {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 1px solid #999;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+
+  .print-plan h2 {
+    font-size: 15px;
+    margin: 0 0 4px;
+  }
+
+  .print-plan p {
+    font-size: 11px;
+    margin: 2px 0;
+    color: #000;
+  }
+
+  .print-block {
+    margin: 6px 0 6px 8px;
+    border-left: 2px solid #ccc;
+    padding-left: 8px;
+  }
+
+  .print-block strong {
+    font-size: 12px;
+  }
+}
+
+@page {
+  margin: 12mm;
+}
+
+
+/* ------------------------------ доступность ---------------------------- */
+
+/*
+  Доступность — не «крайний случай»: в группе из двадцати детей обязательно
+  есть тот, кому трудно читать, и тот, кого укачивает от движения. Три вещи,
+  которые ломаются чаще всего и которые видно только вживую:
+
+  1. Мелкий шрифт. 13px в подсказках педагога и в списках — это уже предел:
+     на телефоне в классе с плохим светом не читается.
+  2. Движение. Мигающий значок награды при «уменьшить движение» должен стоять.
+  3. Фокус с клавиатуры. Без видимой рамки по кнопкам нельзя ходить табом,
+     а это единственный способ для того, кто не пользуется мышью.
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Фокус заметен на любом фоне и не зависит от цвета кнопки. */
+:focus-visible {
+  outline: 2px solid var(--mint); outline-offset: 2px;
+}
+
+/* На узком экране ничего не должно вылезать за край: горизонтальная
+   прокрутка на телефоне ломает и чтение, и нажатия. */
+@media (max-width: 420px) {
+  .teacher-plan,
+  .teacher-student,
+  .teacher-group {
+    padding: 10px;
+  }
+
+  .teacher-student .row {
+    flex-wrap: wrap;
+  }
+
+  .print-plan h2 {
+    font-size: 14px;
+  }
+}
+
+/* Скрытое от глаза, но не от чтения с экрана: подписи к кнопкам-символам. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+  Страница для школы (/school).
+
+  Её читают на большом экране и на бумаге: завуч открывает ссылку и решает, звать
+  ли методиста. Поэтому таблицы, а не карточки, и перенос строк по словам —
+  иначе «Чего это не значит» уезжает за край.
+*/
+.school-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.school-table th,
+.school-table td {
+  border-top: 1px solid rgba(27, 27, 47, 0.18);
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.school-table thead th {
+  border-top: none;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.school-table th[scope='row'] {
+  font-weight: 700;
+  width: 38%;
+}
+
+.school-outline {
+  margin: 8px 0 0;
+  padding-left: 22px;
+}
+
+.school-outline li {
+  margin: 4px 0;
+}
+
+.school-stage {
+  border-left: 3px solid var(--mint);
+  padding: 4px 0 4px 10px;
+  margin: 10px 0;
+}
+
+.school-stage p {
+  margin: 2px 0;
+}
+
+@media (max-width: 520px) {
+  .school-table,
+  .school-table th[scope='row'] {
+    font-size: 13px;
+  }
+  .school-table th[scope='row'] {
+    width: 45%;
+  }
+}
+
+/*
+  Этап года в отчёте родителю.
+
+  Этап — не прогресс и не оценка: он отвечает на вопрос «что сейчас происходит
+  с группой». Поэтому это отдельная карточка с меткой, а не полоска
+  заполнения — полоску читают как «пройдено на 40%».
+*/
+.stage-card .tag {
+  background: var(--mint);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.stage-card p {
+  margin: 4px 0;
+}
+
+/*
+  Документы, согласие и оффер.
+
+  Здесь всё намеренно скучно: это то, что читают, а не то, чем пользуются.
+  Читаемость важнее украшений — крупный межстрочный интервал, ширина строки
+  около 70 символов, никаких фонов под текстом.
+*/
+.legal-page,
+.offer-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.legal-page h2,
+.offer-page h2 {
+  margin-top: 28px;
+}
+
+.legal-document {
+  line-height: 1.65;
+}
+
+.legal-section p,
+.legal-operator p {
+  line-height: 1.65;
+  max-width: 68ch;
+}
+
+.legal-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.legal-list-item {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 14px 0;
+}
+
+.legal-list-item a {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.legal-operator {
+  margin-top: 32px;
+  border-left: 4px solid var(--yellow);
+  padding: 4px 0 4px 14px;
+}
+
+.legal-operator [role='status'] {
+  max-width: 68ch;
+}
+
+.offer-lead {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.offer-card {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 8px;
+  margin-top: 20px;
+}
+
+.offer-card p,
+.offer-card li {
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.offer-blocks {
+  padding-left: 20px;
+}
+
+.offer-blocks li {
+  margin: 6px 0;
+}
+
+.offer-minutes {
+  display: inline-block;
+  min-width: 48px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.offer-facts {
+  padding-left: 20px;
+}
+
+.offer-links {
+  margin-top: 28px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/*
+  Выбор из двух-трёх вариантов: онбординг и режим занятия.
+
+  Кнопка, а не радиокнопка: она читается на телефоне пальцем, а не мышью, и
+  состояние `aria-pressed` даёт экранному диктору то же, что и радио.
+*/
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+
+.choice-list.compact {
+  margin-bottom: 8px;
+}
+
+.choice {
+  text-align: left;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  background: var(--paper);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+}
+
+.choice.active {
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+
+.choice:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.consent-points {
+  text-align: left;
+  max-width: 62ch;
+  margin: 12px auto;
+  padding-left: 20px;
+  line-height: 1.55;
+}
+
+.consent-points li {
+  margin: 8px 0;
+}
+
+.consent-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 62ch;
+  margin: 16px auto;
+  line-height: 1.5;
+}
+
+.consent-check input {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.consent-gate,
+.paywall-card {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/*
+  План встречи в кабинете родителя.
+
+  Печатается отдельным листом: у встречи есть начало и конец, и разрезать её
+  по страницам между «кругом» и «разбором» — значит потерять лист на столе.
+*/
+.meeting-card {
+  break-inside: avoid;
+}
+
+.meeting-blocks {
+  padding-left: 20px;
+}
+
+.meeting-blocks li {
+  margin: 14px 0;
+}
+
+.meeting-blocks p {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.meeting-frame {
+  border-left: 4px solid var(--violet);
+  margin: 12px 0;
+  padding: 6px 0 6px 12px;
+  font-style: italic;
+}
+
+.meeting-freeze {
+  border-left: 4px solid var(--orange);
+  padding: 6px 0 6px 12px;
+  margin: 12px 0;
+}
+
+.meeting-safety summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.meeting-closing {
+  font-weight: 700;
+  margin-top: 16px;
+}
+
+.billing-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+/* Кнопка-ссылка внутри текста: действие, но не отдельная кнопка. */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media print {
+  .meeting-card {
+    break-after: page;
+  }
+}
+
+/* ------------------------- служебный экран: воронка -------------------------
+   Не раздел продукта: экран читает дежурный, поэтому плотная таблица вместо
+   карточек. Ошибка и предупреждение отличаются цветом и подписью, а не только
+   оттенком: различать их придётся и без цвета.
+--------------------------------------------------------------------------- */
+.funnel-token { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 6px; }
+.funnel-token label { flex: 0 0 100%; font-weight: 800; }
+.funnel-token input { flex: 1 1 220px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; font: inherit; }
+.funnel-steps { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.funnel-steps caption { text-align: left; font-weight: 700; padding-bottom: 6px; }
+.funnel-steps th, .funnel-steps td { border-bottom: 2px solid var(--ink-soft); padding: 6px 8px; text-align: left; }
+.funnel-steps th:last-child, .funnel-steps td:last-child { text-align: right; }
+.funnel-drop td { background: var(--lis-soft); font-weight: 800; }
+.funnel-warning { padding: 12px; background: #fff7d6; color: var(--glyph); border: 2px solid var(--glyph); border-radius: 12px; }
+
+/* ==========================================================================
+   Арт v2: «мягкий объём».
+   Портреты героев приходят с бумажным фоном (альфы пока нет), поэтому в
+   маленьких слотах картинку обрезаем по лицу, а не масштабируем целиком:
+   иначе на экране появляется фото с фоном вместо героя.
+   ========================================================================== */
+.mascot-inline,
+.mascot {
+  object-fit: cover;
+  object-position: 50% 8%;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.mascot-inline {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+}
+
+.mascot {
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.reward-mascot {
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.hero-art {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+/* ==========================================================================
+   Карточки и кнопки v2.
+   Правила выше — старый «комикс»: толстые контуры, смещённые тени, жёлтые
+   кнопки. Здесь тот же разметке дан новый вид: мягкая тень, тёплая линия,
+   один акцент. Порядок важен — этот блок идёт последним и перекрывает старый.
+   ========================================================================== */
+.panel {
+  border-radius: 26px;
+  padding: 18px;
+}
+
+.btn {
+  border: 1px solid rgba(36, 29, 49, 0.08);
+  border-radius: 999px;
+  background: var(--mint);
+  font-size: 17px;
+  box-shadow: 0 16px 28px -20px rgba(36, 29, 49, 0.55);
+}
+
+.btn:hover {
+  background: var(--mint-soft);
+}
+
+.btn:active {
+  transform: none;
+  box-shadow: 0 20px 32px -22px rgba(36, 29, 49, 0.55);
+  border-color: rgba(36, 29, 49, 0.18);
+}
+
+.btn.big {
+  border-radius: 999px;
+  padding: 16px 20px;
+  font-size: 19px;
+  background: var(--mint);
+}
+
+.btn.big:hover {
+  background: var(--mint-soft);
+}
+
+.btn.ghost {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.btn.secondary {
+  background: var(--sky);
+  color: var(--paper);
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--cream);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.chip.coins {
+  background: var(--gold-soft);
+}
+
+.chip.stars {
+  background: var(--paper);
+}
+
+/* Карточка миссии: сцена места сверху, герой линейки, спокойные чипы. */
+.mission-card {
+  background: var(--paper);
+}
+
+
+.mission-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mission-hero img {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 8%;
+  background: var(--cream);
+}
+
+.mission-hero b {
+  display: block;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.mission-hero span {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Варианты истории: одинаковые по весу карточки, без «правильного» вида. */
+.option {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 12px 24px -22px rgba(36, 29, 49, 0.5);
+  padding: 14px 16px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.option:hover {
+  border-color: rgba(36, 29, 49, 0.2);
+}
+
+.option.scenario-selected {
+  border-color: var(--mint);
+  box-shadow: inset 0 0 0 2px var(--mint-soft), 0 12px 24px -22px rgba(36, 29, 49, 0.5);
+}
+
+/* Кабинет родителя и служебные экраны: те же карточки, что у ребёнка.
+   Нажатие показываем тенью и цветом, а не сдвигом на 2–3px: сдвиг читается
+   как «нарисованная» кнопка, а нам нужна мягкая поверхность. */
+.card {
+  border-radius: 26px;
+  padding: 18px;
+}
+
+.card + .card {
+  margin-top: 14px;
+}
+
+.stat {
+  border-radius: 16px;
+  background: var(--cream);
+}
+
+.tag {
+  background: var(--gold-soft);
+  font-size: 13px;
+}
+
+.btn:active,
+.option:active,
+.key:active,
+.cell:active,
+.hud-sound:active {
+  transform: none;
+}
+
+.option:hover {
+  background: var(--cream);
+}
+
+.option:active,
+.key:active,
+.cell:active {
+  box-shadow: inset 0 0 0 1px rgba(36, 29, 49, 0.14), 0 10px 20px -18px rgba(36, 29, 49, 0.5);
+}
+
+.key {
+  border-radius: 16px;
+  font-size: 20px;
+}
+
+.key.wide {
+  background: var(--gold-soft);
+}
+
+/* Неделя в кабинете: заголовок — это <button>, а у кнопок браузера свой серый
+   фон и рамка. Без сброса строка выглядела серой полосой в бумажной карточке. */
+.week-head {
+  width: 100%;
+  background: var(--paper);
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.week-head:hover {
+  background: var(--cream);
+}
+
+.week-block {
+  border-radius: 18px;
+}
+
+.week-art {
+  border-radius: 10px;
+}
+
+/* Место района — кадр 16:9; квадрат обрезал сцену по краям. */
+.week-full-art {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  margin: 10px 0 12px;
+  border-radius: 16px;
+}
+
+/* Показатели кабинета: содержимое по центру и одинаковая высота в ряду,
+   иначе соседние плитки «пляшут» на одну строку текста. */
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 84px;
+}
+
+/* Системный синий чекбокс спорит с мятным акцентом. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--mint);
+}
+
+/* План дня: пунктир — тёплой линией, «сейчас» — мятный, как единственный акцент. */
+.plan {
+  border-bottom: 1px dashed var(--line);
+}
+
+.plan.current .badge {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.week-art {
+  position: relative;
+}
+
+.week-num {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  background: var(--paper);
+  box-shadow: 0 2px 6px -2px rgba(36, 29, 49, 0.35);
+}
+
+/* Показатели прямо в карточке (без .row) — это строки «подпись → число»:
+   шесть крупных плиток друг под другом читались как список цен. */
+.card > .stat {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  margin-top: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  text-align: left;
+}
+
+.card > .stat span {
+  order: 1;
+  font-size: 14px;
+}
+
+.card > .stat b {
+  order: 2;
+  margin-left: auto;
+  font-size: 19px;
+}
+
+/* Строки показателей в карточке — «полосами» на кремовом, без рамки:
+   рамка на белом давала «таблицу», а не список. */
+.card > .stat {
+  border: 0;
+  background: var(--cream);
+}
+
+/* Поля ввода кабинета: почта для чека была системным квадратным полем
+   с площадкой не по росту — приводим к тем же капсулам, что и остальное. */
+input[type='email'],
+input[type='tel'],
+input[type='number'],
+select,
+textarea {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 700;
+  background: var(--cream);
+  margin-bottom: 8px;
+}
+
+input[type='email']:focus,
+input[type='tel']:focus,
+input[type='number']:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid var(--sky);
+}
+
+label[for='receipt-email'] {
+  display: block;
+  margin-top: 10px;
+  font-weight: 800;
+}
+
+/* Недоступная кнопка — не «выцветшая мятная», а спокойная бумага:
+   полупрозрачный акцент читается как сломанный цвет. */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 1;
+  background: var(--cream);
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* Полоска прогресса: дорожка кремовая, заполнение — мятное, без градиента. */
+.progress {
+  background: var(--cream);
+}
+
+.progress-fill {
+  background: var(--mint);
+}
+
+/* Вложенная карточка — кремовая подложка: белое на белом не отделялось. */
+.card .card {
+  background: var(--cream);
+  box-shadow: none;
+}
+
+.card .card .choice {
+  background: var(--paper);
+}
+
+/* Варианты выбора в кабинете: та же тонкая линия, что у всех карточек. */
+.choice {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--mint);
+}
+
+.choice.active {
+  border-color: var(--mint);
+  box-shadow: inset 0 0 0 2px var(--mint-soft);
+}
+
+.choice:disabled {
+  opacity: 1;
+}
+
+/* .stat по умолчанию центрирует содержимое (плитки в .row). Строка в карточке
+   должна читаться слева направо, а значение — упираться в правый край. */
+.card > .stat {
+  justify-content: flex-start;
+}
+
+.card > .stat > span:last-child:not(:first-child) {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Гардероб: настоящие картинки предметов вместо эмодзи. Эмодзи — чужой шрифт
+   и чужая палитра; предмет уже нарисован в v2, его и показываем. */
+.shop-thumb {
+  width: 54px;
+  height: 54px;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+.shop-thumb img,
+.shop-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* «Моя комната» — плитка с тем, что ребёнок уже купил для комнаты.
+   Сцена теперь фотография места, поэтому предметы живут здесь. */
+.shop-room {
+  margin: 6px 0 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--cream);
+}
+
+.shop-room h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.shop-room-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.shop-room-item {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  text-align: center;
+}
+
+.shop-room-item.on {
+  border-color: var(--mint);
+  box-shadow: inset 0 0 0 2px var(--mint-soft);
+}
+
+.shop-room-item img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+/* Место недели в чипе: маленький кадр 16:9, не второй постер. */
+.chip-place {
+  width: 26px;
+  height: 18px;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: -4px;
+}
+
+/* Табы: активный — мятая мятная плашка с тонкой линией, а не жёлтая наклейка
+   с чернильной рамкой. Наведения на неактивных тоже мягкие. */
+.tabs {
+  border-radius: 20px;
+}
+
+.tabs button,
+.tabs a {
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+
+.tabs button.on,
+.tabs a:hover {
+  background: var(--mint-soft);
+  border-color: var(--mint);
+}
+
+.tabs button:hover:not(.on) {
+  background: var(--cream);
+}
+
+/* Питомец на сцене: тёплый кремовый кружок вместо белого — так он не выглядит
+   вырезанной наклейкой на фотографии, а фон питомца совпадает с подложкой. */
+.room-pet {
+  width: 84px;
+  height: 84px;
+  background: var(--cream);
+}
+
+.room-pet svg {
+  filter: drop-shadow(0 6px 10px rgba(36, 29, 49, 0.18));
+}
+
+/* Кнопки покупки в гардеробе: цена — на золотой подложке (это про награду),
+   «Надеть» — мятная капсула; жёлтой заливки во всю кнопку больше нет. */
+.btn.tiny {
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.btn.tiny.secondary {
+  background: var(--mint);
+  color: var(--ink);
+}
+
+.btn.tiny:hover {
+  background: var(--gold-soft);
+  border-color: rgba(36, 29, 49, 0.18);
+}
+
+.btn.tiny.secondary:hover {
+  background: var(--mint-soft);
+}
+
+/* Превью гардероба: герой и питомец рядом с подписью, без пустого поля. */
+.shop-preview {
+  align-items: center;
+  border-radius: 20px;
+}
+
+.shop-avatar {
+  width: 96px;
+  flex: 0 0 96px;
+  animation: none;
+}
+
+.shop-pet {
+  width: 62px;
+  flex: 0 0 62px;
+}
+
+.shop-preview p {
+  flex: 1 1 150px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Общий контейнер «документной» страницы: у кабинета педагога и служебных
+   экранов не было горизонтальных отступов, текст прилипал к краю экрана. */
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+/* Поле без атрибута type не попадало под input[type='text'] и рисовалось
+   системным квадратом. */
+.input {
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.input:focus-visible {
+  outline: 3px solid #1264c4;
+  outline-offset: 2px;
+}

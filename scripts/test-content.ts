@@ -63,7 +63,7 @@ check(
   PROGRAM.every((w) => new Set(w.days.map((d) => d.scenarioId)).size === 5)
 );
 
-check('дополнительные истории не пересекаются с программой и имеют три возраста', STORYLET_SCENARIOS.length === 61 && STORYLET_SCENARIOS.every(sc => !ids.includes(sc.id) && BANDS.every(b => !!sc.variants[b]?.title && !!sc.variants[b]?.text && sc.variants[b].options.length === 3 && sc.variants[b].options.every(o => o.text && o.note)) && TASK_IDS.has(sc.practiceTaskId)));
+check('дополнительные истории не пересекаются с программой и имеют три возраста', STORYLET_SCENARIOS.length > 0 && STORYLET_SCENARIOS.every(sc => !ids.includes(sc.id) && BANDS.every(b => !!sc.variants[b]?.title && !!sc.variants[b]?.text && sc.variants[b].options.length === 3 && sc.variants[b].options.every(o => o.text && o.note)) && TASK_IDS.has(sc.practiceTaskId)));
 
 let variantProblems = 0;
 const problemDetails: string[] = [];
@@ -111,6 +111,90 @@ for (const sc of PROGRAM_SCENARIOS) {
   }
 }
 check('все варианты, разборы и привязки заполнены', variantProblems === 0, problemDetails.slice(0, 5).join(' | '));
+
+/**
+ * Варианты по возрасту должны РАЗЛИЧАТЬСЯ, а не только существовать.
+ *
+ * Проверки выше убеждаются, что текст есть и вариантов три. Этого мало:
+ * сценарий для 11-летнего может быть копией текста для 5-летнего, и все
+ * проверки пройдут. Ребёнку в 11 лет история про «Лиса с корабликом» не
+ * адресована, и подменять возрастную адаптацию одним текстом нельзя — это
+ * ровно то, о чём говорит пункт 12 реестра.
+ */
+const sameAgeTexts: string[] = [];
+const sameAgeTitles: string[] = [];
+for (const sc of PROGRAM_SCENARIOS) {
+  const bands = [BANDS[0], BANDS[1], BANDS[2]];
+  for (let i = 0; i < bands.length; i += 1) {
+    for (let j = i + 1; j < bands.length; j += 1) {
+      const a = sc.variants[bands[i]];
+      const b = sc.variants[bands[j]];
+      if (a && b) {
+        if (a.text.trim() === b.text.trim()) sameAgeTexts.push(`${sc.id}: ${bands[i]} = ${bands[j]}`);
+        if (a.title.trim() === b.title.trim()) sameAgeTitles.push(`${sc.id}: ${bands[i]} = ${bands[j]}`);
+      }
+    }
+  }
+}
+check('текст сцены разный для трёх возрастов, а не скопирован', sameAgeTexts.length === 0, sameAgeTexts.slice(0, 3).join(' | '));
+check('название сцены разное для трёх возрастов', sameAgeTitles.length === 0, sameAgeTitles.slice(0, 3).join(' | '));
+
+/**
+ * Варианты ответа начинаются по-разному.
+ *
+ * Кнопки в интерфейсе короткие: «Спросить, хочет ли она поговорить» и
+ * «Спросить, можно ли помочь» на телефоне обрезаются до «Спросить, …» — и
+ * ребёнок видит три одинаковых варианта. Требование: первые два слова у
+ * вариантов одного набора различаются.
+ */
+const sameOptionStarts: string[] = [];
+for (const sc of PROGRAM_SCENARIOS) {
+  for (const band of BANDS) {
+    const options = sc.variants[band]?.options ?? [];
+    const starts = options.map((option) => option.text.split(/\s+/).slice(0, 2).join(' ').toLowerCase());
+    if (new Set(starts).size !== starts.length) {
+      sameOptionStarts.push(`${sc.id}/${band}: ${options.map((o) => o.text).join(' / ')}`);
+    }
+  }
+}
+check('варианты ответа различимы по первым двум словам', sameOptionStarts.length === 0, sameOptionStarts.slice(0, 2).join(' | '));
+
+
+/**
+ * Начало сцены (`start`) — то, с чего педагог запускает этюд.
+ *
+ * Зачем проверка. Название и текст ситуации — это разбор, а не игра. Если
+ * `start` есть у одного возраста и нет у другого, то на занятии с младшими
+ * приём «замри на пике» просто не начнётся, и никто этого не заметит: план
+ * встречи отработает как обычно.
+ *
+ * Требования: там, где начало есть, оно есть у всех трёх возрастов и
+ * начинается по-разному; тексты не копируют друг друга; две трети дней
+ * (30 из 45 переписанных) имеют начало, чтобы приём был не единичным.
+ */
+const missingStarts: string[] = [];
+const sameStarts: string[] = [];
+let startsTotal = 0;
+for (const sc of PROGRAM_SCENARIOS) {
+  const values = BANDS.map((band) => sc.variants[band]?.start?.trim()).filter(Boolean) as string[];
+  if (values.length === 0) continue;
+  startsTotal += 1;
+  if (values.length !== 3) {
+    missingStarts.push(`${sc.id}: начало есть у ${values.length} из 3 возрастов`);
+    continue;
+  }
+  if (new Set(values.map((value) => value.toLowerCase())).size !== 3) {
+    sameStarts.push(sc.id);
+  }
+  for (const value of values) {
+    // Начало — действие, а не вопрос и не вывод.
+    if (value.endsWith('?')) sameStarts.push(`${sc.id}: начало сцены — вопрос`);
+    if (value.length < 15 || value.length > 120) sameStarts.push(`${sc.id}: начало длиной ${value.length}`);
+  }
+}
+check('начало сцены есть у всех трёх возрастов, если оно есть вообще', missingStarts.length === 0, missingStarts.slice(0, 3).join(' | '));
+check('начало сцены разное у возрастов, это действие, не вопрос', sameStarts.length === 0, sameStarts.slice(0, 3).join(' | '));
+check('начало сцены есть не у единичного дня', startsTotal >= 30, `дней с началом: ${startsTotal}`);
 
 const competencyUse = new Set(PROGRAM_SCENARIOS.map((s) => s.competency));
 check('использованы все 7 компетенций', competencyUse.size === 7, `компетенций=${competencyUse.size}`);

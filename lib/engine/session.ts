@@ -11,12 +11,16 @@ import type { Scenario } from '../content/softskills';
 import { hasSupportPractice, makeSupportPractice } from '../content/support-practice';
 import { STORYLETS_BY_ID } from '../content/storylets';
 import { selectStoryCards, DAY_STORY_CARDS, type StoryChoice } from '../day/story-deck';
+import { STORY_SKILLS } from '../content/story-skills';
+import { SKILL_BY_ID } from '../content/skills-catalog';
 import { nextDayStage } from '../day/day-machine';
 import { eventJournal, dedupeKeyFor, type EventJournal } from '../events/journal';
 import { dueReviewTopics, reviewStatesFromSessions, reviewDayKeyFor, type ReviewTopic } from '../review/topics';
 import { applyReview } from '../review/intervals';
 import { nextJourneyStage } from '../day/journey-machine';
 import { weekOneInk } from './week-one-ink-catalog';
+import { YEAR } from '../content/year/index.ts';
+import { STAGE_INFO, stageOfNumber } from '../year/stages.ts';
 import { remainingInk } from './remaining-ink-catalog';
 import { readInkScene, validateInkVariant } from './ink-snapshot';
 import { readDeepInk, validateDeepInkVariant } from './deep-ink';
@@ -764,6 +768,18 @@ export function buildReport(profile: Profile): WeeklyReport {
     })
     .filter(Boolean) as { scenarioId: string; text: string }[];
 
+  // Какие гибкие навыки тренировались на неделе: берём карту «история →
+  // навыки». Это не оценка ребёнка: навык либо встречался, либо нет.
+  const skillIds = new Set<string>();
+  for (const entry of weekScenarios) {
+    const mapped = STORY_SKILLS[entry.scenarioId]?.skills ?? [];
+    for (const skillId of mapped) skillIds.add(skillId);
+  }
+  const softSkills = [...skillIds]
+    .map(skillId => SKILL_BY_ID[skillId])
+    .filter(Boolean)
+    .map(skill => ({ id: skill.id, title: skill.title, competency: skill.competency }));
+
   const lastScenario = weekScenarios.length
     ? ALL_SCENARIOS[weekScenarios[weekScenarios.length - 1].scenarioId]
     : null;
@@ -791,6 +807,7 @@ export function buildReport(profile: Profile): WeeklyReport {
     home: lastScenario?.home ?? 'Сыграйте вместе 10 минут в настольную игру.',
     question: lastScenario?.question ?? 'Что сегодня было хорошего?',
     scenarioNotes: notes,
+    softSkills,
     program: {
       week: pos.week.week,
       weekTitle: pos.week.title,
@@ -800,6 +817,24 @@ export function buildReport(profile: Profile): WeeklyReport {
       totalDays: TOTAL_DAYS,
       finished: pos.finished,
     },
+    stage: (() => {
+      // Этап считается от урока года, а не от процента дней симулятора: дней
+      // 60, но занятия идут раз в неделю, и «60 дней» — это домашняя практика,
+      // а не шкала года. Если расписания ещё нет, этап — вход: честнее, чем
+      // выдумывать середину.
+      const schedule = store.programState(profile.id)?.lessons ?? [];
+      const today = new Date().toISOString().slice(0, 10);
+      const upcoming = schedule.find((entry) => entry.date >= today);
+      const lesson = upcoming?.lesson ?? schedule.at(-1)?.lesson ?? 1;
+      const id = stageOfNumber(lesson, YEAR.lessons.length);
+      const info = STAGE_INFO[id];
+      return { id, title: info.title, task: info.task, question: info.question };
+    })(),
+    lesson: (() => {
+      const schedule = store.programState(profile.id)?.lessons ?? [];
+      const today = new Date().toISOString().slice(0, 10);
+      return schedule.find((entry) => entry.date >= today)?.lesson ?? schedule.at(-1)?.lesson ?? 1;
+    })(),
     player: {
       level: lvl.level,
       levelTitle: lvl.title,

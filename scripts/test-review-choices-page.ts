@@ -22,6 +22,13 @@ async function main() {
   page.on('pageerror', e => errors.push(String(e)));
 
   const h = { 'content-type': 'application/json' };
+  // Демо-владелец один на весь сервер, а POST /api/profile без addChild
+  // намеренно возвращает уже существующего ребёнка (защита от повторной
+  // отправки формы). В общем прогоне это значит, что тест получит профиль,
+  // созданный предыдущим тестом, и будет проверять чужое состояние. Чистим
+  // заранее — иначе падение ничего не говорит о продукте.
+  const stale = await fetch(`${BASE}/api/profile`).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  if (stale?.profile?.id) await fetch(`${BASE}/api/profile?profileId=${stale.profile.id}`, { method: 'DELETE' }).catch(() => {});
   const a = await (await fetch(`${BASE}/api/profile`, { method: 'POST', headers: h, body: JSON.stringify({ name: 'Мира', age: 9 }) })).json();
   await fetch(`${BASE}/api/parent-pin`, { method: 'DELETE' });
 

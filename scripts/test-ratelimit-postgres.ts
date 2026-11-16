@@ -20,6 +20,7 @@ import pg from 'pg';
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 import { RATE_LIMIT_UPSERT, resolveLimitStore, PgLimitStore } from '../lib/ratelimit-store.ts';
+import { stopPgliteSocketServer } from './pglite-socket-shutdown.ts';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-rl-pg-'));
 
@@ -111,7 +112,7 @@ async function main(): Promise<void> {
     console.log('  ok режим postgres без подключения не подменяется молча');
   } finally {
     await Promise.all(pools.map(p => p.end()));
-    await server.stop();
+    await stopPgliteSocketServer(server, db);
     await db.close();
     fs.rmSync(dir, { recursive: true, force: true });
   }

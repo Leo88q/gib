@@ -16,6 +16,9 @@ import { store } from '../store.ts';
 import { limitStoreInfo } from '../ratelimit.ts';
 import { auditSecrets, clientLeaks, secretsReady, strictBlockers } from '../secrets.ts';
 import { openBridge, pingDatabase } from '../postgres/state-backend.ts';
+import { receiptConfig } from '../billing/receipt.ts';
+import { OPERATOR, legalMissing, legalReady } from '../legal/documents.ts';
+import { storeModeProblem } from '../store-mode.ts';
 
 export type CheckId = 'store' | 'state' | 'storage' | 'ratelimit' | 'secrets' | 'billing' | 'notifications';
 
@@ -99,6 +102,13 @@ function checkState(): Check {
  * показывал бы посторонний файл как источник данных.
  */
 function checkStorage(): Check {
+  // Сначала режим: в продакшене файл — не «медленнее», а недопустим.
+  // Проверка обязательная (`ready`), иначе сервис на `data/db.json`
+  // рапортовал бы «готово» и терял данные при первой пересборке.
+  const problem = storeModeProblem(process.env.NODE_ENV, process.env);
+  if (problem) {
+    return { id: 'storage', level: 'ready', ok: false, detail: problem, durationMs: 0 };
+  }
   const sqlite = process.env.GIB_STORE === 'sqlite';
   if (process.env.GIB_STORE === 'postgres') {
     try {
@@ -171,14 +181,30 @@ function checkSecrets(): Check {
   }
 }
 
-/** Платёжный контур: без него сервис работает, но оплата выключена. */
+/**
+ * Платёжный контур: без него сервис работает, но оплата выключена.
+ *
+ * Проверяется не только наличие ключей, но и то, без чего деньги принимать
+ * нельзя: настройка чека (ставка НДС) и заполненные реквизиты оператора в
+ * оферте. Ключи ЮKassa без чека — это приём оплаты с нарушением 54-ФЗ, а
+ * оферта без реквизитов не является офертой. Здесь это видно в отчёте о
+ * готовности, а не выясняется при первой продаже.
+ */
 function checkBilling(): Check {
-  const configured = Boolean(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY);
+  const keys = Boolean(process.env.YOOKASSA_SHOP_ID && process.env.YOOKASSA_SECRET_KEY);
+  const receipt = receiptConfig() !== null;
+  const legal = legalReady(OPERATOR);
+  const problems = [
+    !keys ? 'нет ключей ЮKassa' : '',
+    !receipt ? 'не настроен чек: нет ставки НДС' : '',
+    !legal ? `не заполнены реквизиты оферты: ${legalMissing(OPERATOR).join(', ')}` : '',
+  ].filter(Boolean);
+  const ok = keys && receipt && legal;
   return {
     id: 'billing',
     level: 'degraded',
-    ok: configured,
-    detail: configured ? 'платёжный контур настроен' : 'оплата выключена: нет ключей ЮKassa',
+    ok,
+    detail: !keys ? 'оплата выключена: нет ключей ЮKassa' : ok ? 'платёжный контур настроен' : `оплата настроена частично: ${problems.join('; ')}`,
     durationMs: 0,
   };
 }

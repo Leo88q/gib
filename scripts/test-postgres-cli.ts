@@ -9,6 +9,7 @@ import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 import pg from 'pg';
 import { exportOwnedProfile, deleteOwnedProfile } from '../lib/postgres/profile-repository.ts';
 import type { SqlClient } from '../lib/postgres/migrate.ts';
+import { shutdownPgliteSocketServer } from './pglite-socket-shutdown.ts';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gib-pg-cli-'));
 const db = new PGlite();
@@ -65,4 +66,4 @@ try {
     check((await db.query<{ n: number }>('SELECT count(*) AS n FROM gib.profiles')).rows[0].n === 1, 'SQLite-профиль оказался в PostgreSQL-таблице');
     check(!fs.readdirSync(dir).some(name => name.startsWith('.gib-postgres-import-')), 'обычная очистка временного снимка выполнена');
   } finally { sqlite.close(); }
-} finally { await server.stop(); await db.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+} finally { await shutdownPgliteSocketServer(server, db); fs.rmSync(dir, { recursive: true, force: true }); }

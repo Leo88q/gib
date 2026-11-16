@@ -6,7 +6,7 @@
  * остальное — в JSONB с проверкой, что столбцы и JSON не разошлись. Так запрос
  * не зависит от формы записи, а рассинхрон ловится ограничением, а не отчётом.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const LOCK_ID = 726391804;
 export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments', 'events'] as const;
 
@@ -95,4 +95,82 @@ CREATE TABLE gib.rate_limits (
   bucket_key TEXT PRIMARY KEY, count INTEGER NOT NULL CHECK (count >= 0), reset_at BIGINT NOT NULL CHECK (reset_at >= 0)
 );
 CREATE INDEX rate_limits_reset ON gib.rate_limits(reset_at);
+`;
+
+/**
+ * Схема v3: продажа доступа.
+ *
+ * Версия 2 знала о платежах только четыре состояния и не знала о возврате.
+ * Возврат появился как обязательная часть продажи (оферта обещает 14 дней),
+ * и без миграции первый же возврат падал бы на CHECK-ограничении status —
+ * причём падал бы не в тесте, а у покупателя.
+ *
+ * Что добавляется:
+ *  - статусы `refunded` и `refund_pending` в платеже и их идентификаторы:
+ *    `refunded_at`, `provider_refund_id` (защита от второго возврата),
+ *    `canceled_at`;
+ *  - `receipt_email` и `offer_version` — чек и редакция оферты относятся к
+ *    конкретному расчёту, поэтому лежат в платеже, а не в профиле;
+ *  - режим встречи и ответ про взрослого в профиле: от них зависит, что
+ *    продаётся (в режиме «ребёнок сам» встречи не продаются вовсе).
+ *
+ * Столбцы выводятся из JSONB теми же выражениями, что и в v1, поэтому
+ * существующие строки заполняются миграцией без отдельного скрипта.
+ */
+export const SCHEMA_V3 = `
+ALTER TABLE gib.payments DROP CONSTRAINT IF EXISTS payments_status_check;
+ALTER TABLE gib.payments ADD CONSTRAINT payments_status_check
+  CHECK (status IN ('creating','pending','succeeded','canceled','refunded','refund_pending'));
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS applied_at BIGINT CHECK (applied_at >= 0);
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS canceled_at BIGINT CHECK (canceled_at >= 0);
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS refunded_at BIGINT CHECK (refunded_at >= 0);
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS provider_refund_id TEXT;
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS receipt_email TEXT;
+ALTER TABLE gib.payments ADD COLUMN IF NOT EXISTS offer_version TEXT;
+UPDATE gib.payments SET
+  applied_at = (data->>'appliedAt')::bigint,
+  canceled_at = (data->>'canceledAt')::bigint,
+  refunded_at = (data->>'refundedAt')::bigint,
+  provider_refund_id = data->>'providerRefundId',
+  receipt_email = data->>'receiptEmail',
+  offer_version = data->>'offerVersion';
+-- Один возврат на платёж: провайдерский идентификатор возврата уникален.
+CREATE UNIQUE INDEX IF NOT EXISTS payments_provider_refund ON gib.payments(provider_refund_id) WHERE provider_refund_id IS NOT NULL;
+ALTER TABLE gib.profiles ADD COLUMN IF NOT EXISTS meeting_lead TEXT;
+ALTER TABLE gib.profiles ADD COLUMN IF NOT EXISTS household_adult TEXT;
+UPDATE gib.profiles SET meeting_lead = data->>'meetingLead', household_adult = data->>'householdAdult';
+ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_meeting_lead_check;
+ALTER TABLE gib.profiles ADD CONSTRAINT profiles_meeting_lead_check
+  CHECK (meeting_lead IS NULL OR meeting_lead IN ('adult','child'));
+ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_household_adult_check;
+ALTER TABLE gib.profiles ADD CONSTRAINT profiles_household_adult_check
+  CHECK (household_adult IS NULL OR household_adult IN ('parent','other','none'));
+`;
+
+/**
+ * Таблица событий воронки запуска.
+ *
+ * Не входит в `SCHEMA_VERSION`: воронка — не состояние ребёнка, у неё свой
+ * срок хранения (400 дней) и своё правило «переживает удаление профиля».
+ * Поэтому таблица поднимается отдельно и идемпотентно
+ * (`lib/events/funnel-store.ts`), а версия схемы состояния от неё не зависит.
+ *
+ * Первичный ключ и есть дедупликация: шаг считается один раз на владельца, а
+ * отказ у оплаты — один раз на владельца и встречу. `lesson_number = 0`
+ * означает «у шага нет встречи», а не «встреча номер ноль».
+ *
+ * Внешнего ключа на `gib.profiles` нет намеренно: иначе удаление ребёнка
+ * стирало бы статистику продаж, и решение о запуске принималось бы по
+ * испорченным числам.
+ */
+export const FUNNEL_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.funnel_events (
+  step TEXT NOT NULL,
+  owner_id TEXT NOT NULL CHECK (char_length(owner_id) BETWEEN 1 AND 200),
+  at BIGINT NOT NULL CHECK (at >= 0),
+  lesson_number INTEGER NOT NULL DEFAULT 0 CHECK (lesson_number >= 0),
+  PRIMARY KEY (step, owner_id, lesson_number)
+);
+CREATE INDEX IF NOT EXISTS funnel_events_at ON gib.funnel_events(at);
 `;

@@ -50,7 +50,7 @@ export default function SupportKit({ competency, band }: { competency: string; b
         🧰 Набор поддержки <span>{open ? 'Свернуть ↑' : 'Открыть ↓'}</span>
       </button>
       {open && <div className="support-content">
-        <img className="support-art" src="/art/support-workshop.png" alt="Лис в мастерской с радугой и пузырьками" />
+        <img className="support-art" src="/art/v2/places/workshop.png" alt="Мастерская: верстак, инструменты и фартуки" />
         <p>Хочешь сделать паузу? Выбери игру. Можно пропустить и продолжить историю.</p>
         <p className="support-hint">Для этой темы Лис предлагает: {activities.find(a => a.id === recommended[competency])?.label ?? 'любую игру'}.</p>
         <div className="support-menu" aria-label="Выбери занятие">

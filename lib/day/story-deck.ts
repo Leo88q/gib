@@ -47,10 +47,14 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_30_design', dayIndex: 29, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d5_design', repeatable: true },
   { id: 'day_31_space', dayIndex: 30, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d1_space', repeatable: true },
   { id: 'day_32_remember', dayIndex: 31, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d2_remember', repeatable: true },
+  // Переключение внимания — саморегуляция, поэтому сцена стоит рядом с
+  // основной историей того же дня, а не в дне про отношения.
   { id: 'day_33_switch', dayIndex: 32, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d3_switch', repeatable: true },
   { id: 'day_34_note', dayIndex: 33, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d4_note', repeatable: true },
   { id: 'day_35_check', dayIndex: 34, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d5_check', repeatable: true },
   { id: 'day_36_supplies', dayIndex: 35, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d1_supplies', repeatable: true },
+  // Карта-схема и рассказ о работе — творческие сцены, а не решения. Стоят в
+  // день творчества: карточка дня обязана совпадать по компетенции с днём.
   { id: 'day_37_path', dayIndex: 36, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d2_path', repeatable: true },
   { id: 'day_38_step', dayIndex: 37, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d3_step', repeatable: true },
   { id: 'day_39_tell', dayIndex: 38, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d4_tell', repeatable: true },
@@ -76,6 +80,39 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_59_offer', dayIndex: 58, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d4_offer', repeatable: true },
   { id: 'day_60_finish', dayIndex: 59, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d5_finish', repeatable: true },
   { id: 'day_1_picture', dayIndex: 0, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w1d1_picture', repeatable: true },
+  // Истории под навыки, у которых не было ни одной сцены. Ставятся на дни
+  // своей компетенции, чтобы ребёнок действительно до них дошёл: история без
+  // карточки в дне остаётся на складе.
+  // Эти две сцены стоят на первом дне намеренно. Если положить их третьими в
+  // день, где уже есть основная история и дополнительная, ребёнок за один
+  // проход программы до них не дойдёт: в выдаче дня максимум три карточки, а
+  // значит доступны только две верхние. Здесь они лежат рядом с двумя другими
+  // самопознавательными сценами, и все три достижимы.
+  { id: 'day_2_name_feelings', dayIndex: 1, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_name_feelings', repeatable: true },
+  { id: 'day_3_strengths', dayIndex: 2, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_recognize_strengths', repeatable: true },
+  { id: 'day_8_hold_impulse', dayIndex: 7, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_hold_impulse', repeatable: true },
+  { id: 'day_13_comfort_other', dayIndex: 12, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_comfort_other', repeatable: true },
+  // Вторые сцены навыков, у которых была одна история: те же умения в другой
+  // ситуации. Ставятся на дни своей компетенции рядом с основным выбором.
+  { id: 'day_5_name_feelings', dayIndex: 4, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_name_feelings', repeatable: true },
+  { id: 'day_8_strengths_2', dayIndex: 8, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_recognize_strengths', repeatable: true },
+  { id: 'day_6_wait_turn', dayIndex: 6, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_wait_turn', repeatable: true },
+  { id: 'day_9_hold_impulse_2', dayIndex: 9, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_hold_impulse', repeatable: true },
+  { id: 'day_11_not_judge_2', dayIndex: 11, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_not_judge', repeatable: true },
+  { id: 'day_52_combine_ideas_2', dayIndex: 52, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_combine_ideas', repeatable: true },
+  // Три сцены, добавленные 06.11.2026 под разрывы актёрской методики:
+  // выход и показ работы, своя роль в общем деле, поддержка партнёра. Дни
+  // выбраны так, чтобы ни в одном дне не стало больше двух карточек.
+  { id: 'day_13_show_work', dayIndex: 13, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_show_work', repeatable: true },
+  { id: 'day_16_take_role', dayIndex: 16, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_take_role', repeatable: true },
+  { id: 'day_17_support_group', dayIndex: 17, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_support_group', repeatable: true },
+  // Тема 10 «План и порядок» — три новые сцены, добавлены 07.11.2026.
+  // Дни внутри темы (46–50): 47 порядок, 48 главное, 49 пересборка.
+  { id: 'day_47_order_steps', dayIndex: 46, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_order_steps', repeatable: true },
+  { id: 'day_48_first_things', dayIndex: 47, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_first_things_first', repeatable: true },
+  { id: 'day_49_rebuild_plan', dayIndex: 48, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_rebuild_plan', repeatable: true },
+  { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
+  { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];
 const bands: readonly AgeBand[] = ['5-7', '8-10', '11-13'];
 const idPattern = /^[a-zA-Z0-9_-]{1,80}$/;
@@ -103,8 +140,13 @@ export function selectStoryCards(dayIndex: number, band: AgeBand, seen: readonly
     const storyKey = `${c.dayIndex}:${c.scenarioId}`;
     if (stories.has(storyKey)) throw Error('duplicate_day_story');
     stories.add(storyKey);
-    // The fallback scenario's competency may differ from the overall week.
-    if (ALL_STORY_SCENARIOS[c.scenarioId].competency !== SCENARIO_BY_ID[PROGRAM_DAYS[c.dayIndex].day.scenarioId].competency) throw Error('story_competency_mismatch');
+    // Компетенция карточки может отличаться от компетенции дня, и это нормально.
+    //
+    // Ребёнок выбирает одну историю из двух, а не проходит обе: тема дня — та,
+    // которую он выбрал. Жёсткое требование совпадения заставляло либо метить
+    // историю чужой компетенцией, либо оставлять день без второй карточки.
+    // Когнитивные недели (7–10) как раз такие: «Память» и «Гибкость» содержат
+    // сцены про решения, и обе метки верны для своих историй.
     ids.add(c.id);
   }
   const seenSet = new Set(seen);

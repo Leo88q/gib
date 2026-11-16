@@ -39,6 +39,17 @@ export function petMood({ completedDays, daysSinceLast }: PetMoodInput): PetMood
  * Подпись рядом с питомцем. Только про питомца и его состояние, без оценок
  * ребёнка, без вины и без обещаний награды.
  */
+/**
+ * Цвет метки настроения на сцене. Это тон, а не оценка: ребёнок видит, что
+ * питомец рядом, и не читает цвет как «хорошо/плохо» про себя.
+ */
+export const PET_MOOD_COLOR: Record<PetMood, string> = {
+  happy: 'var(--mint)',
+  sleepy: 'var(--sky)',
+  curious: 'var(--yellow)',
+  missing: 'var(--pink)',
+};
+
 export function petMoodText(mood: PetMood): string {
   switch (mood) {
     case 'happy':

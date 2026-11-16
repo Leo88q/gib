@@ -246,7 +246,7 @@ export function runTransaction<T>(bridge: PgBridge, fn: (load: () => StateShape)
  * Нужно при первом запуске в режиме PostgreSQL: приложение не может await-ить
  * миграцию, поэтому она выполняется здесь в одной транзакции под advisory-замком.
  */
-export function ensureSchemaSync(bridge: PgBridge, schema: { v1: string; v2: string }): void {
+export function ensureSchemaSync(bridge: PgBridge, schema: { v1: string; v2: string; v3: string }): void {
   bridge.exec('BEGIN');
   try {
     bridge.query('SELECT pg_advisory_xact_lock($1)', [726391804]);
@@ -254,14 +254,17 @@ export function ensureSchemaSync(bridge: PgBridge, schema: { v1: string; v2: str
     bridge.exec('CREATE TABLE IF NOT EXISTS gib.schema_version (id SMALLINT PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, imported_at TIMESTAMPTZ)');
     const current = bridge.query('SELECT version FROM gib.schema_version WHERE id = 1');
     const version = current.length ? Number(current[0].version) : 0;
+    const statements = (sql: string) => sql.split(';').map(s => s.trim()).filter(Boolean);
     if (version === 0) {
-      for (const statement of schema.v1.split(';').map(s => s.trim()).filter(Boolean)) bridge.exec(statement);
-      for (const statement of schema.v2.split(';').map(s => s.trim()).filter(Boolean)) bridge.exec(statement);
-      bridge.query('INSERT INTO gib.schema_version (id, version) VALUES (1, $1)', [2]);
-    } else if (version === 1) {
-      for (const statement of schema.v2.split(';').map(s => s.trim()).filter(Boolean)) bridge.exec(statement);
-      bridge.query('UPDATE gib.schema_version SET version = 2 WHERE id = 1');
-    } else if (version !== 2) {
+      for (const sql of [schema.v1, schema.v2, schema.v3]) for (const statement of statements(sql)) bridge.exec(statement);
+      bridge.query('INSERT INTO gib.schema_version (id, version) VALUES (1, $1)', [3]);
+    } else if (version === 1 || version === 2) {
+      // 1 → 2 → 3 теми же ступенями, что и миграция: пропускать ступень нельзя,
+      // иначе новая база «версии 1» получит таблицы продажи без таблиц аккаунта.
+      if (version === 1) for (const statement of statements(schema.v2)) bridge.exec(statement);
+      for (const statement of statements(schema.v3)) bridge.exec(statement);
+      bridge.query('UPDATE gib.schema_version SET version = 3 WHERE id = 1');
+    } else if (version !== 3) {
       throw new Error('Unsupported PostgreSQL schema version: ' + version);
     }
     bridge.exec('COMMIT');

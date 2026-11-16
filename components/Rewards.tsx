@@ -1,6 +1,7 @@
 'use client';
 
 import Confetti from './Confetti';
+import { heroFace } from '@/lib/art-paths';
 
 export type RewardBadge = { id: string; title: string; desc: string; glyph: string; tier: string };
 
@@ -16,6 +17,7 @@ export default function Rewards({
   badges,
   levelUp,
   program,
+  band,
   onDone,
   onReflect,
 }: {
@@ -29,6 +31,8 @@ export default function Rewards({
   badges: RewardBadge[];
   levelUp: { level: number; title: string } | null;
   program: { week: number; totalDays: number; completedDays: number; weekTitle: string } | null;
+  /** Линейка: на итогах стоит свой проводник, а не всегда Лис. */
+  band?: string;
   onDone: () => void;
   onReflect?: () => void;
 }) {
@@ -37,7 +41,7 @@ export default function Rewards({
     <div className="rewards">
       <Confetti count={stars >= 3 ? 70 : 40} />
       <div className="panel reward-panel">
-        <img src="/art/mascot-celebrate.png" alt="" className="reward-mascot" />
+        <img src={heroFace(band ?? '')} alt="" className="reward-mascot" />
         <h2 className="reward-title">Миссия выполнена!</h2>
 
         <div className="stars-row">
