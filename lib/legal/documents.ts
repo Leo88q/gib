@@ -39,7 +39,7 @@ export type Operator = {
  */
 export const OPERATOR: Operator = {
   name: '',
-  registration: '',
+  registration: 'ИНН 231521684300 · ОГРНИП 321344300084915',
   address: '',
   email: '',
 };
