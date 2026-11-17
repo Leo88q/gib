@@ -34,6 +34,10 @@ export default function LegalIndexPage() {
           </li>
         ))}
       </ul>
+      <p>
+        <Link href="/legal/cookies">Куки и локальное хранение</Link> ·{' '}
+        <Link href="/licenses">Лицензии и открытые компоненты</Link>
+      </p>
       <section className="legal-operator">
         <h2>Кто отвечает за данные</h2>
         {ready ? (

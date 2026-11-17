@@ -3574,3 +3574,30 @@ label[for='receipt-email'] {
 }
 
 
+
+/* Уведомление о куках: только технически необходимые cookie, показывается до первого подтверждения. */
+.cookie-notice {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  z-index: 60;
+  width: min(720px, calc(100vw - 24px));
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(36, 29, 49, 0.18);
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink);
+}
+.cookie-notice p { margin: 0; font-size: 0.85rem; line-height: 1.35; }
+.cookie-notice a { color: var(--orange); font-weight: 600; }
+.cookie-notice .cookie-notice-actions { display: flex; gap: 8px; flex-shrink: 0; }
+@media (max-width: 560px) {
+  .cookie-notice { flex-direction: column; align-items: stretch; }
+  .cookie-notice .cookie-notice-actions { justify-content: flex-end; }
+}

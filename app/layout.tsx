@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ReadingSettings from '@/components/ReadingSettings';
 import PwaRegistration from '@/components/PwaRegistration';
+import CookieNotice from '@/components/CookieNotice';
 
 export const metadata: Metadata = {
   title: 'Город историй — тренажёр навыков',
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ReadingSettings />
         <PwaRegistration />
+        <CookieNotice />
         {children}
       </body>
     </html>

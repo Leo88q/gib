@@ -41,9 +41,10 @@ export function formatWeeklyReport(profile: Profile): string {
 
 export function formatFamilyDigest(profiles: Profile[]): string {
   if (profiles.length === 0) {
-    return 'В вашем аккаунте пока нет созданных профилей детей. Откройте тренажёр, чтобы начать первую бесплатную встречу.';
+    return 'В вашем аккаунте пока нет созданных профилей детей. Откройте тренажёр, чтобы начать первую бесплатную встречу.\n\nОтключить отчёты: команда /stop в этом чате или «Уведомления» в кабинете родителя.';
   }
-  return profiles.map(formatWeeklyReport).join('\n\n────────────\n\n');
+  return profiles.map(formatWeeklyReport).join('\n\n────────────\n\n')
+    + '\n\nОтключить эти отчёты: ответьте /stop в этом чате или выключите «Уведомления» в кабинете родителя. Напоминания о встречах отключаются там же отдельно.';
 }
 
 export async function sendTelegramMessage(
