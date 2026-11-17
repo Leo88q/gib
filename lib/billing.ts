@@ -206,6 +206,56 @@ function applyRefunded(providerId: string, refundId: string, now: number): Payme
   return current;
 }
 
+const DAY_MS = 86_400_000;
+const FULL_REFUND_WINDOW_DAYS = 14;
+
+export type RefundCalculation = {
+  kind: 'full' | 'prorata';
+  amount: string;
+  unusedDays: number;
+  totalDays: number;
+  completedPaidSessions: number;
+};
+
+/**
+ * Расчёт суммы возврата строго по правилам `lib/legal/documents.ts` (REFUND §1):
+ *  - до 14 календарных дней с оплаты и 0 завершённых новых занятий после оплаты → 100% суммы;
+ *  - после начала занятий или после 14 дней → пропорционально неиспользованным целым дням из 30;
+ *  - если оплаченный срок полностью истёк (0 неиспользованных дней) → `refund_period_expired`.
+ */
+export function calculateRefundAmount(payment: Payment, options: { now?: number } = {}): RefundCalculation {
+  if (!payment.appliedAt) throw new Error('payment_not_paid');
+  const now = options.now ?? Date.now();
+  const totalDays = payment.days || 30;
+  const elapsedMs = Math.max(0, now - payment.appliedAt);
+  const elapsedDays = Math.floor(elapsedMs / DAY_MS);
+  const completedPaidSessions = store
+    .sessions(payment.profileId)
+    .filter((s) => s.startedAt >= payment.appliedAt! && Boolean(s.finishedAt) && !s.review && s.runtime?.advanceProgram !== false).length;
+
+  if (elapsedMs <= FULL_REFUND_WINDOW_DAYS * DAY_MS && completedPaidSessions === 0) {
+    return {
+      kind: 'full',
+      amount: payment.amount,
+      unusedDays: totalDays,
+      totalDays,
+      completedPaidSessions: 0,
+    };
+  }
+
+  const unusedDays = Math.max(0, totalDays - elapsedDays);
+  if (unusedDays <= 0) throw new Error('refund_period_expired');
+  const totalKopecks = Math.round(Number(payment.amount) * 100);
+  const refundKopecks = Math.max(1, Math.round((totalKopecks * unusedDays) / totalDays));
+  return {
+    kind: 'prorata',
+    amount: (refundKopecks / 100).toFixed(2),
+    unusedDays,
+    totalDays,
+    completedPaidSessions,
+  };
+}
+
 /**
  * Запросить возврат.
  *
@@ -213,22 +263,27 @@ function applyRefunded(providerId: string, refundId: string, now: number): Payme
  * возвращает существующий. Ключ идемпотентности `refund-<paymentId>` — тот же
  * приём, что при оплате.
  */
-export async function requestRefund(paymentId: string, config: Config, transport: Transport = fetch, options: { reason?: string } = {}) {
+export async function requestRefund(paymentId: string, config: Config, transport: Transport = fetch, options: { reason?: string; now?: number } = {}) {
   const local = store.allPayments().find(payment => payment.id === paymentId);
   if (!local) throw new Error('payment_not_found');
   if (!local.providerId) throw new Error('payment_not_paid');
   if (local.status === 'refunded') return local;
   if (local.status === 'refund_pending') return local;
   if (local.status !== 'succeeded' || !local.appliedAt) throw new Error('payment_not_paid');
-  const amount = { value: local.amount, currency: local.currency };
+  const calc = calculateRefundAmount(local, { now: options.now });
+  const amount = { value: calc.amount, currency: local.currency };
+  const defaultDesc =
+    calc.kind === 'full'
+      ? 'Возврат по заявлению родителя (полный)'
+      : `Возврат за неиспользованные дни (${calc.unusedDays} из ${calc.totalDays})`;
   const remote = await jsonResponse<ProviderRefund>(await transport('https://api.yookassa.ru/v3/refunds', {
     method: 'POST', headers: providerHeaders(config, `refund-${local.id}`), signal: AbortSignal.timeout(15000),
-    body: JSON.stringify({ payment_id: local.providerId, amount, description: options.reason?.slice(0, 128) || 'Возврат по заявлению родителя' }),
+    body: JSON.stringify({ payment_id: local.providerId, amount, description: options.reason?.slice(0, 128) || defaultDesc }),
   }));
   if (!remote.id || !/^[a-zA-Z0-9_-]{1,100}$/.test(remote.id)) throw new Error('provider_invalid_response');
   if (!['pending', 'succeeded'].includes(remote.status ?? '')) throw new Error('provider_invalid_response');
   if (remote.payment_id && remote.payment_id !== local.providerId) throw new Error('payment_mismatch');
-  if (remote.amount && (remote.amount.value !== local.amount || remote.amount.currency !== local.currency)) throw new Error('payment_mismatch');
+  if (remote.amount && (remote.amount.value !== calc.amount || remote.amount.currency !== local.currency)) throw new Error('payment_mismatch');
   return store.transaction(() => {
     const current = store.paymentByProviderId(local.providerId!);
     if (!current) throw new Error('payment_not_found');

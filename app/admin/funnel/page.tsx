@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import FunnelReport from '@/components/FunnelReport.tsx';
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 export default function AdminFunnelPage() {
   return (
     <main className="page funnel-page">
+      <p className="muted small"><Link href="/admin">← Панель управления и исследования</Link></p>
       <h1>Воронка запуска</h1>
       <p className="muted">
         Шесть шагов от согласия до оплаты. Считаются уникальные взрослые, а не дети: платит взрослый.

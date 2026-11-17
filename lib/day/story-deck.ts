@@ -114,6 +114,66 @@ export const DAY_STORY_CARDS: readonly StoryCard[] = [
   { id: 'day_15_not_judge', dayIndex: 14, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_not_judge', repeatable: true },
   { id: 'day_52_combine_ideas', dayIndex: 51, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
 ];
+
+/**
+ * Расширенная колода для полного дневного пути (`journey: true`, дни 1–60):
+ * дополняет все дни со 2-го по 60-й, где было две карточки, третьей карточкой
+ * той же недели/темы, чтобы в каждом из 60 дней у ребёнка был выбор из 3 историй,
+ * а ранее непройденные сюжеты поднимались наверх колоды.
+ */
+const THIRD_CHOICE_CARDS: readonly StoryCard[] = [
+  { id: 'day_4_choice3', dayIndex: 3, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_name_feelings', repeatable: true },
+  { id: 'day_6_choice3', dayIndex: 5, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk2_wait_turn', repeatable: true },
+  { id: 'day_11_choice3', dayIndex: 10, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_comfort_other', repeatable: true },
+  { id: 'day_16_choice3', dayIndex: 15, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_take_role', repeatable: true },
+  { id: 'day_19_choice3', dayIndex: 18, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk3_support_group', repeatable: true },
+  { id: 'day_20_choice3', dayIndex: 19, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w4d2_banner', repeatable: true },
+  // Неделя 5 (дни 21–25)
+  { id: 'day_21_choice3', dayIndex: 20, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w5d2_materials', repeatable: true },
+  { id: 'day_22_choice3', dayIndex: 21, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w5d3_scarf', repeatable: true },
+  { id: 'day_23_choice3', dayIndex: 22, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w5d4_festival', repeatable: true },
+  { id: 'day_24_choice3', dayIndex: 23, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w5d5_choice', repeatable: true },
+  { id: 'day_25_choice3', dayIndex: 24, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w5d1_crafts', repeatable: true },
+  // Неделя 6 (дни 26–30)
+  { id: 'day_26_choice3', dayIndex: 25, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d2_tempo', repeatable: true },
+  { id: 'day_27_choice3', dayIndex: 26, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d3_pause', repeatable: true },
+  { id: 'day_28_choice3', dayIndex: 27, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d4_example', repeatable: true },
+  { id: 'day_29_choice3', dayIndex: 28, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d5_design', repeatable: true },
+  { id: 'day_30_choice3', dayIndex: 29, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w6d1_map', repeatable: true },
+  // Неделя 7 (дни 31–35)
+  { id: 'day_31_choice3', dayIndex: 30, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d2_remember', repeatable: true },
+  { id: 'day_32_choice3', dayIndex: 31, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d3_switch', repeatable: true },
+  { id: 'day_33_choice3', dayIndex: 32, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d4_note', repeatable: true },
+  { id: 'day_34_choice3', dayIndex: 33, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d5_check', repeatable: true },
+  { id: 'day_35_choice3', dayIndex: 34, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w7d1_space', repeatable: true },
+  // Неделя 8 (дни 36–40)
+  { id: 'day_36_choice3', dayIndex: 35, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d2_path', repeatable: true },
+  { id: 'day_37_choice3', dayIndex: 36, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d3_step', repeatable: true },
+  { id: 'day_38_choice3', dayIndex: 37, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d4_tell', repeatable: true },
+  { id: 'day_39_choice3', dayIndex: 38, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d5_gallery', repeatable: true },
+  { id: 'day_40_choice3', dayIndex: 39, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w8d1_supplies', repeatable: true },
+  // Неделя 9 (дни 41–45)
+  { id: 'day_41_choice3', dayIndex: 40, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w9d2_weather', repeatable: true },
+  { id: 'day_42_choice3', dayIndex: 41, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w9d3_roles', repeatable: true },
+  { id: 'day_43_choice3', dayIndex: 42, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w9d4_signal', repeatable: true },
+  { id: 'day_44_choice3', dayIndex: 43, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w9d5_plan', repeatable: true },
+  { id: 'day_45_choice3', dayIndex: 44, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w9d1_rules', repeatable: true },
+  // Неделя 10 (дни 46, 50)
+  { id: 'day_46_choice3', dayIndex: 45, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_order_steps', repeatable: true },
+  { id: 'day_50_choice3', dayIndex: 49, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk4_rebuild_plan', repeatable: true },
+  // Неделя 11 (дни 51, 54, 55)
+  { id: 'day_51_choice3', dayIndex: 50, bands: ['5-7', '8-10', '11-13'], scenarioId: 'sk_combine_ideas', repeatable: true },
+  { id: 'day_54_choice3', dayIndex: 53, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w11d5_shapes', repeatable: true },
+  { id: 'day_55_choice3', dayIndex: 54, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w11d1_cloud', repeatable: true },
+  // Неделя 12 (дни 56–60)
+  { id: 'day_56_choice3', dayIndex: 55, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d2_comment', repeatable: true },
+  { id: 'day_57_choice3', dayIndex: 56, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d3_new', repeatable: true },
+  { id: 'day_58_choice3', dayIndex: 57, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d4_offer', repeatable: true },
+  { id: 'day_59_choice3', dayIndex: 58, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d5_finish', repeatable: true },
+  { id: 'day_60_choice3', dayIndex: 59, bands: ['5-7', '8-10', '11-13'], scenarioId: 'w12d1_invite', repeatable: true },
+];
+
+export const JOURNEY_STORY_CARDS: readonly StoryCard[] = [...DAY_STORY_CARDS, ...THIRD_CHOICE_CARDS];
 const bands: readonly AgeBand[] = ['5-7', '8-10', '11-13'];
 const idPattern = /^[a-zA-Z0-9_-]{1,80}$/;
 
@@ -151,7 +211,12 @@ export function selectStoryCards(dayIndex: number, band: AgeBand, seen: readonly
   }
   const seenSet = new Set(seen);
   return [fallback, ...extra].filter(c => c.dayIndex === dayIndex && c.bands.includes(band) && (c.repeatable || !seenSet.has(c.id)) && (c.requires ?? []).every(id => seenSet.has(id)) && qbnAllowsCard(c, dayIndex, band, seenSet))
-    .sort((a, b) => rank(seed, a.id) - rank(seed, b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .sort((a, b) => {
+      const aSeen = (seenSet.has(a.id) || seenSet.has(a.scenarioId)) ? 1 : 0;
+      const bSeen = (seenSet.has(b.id) || seenSet.has(b.scenarioId)) ? 1 : 0;
+      if (aSeen !== bSeen) return aSeen - bSeen;
+      return rank(seed, a.id) - rank(seed, b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    })
     .slice(0, 3)
     .map(c => {
       const scenario = ALL_STORY_SCENARIOS[c.scenarioId];

@@ -22,9 +22,9 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 
-/** Размер общей области ответа: строка состояния (16 байт) + JSON. */
+/** Размер общей области ответа: строка состояния (16 байт) + JSON (по умолчанию 64 МБ, настраивается через GIB_PG_BUFFER_MB). */
 const CONTROL_BYTES = 16;
-const DEFAULT_BODY_BYTES = 16 * 1024 * 1024;
+const DEFAULT_BODY_BYTES = Math.max(16, Number(process.env.GIB_PG_BUFFER_MB) || 64) * 1024 * 1024;
 
 /**
  * Путь к файлу потока базы.

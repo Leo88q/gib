@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { LEGAL_DOCUMENTS, OPERATOR, legalMissing, legalReady } from '@/lib/legal/documents';
+import { LEGAL_DOCUMENTS, legalMissing, legalReady, resolveOperator } from '@/lib/legal/documents';
 
 export const metadata: Metadata = {
   title: 'Документы — ГИБ',
@@ -16,7 +16,8 @@ export const metadata: Metadata = {
  * блоком «чего не хватает», а не пустым местом, которое читается как согласие.
  */
 export default function LegalIndexPage() {
-  const ready = legalReady();
+  const operator = resolveOperator();
+  const ready = legalReady(operator);
   return (
     <main className="page legal-page">
       <h1>Документы</h1>
@@ -33,14 +34,18 @@ export default function LegalIndexPage() {
           </li>
         ))}
       </ul>
+      <p>
+        <Link href="/legal/cookies">Куки и локальное хранение</Link> ·{' '}
+        <Link href="/licenses">Лицензии и открытые компоненты</Link>
+      </p>
       <section className="legal-operator">
         <h2>Кто отвечает за данные</h2>
         {ready ? (
           <>
-            <p>{OPERATOR.name}</p>
-            <p className="muted small">{OPERATOR.registration}</p>
-            <p className="muted small">{OPERATOR.address}</p>
-            <p className="muted small">{OPERATOR.email}</p>
+            <p>{operator.name}</p>
+            <p className="muted small">{operator.registration}</p>
+            <p className="muted small">{operator.address}</p>
+            <p className="muted small">{operator.email}</p>
           </>
         ) : (
           <>
@@ -49,7 +54,7 @@ export default function LegalIndexPage() {
               за обработку данных, — значит, и согласие по ним давать рано.
             </p>
             <ul className="muted small">
-              {legalMissing().map((item) => <li key={item}>не заполнено: {item}</li>)}
+              {legalMissing(operator).map((item) => <li key={item}>не заполнено: {item}</li>)}
             </ul>
           </>
         )}

@@ -2,8 +2,31 @@
 
 import type { ReactNode } from 'react';
 import { exercisePanelTitle, type TaskKind } from '@/lib/exercise/mechanics';
+import { itemArt } from '@/lib/design/tokens';
 import type { AgeBand } from '@/lib/types';
 import ReadAloud from './ReadAloud';
+
+function exerciseItemArt(kind: TaskKind): string {
+  switch (kind) {
+    case 'cards':
+    case 'switch-rounds':
+      return itemArt('cards');
+    case 'memory':
+    case 'symbol-memory':
+    case 'digits':
+      return itemArt('notebook');
+    case 'gonogo':
+      return itemArt('hourglass');
+    case 'order':
+      return itemArt('block');
+    case 'social-practice':
+      return itemArt('bubble');
+    case 'finddiff':
+    case 'choice':
+    default:
+      return itemArt('shapes');
+  }
+}
 
 /**
  * Окно упражнения: заголовок, инструкция по возрасту, озвучивание и отмена.
@@ -38,6 +61,7 @@ export default function ExerciseFrame({
     <section className={`exercise-window band-${band}`} aria-label={title}>
       <div className="exercise-window-top">
         <span className="exercise-window-glyph" aria-hidden="true">✦</span>
+        <img className="exercise-item-art" src={exerciseItemArt(kind)} alt="" width={36} height={36} decoding="async" />
         <h3 className="exercise-window-title">{title}</h3>
         <span className="exercise-window-glyph" aria-hidden="true">✦</span>
       </div>

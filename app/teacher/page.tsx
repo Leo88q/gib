@@ -29,7 +29,7 @@ export default function TeacherPage() {
       */}
       <p className="muted small">
         Для завуча и директора: <Link href="/school">что получает школа</Link> — те же числа, что
-        в плане встречи.
+        в плане встречи. Навигация: <Link href="/parent">кабинет родителя</Link> · <Link href="/">к тренажёру</Link>.
       </p>
       <TeacherCabinet />
     </main>

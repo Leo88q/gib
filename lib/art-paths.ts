@@ -14,6 +14,7 @@
  *  - неизвестный идентификатор уходит на безопасный дефолт, а не в 404.
  */
 import { creatureArt, placeForCompetency, DEFAULT_CREATURE_ART, DEFAULT_PLACE_ART } from './design/tokens.ts';
+import { petStage } from './pet-mood.ts';
 
 /** Навык программы → существо навыка. `working_memory` — это «память». */
 const SKILL_CREATURE: Record<string, string> = {
@@ -40,6 +41,9 @@ export const DEFAULT_ART = DEFAULT_CREATURE_ART;
 
 /** Дефолтная сцена — дом: место, с которого начинается район. */
 export const DEFAULT_PLACE = DEFAULT_PLACE_ART;
+
+/** Панорамная иллюстрация карты практики v2. */
+export const MAP_BANNER_ART = '/art/v2/places/map.png';
 
 /** Проводник по возрастной линейке: 5–7 Лис, 8–10 Мира, 11–13 Тима. */
 export function heroArt(band: string): string {
@@ -81,3 +85,12 @@ export function weekArt(week: number, competency: string): string {
   if (Number.isInteger(week) && week >= 1 && week <= 12) return placeForCompetency(competency);
   return competencyArt(competency);
 }
+
+/** 3D-иллюстрация питомца с учётом трёх возрастных стадий роста (уровни 1–2, 3–5, 6+). */
+export function petStageArt(level = 1): string {
+  const stage = petStage(level);
+  if (stage === 1) return '/art/v2/creatures/pet-teen.png';
+  if (stage === 2) return '/art/v2/creatures/pet-adult.png';
+  return creatureArt('pet');
+}
+

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/telegramClient';
 
-type Status = { configured: boolean; locked: boolean; retryAfterMs: number; minLength: number; maxLength: number; attempts: number; lockMs: number; sessionMs: number };
+type Status = { configured: boolean; verified?: boolean; locked: boolean; retryAfterMs: number; minLength: number; maxLength: number; attempts: number; lockMs: number; sessionMs: number };
 
 const SESSION_KEY = 'gib:parentUnlockedUntil';
 
@@ -16,9 +16,9 @@ function sessionValid(): boolean {
 /**
  * Ворота кабинета: если взрослый задал PIN, вход требует его.
  *
- * Без PIN кабинет открыт как раньше — это обратная совместимость и демо.
- * PIN не заменяет настоящую аутентификацию: он защищает от случайного входа
- * ребёнка на телефоне, который лежит рядом.
+ * На живом сервере сессия подтверждается через подписанную HttpOnly-cookie
+ * (`gib_parent_gate` → `status.verified`), поэтому подделка `localStorage`
+ * не открывает ворота.
  */
 export default function ParentGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status | null>(null);
@@ -29,14 +29,18 @@ export default function ParentGate({ children }: { children: React.ReactNode }) 
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    setUnlocked(sessionValid());
     const controller = new AbortController();
     void (async () => {
       try {
         const res = await apiFetch('/api/parent-pin', { signal: controller.signal });
         if (!res.ok) return;
-        const data = await res.json();
-        if (!controller.signal.aborted) setStatus(data);
+        const data = (await res.json()) as Status;
+        if (!controller.signal.aborted) {
+          setStatus(data);
+          if (!data.configured) setUnlocked(true);
+          else if (typeof data.verified === 'boolean') setUnlocked(data.verified);
+          else setUnlocked(sessionValid());
+        }
       } catch { /* без PIN-сервиса кабинет работает как раньше */ }
     })();
     return () => controller.abort();

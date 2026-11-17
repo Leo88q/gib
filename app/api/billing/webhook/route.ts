@@ -4,6 +4,7 @@ import { billingConfig, reconcilePayment, reconcileRefund } from '@/lib/billing'
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { recordFunnel } from '@/lib/events/funnel-store';
 import { store } from '@/lib/store';
+import { deliverToParent } from '@/lib/bots/messenger';
 
 export const dynamic = 'force-dynamic';
 const EVENTS = ['payment.succeeded', 'payment.canceled', 'refund.succeeded'];
@@ -31,14 +32,37 @@ export async function POST(req: Request) {
   if (!body || !EVENTS.includes(String(body.event)) || typeof body.object?.id !== 'string') return NextResponse.json({ error: 'invalid_event' }, { status: 400 });
   try {
     if (body.event === 'refund.succeeded') {
-      await reconcileRefund(body.object.id, config);
+      const beforeRefund = store.allPayments().find(p => p.providerRefundId === body.object!.id);
+      const wasRefunded = beforeRefund?.status === 'refunded';
+      const refunded = await reconcileRefund(body.object.id, config);
+      if (!wasRefunded && refunded.status === 'refunded') {
+        const profile = store.profile(refunded.profileId);
+        if (profile) {
+          void deliverToParent(
+            profile.parentId,
+            `Возврат оплаты подтверждён платёжным сервисом (профиль «${profile.name}»). Деньги зачислятся на карту, с которой проводилась оплата.`,
+            { subject: 'Город историй — возврат подтверждён' },
+          ).catch(() => {});
+        }
+      }
       return NextResponse.json({ ok: true });
     }
+    const beforePay = store.paymentByProviderId(body.object.id);
+    const wasPaid = beforePay?.status === 'succeeded';
     const payment = await reconcilePayment(body.object.id, config);
     // Оплата, подтверждённая провайдером, — единственный источник шага «оплачено».
     if (body.event === 'payment.succeeded' && payment.status === 'succeeded') {
       const profile = store.profile(payment.profileId);
-      if (profile) recordFunnel({ step: 'paid', ownerId: profile.parentId, at: payment.appliedAt ?? Date.now() });
+      if (profile) {
+        recordFunnel({ step: 'paid', ownerId: profile.parentId, at: payment.appliedAt ?? Date.now() });
+        if (!wasPaid) {
+          void deliverToParent(
+            profile.parentId,
+            `Оплата ${payment.amount} ₽ подтверждена! Доступ к программе для «${profile.name}» открыт на ${payment.days || 30} дней без автопродления.`,
+            { subject: 'Город историй — доступ открыт' },
+          ).catch(() => {});
+        }
+      }
     }
     return NextResponse.json({ ok: true });
   } catch (error) {

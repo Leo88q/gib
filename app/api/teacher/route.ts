@@ -3,7 +3,7 @@ import { requestParent } from '@/lib/auth';
 import { clientKey, rateLimit } from '@/lib/ratelimit';
 import { store } from '@/lib/store';
 import { YEAR } from '@/lib/content/year/index.ts';
-import { attendanceSummary, nextLesson, markShowcase, showcaseSummary, SHOWCASE_ANCHORS, type ShowcaseLevel } from '@/lib/year/lessons.ts';
+import { attendanceSummary, buildSchedule, nextLesson, markShowcase, showcaseSummary, SHOWCASE_ANCHORS, type ScheduledLesson, type ShowcaseLevel } from '@/lib/year/lessons.ts';
 import { groupStudents, teacherCanMark, type Membership, type Store as AccessStore } from '@/lib/teacher/access.ts';
 import { newJoinCode, normalizeJoinCode } from '@/lib/teacher/invites.ts';
 import { MEETING_MINUTES, meetingPlan } from '@/lib/year/meeting.ts';
@@ -52,9 +52,19 @@ function accessStore(): AccessStore {
   };
 }
 
+/** Гарантирует созданное годовое расписание 36 встреч даже если родитель ещё не открывал кабинет. */
+function ensureSchedule(profileId: string): ScheduledLesson[] {
+  const state = store.programState(profileId);
+  if (state.lessons?.length) return state.lessons;
+  const startIso = new Date(state.startedAt).toISOString().slice(0, 10);
+  const schedule = buildSchedule(YEAR, startIso);
+  store.setProgramState({ ...state, lessons: schedule });
+  return schedule;
+}
+
 /** Отметки ребёнка: только три счётчика, без содержимого. */
 function marksOf(profileId: string) {
-  const schedule = store.programState(profileId)?.lessons ?? [];
+  const schedule = ensureSchedule(profileId);
   const today = new Date().toISOString().slice(0, 10);
   const summary = attendanceSummary(schedule, today);
   // Показы считаются по шкале выхода, а не по посещению: ребёнок мог прийти,
@@ -73,7 +83,7 @@ function nextLessonNumber(groupId: string | undefined): number | null {
   if (!groupId) return null;
   const membership = store.memberships().find((row) => row.groupId === groupId);
   if (!membership) return null;
-  const schedule = store.programState(membership.profileId)?.lessons ?? [];
+  const schedule = ensureSchedule(membership.profileId);
   const today = new Date().toISOString().slice(0, 10);
   const next = nextLesson(schedule, today);
   return next?.lesson ?? null;
@@ -86,10 +96,30 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'too_many_requests' }, { status: 429 });
   }
 
-  const groups = store.groupsByTeacher(parentId);
-  const storeValue = accessStore();
+  const profileIdParam = new URL(req.url).searchParams.get('profileId');
+  if (profileIdParam) {
+    return store.transaction(() => {
+      const profile = store.profile(profileIdParam);
+      if (!profile || profile.parentId !== parentId) {
+        return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+      }
+      const memberships = store
+        .memberships()
+        .filter((row) => row.profileId === profileIdParam)
+        .map((row) => {
+          const group = store.group(row.groupId);
+          return group ? { groupId: group.id, name: group.name, year: group.year, joinedAt: row.joinedAt } : null;
+        })
+        .filter((item): item is { groupId: string; name: string; year: number; joinedAt: number } => item !== null);
+      return NextResponse.json({ memberships });
+    });
+  }
 
-  return NextResponse.json({
+  return store.transaction(() => {
+    const groups = store.groupsByTeacher(parentId);
+    const storeValue = accessStore();
+
+    return NextResponse.json({
     // Педагог без групп видит пустой список, а не ошибку: он может быть
     // родителем, который ещё не создал группу.
     groups: groups.map((group) => ({
@@ -104,7 +134,7 @@ export async function GET(req: Request) {
        * разговор, а не уговоры». Без этого шкала фиксирует факт и не помогает.
        */
       students: groupStudents(storeValue, parentId, group.id, marksOf).map((student) => {
-        const schedule = store.programState(student.profileId)?.lessons ?? [];
+        const schedule = ensureSchedule(student.profileId);
         const showcaseLevels = schedule
           .filter((entry) => YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.isShowcase)
           .map((entry) => entry.showcase);
@@ -165,6 +195,7 @@ export async function GET(req: Request) {
       next: nextLessonNumber(groups[0]?.id),
       lessons: YEAR.lessons.map((lesson) => meetingPlan(lesson)),
     },
+    });
   });
 }
 
@@ -211,8 +242,8 @@ function markLesson(parentId: string, profileId: unknown, lesson: unknown, atten
       return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
     }
 
+    const schedule = ensureSchedule(profileId);
     const state = store.programState(profileId);
-    const schedule = state.lessons ?? [];
     const index = schedule.findIndex((entry) => entry.lesson === lesson);
     if (index === -1) return NextResponse.json({ error: 'lesson_not_found' }, { status: 404 });
 
@@ -253,10 +284,11 @@ function markShowcaseRoute(parentId: string, profileId: unknown, lesson: unknown
     if (!teacherCanMark(accessStore(), parentId, profileId)) {
       return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
     }
+    const schedule = ensureSchedule(profileId);
     const state = store.programState(profileId);
     let updated;
     try {
-      updated = markShowcase(state.lessons ?? [], YEAR, lesson, level as ShowcaseLevel);
+      updated = markShowcase(schedule, YEAR, lesson, level as ShowcaseLevel);
     } catch (error) {
       // «Не показ» и «нет такого занятия» — разные ошибки, и педагогу нужно
       // понимать, какая из них: вторая значит, что он открыл не то занятие.
@@ -297,10 +329,11 @@ function joinGroup(parentId: string, code: unknown, profileId: unknown) {
 
     const membership: Membership = { groupId: group.id, profileId, joinedAt: Date.now() };
     store.addMembership(membership);
+    ensureSchedule(profileId);
 
     // Родителю — минимум: название группы и год. Других детей в группе он не
     // видит: знать, кто ещё ходит, — это уже про чужих детей.
-    return NextResponse.json({ joined: true, group: { name: group.name, year: group.year } });
+    return NextResponse.json({ joined: true, group: { groupId: group.id, name: group.name, year: group.year } });
   });
 }
 

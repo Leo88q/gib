@@ -44,6 +44,25 @@ export type GuardianConsent = {
   at: number;
 };
 
+/**
+ * Отдельное согласие законного представителя на видеофиксацию очного показа
+ * для двойного независимого кодирования в исследовательском контуре ВУЗа.
+ * Не связано с основным согласием на работу приложения и может быть отозвано
+ * в любой момент без влияния на занятия ребёнка.
+ */
+export type VideoConsentRecord = {
+  granted: boolean;
+  version: string;
+  updatedAt: number;
+  revokedAt?: number;
+};
+
+export type LessonReminderState = {
+  enabled: boolean;
+  lastRemindedLesson: number | null;
+  lastRemindedAt: number | null;
+};
+
 export type Profile = {
   id: string;
   parentId: string;
@@ -71,6 +90,8 @@ export type Profile = {
    * как часть профиля, наружу не отдаётся (`publicProfile` его не включает).
    */
   householdAdult?: HouseholdAdult;
+  /** Отдельное согласие на съёмку показов для исследования (по умолчанию нет). */
+  videoConsent?: VideoConsentRecord;
 };
 
 export type SkillState = {
@@ -153,6 +174,8 @@ export type ProgramState = {
    * должны получать пустое расписание, которого у них никогда не было.
    */
   lessons?: import('../lib/year/lessons.ts').ScheduledLesson[];
+  /** Напоминание взрослому за сутки до очной встречи по расписанию. */
+  lessonReminder?: LessonReminderState;
 };
 
 /* ------------------------- игровое состояние ребёнка ------------------------- */

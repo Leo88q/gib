@@ -16,10 +16,13 @@
 import { isDeepStrictEqual } from 'node:util';
 import type { Payment, PlayerState, Profile, ProgramState, Session, SkillState, Subscription } from '../types.ts';
 import type { StoredEvent } from '../events/journal.ts';
+import type { Group, Membership } from '../teacher/access.ts';
+import { EXTRA_STATE_SCHEMA } from './schema.ts';
 import { PgBridge as PgBridgeClass, pgBridge, type PgBridge, type PgRow } from './bridge.ts';
 
 export type StateShape = {
   profiles: Profile[];
+  groups: Group[];
   skills: (SkillState & { profileId: string })[];
   sessions: Session[];
   subs: Subscription[];
@@ -27,6 +30,7 @@ export type StateShape = {
   playerStates: PlayerState[];
   payments: Payment[];
   events: StoredEvent[];
+  memberships: Membership[];
   parentPins: { parentId: string; pin: unknown }[];
   familySettings: { parentId: string; goalTarget: number }[];
   notificationSettings: { parentId: string; settings: unknown }[];
@@ -56,7 +60,13 @@ const TABLES: Record<CollectionKey, TableSpec> = {
     table: 'profiles',
     key: row => [row.id],
     keyColumns: ['id'],
-    columns: row => ({ id: row.id, parent_id: row.parentId, age: row.age, band: row.band, created_at: row.createdAt }),
+    columns: row => ({ id: row.id, parent_id: row.parentId, age: row.age, band: row.band, created_at: row.createdAt, meeting_lead: row.meetingLead ?? null, household_adult: row.householdAdult ?? null }),
+  },
+  groups: {
+    table: 'groups',
+    key: row => [row.id],
+    keyColumns: ['id'],
+    columns: row => ({ id: row.id, teacher_id: row.teacherId, name: row.name, year: row.year, join_code: row.joinCode }),
   },
   skills: {
     table: 'skills',
@@ -92,13 +102,30 @@ const TABLES: Record<CollectionKey, TableSpec> = {
     table: 'payments',
     key: row => [row.id],
     keyColumns: ['id'],
-    columns: row => ({ id: row.id, profile_id: row.profileId, provider_id: row.providerId ?? null, status: row.status }),
+    columns: row => ({
+      id: row.id,
+      profile_id: row.profileId,
+      provider_id: row.providerId ?? null,
+      status: row.status,
+      applied_at: row.appliedAt ?? null,
+      canceled_at: row.canceledAt ?? null,
+      refunded_at: row.refundedAt ?? null,
+      provider_refund_id: row.providerRefundId ?? null,
+      receipt_email: row.receiptEmail ?? null,
+      offer_version: row.offerVersion ?? null,
+    }),
   },
   events: {
     table: 'events',
     key: row => [row.id],
     keyColumns: ['id'],
     columns: row => ({ id: row.id, profile_id: row.profileId, owner_id: row.ownerId, at: row.at, dedupe_key: row.dedupeKey }),
+  },
+  memberships: {
+    table: 'memberships',
+    key: row => [row.groupId, row.profileId],
+    keyColumns: ['group_id', 'profile_id'],
+    columns: row => ({ group_id: row.groupId, profile_id: row.profileId, joined_at: row.joinedAt }),
   },
   parentPins: {
     table: 'parent_pins',
@@ -161,6 +188,8 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
   assertSchemaName(schema);
   let written = 0;
   let deleted = 0;
+
+  // 1. Вставки и обновления — в прямом порядке зависимостей (сначала profiles и groups, затем дочерние таблицы).
   for (const name of STATE_KEYS) {
     const spec = TABLES[name];
     const previous = new Map(((before as unknown as Record<string, Record<string, unknown>[]>)[name] ?? []).map(row => [keyOf(spec, row), row]));
@@ -173,11 +202,6 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
       const cols = spec.columns(row);
       const names = Object.keys(cols);
       if (old) {
-        // Обновление: ordinal не трогаем, он держит порядок чтения.
-        //
-        // `data` пишется ВСЕГДА. Раньше обновление пропускалось, если у таблицы
-        // все колонки — первичный ключ (например `player_states`): тогда
-        // изменения не попадали в базу вовсе. Это ловит тест флоу.
         const extra = names.filter(c => !spec.keyColumns.includes(c));
         const values = extra.map(c => cols[c]);
         const sets = extra.map((c, i) => `${c} = $${i + 1}`);
@@ -195,11 +219,44 @@ export function writeState(bridge: PgBridge, before: StateShape, after: StateSha
       }
       written++;
     }
+  }
 
-    // Удаления: ключи, которых больше нет. Только по существующим первичным ключам.
+  // Проверяем наличие обезличенного бухгалтерского реестра для архивации оплат при удалении профиля (402-ФЗ / 152-ФЗ).
+  const hasLedger =
+    bridge.query(
+      "SELECT 1 FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'payment_ledger'",
+      [schema],
+    ).length > 0;
+
+  // 2. Удаления — в обратном порядке зависимостей (сначала дочерние записи и платежи, в конце groups и profiles).
+  for (const name of [...STATE_KEYS].reverse()) {
+    const spec = TABLES[name];
+    const previous = new Map(((before as unknown as Record<string, Record<string, unknown>[]>)[name] ?? []).map(row => [keyOf(spec, row), row]));
+    const next = ((after as unknown as Record<string, Record<string, unknown>[]>)[name] ?? []);
     const nextKeys = new Set(next.map(row => keyOf(spec, row)));
     for (const [key, row] of previous) {
       if (nextKeys.has(key)) continue;
+      if (name === 'payments' && hasLedger && (row.status === 'succeeded' || row.status === 'refunded')) {
+        bridge.query(
+          `INSERT INTO ${schema}.payment_ledger
+            (payment_id, amount, currency, status, created_at, applied_at, refunded_at, offer_version, archived_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (payment_id) DO UPDATE SET
+             status = EXCLUDED.status,
+             refunded_at = COALESCE(EXCLUDED.refunded_at, ${schema}.payment_ledger.refunded_at)`,
+          [
+            String(row.id),
+            String(row.amount ?? '0.00'),
+            String(row.currency ?? 'RUB'),
+            String(row.status),
+            Number(row.createdAt ?? 0),
+            row.appliedAt != null ? Number(row.appliedAt) : null,
+            row.refundedAt != null ? Number(row.refundedAt) : null,
+            row.offerVersion != null ? String(row.offerVersion) : null,
+            Date.now(),
+          ],
+        );
+      }
       const cols = spec.columns(row);
       const where = spec.keyColumns.map((c, i) => `${c} = $${i + 1}`).join(' AND ');
       bridge.query(`DELETE FROM ${schema}.${spec.table} WHERE ${where}`, spec.keyColumns.map(c => cols[c]));
@@ -267,6 +324,7 @@ export function ensureSchemaSync(bridge: PgBridge, schema: { v1: string; v2: str
     } else if (version !== 3) {
       throw new Error('Unsupported PostgreSQL schema version: ' + version);
     }
+    for (const statement of statements(EXTRA_STATE_SCHEMA)) bridge.exec(statement);
     bridge.exec('COMMIT');
   } catch (error) {
     try {

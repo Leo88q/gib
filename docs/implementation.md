@@ -16,7 +16,7 @@ npm run typecheck
 
 Полноценная игровая механика вместо «текста с кнопками»: XP и 8 уровней, комбо, звёзды за день, 3 миссии дня, 25 значков, комната в SVG, растущий питомец, гардероб за игровые монетки, испытание района в 5-й день недели, звук на WebAudio, конфетти. Подробно — в [`game-design.md`](game-design.md).
 
-Модули: `lib/gamification.ts` (уровни, миссии, значки, гардероб), `lib/engine/rewards.ts` (начисление), `app/api/player/route.ts` (состояние, покупки, миссии), `components/avatarParts.tsx`, `components/Pet.tsx`, `components/Room.tsx`.
+Модули: `lib/gamification.ts` (уровни, миссии, значки, гардероб), `lib/engine/rewards.ts` (начисление), `app/api/player/route.ts` (состояние, покупки, миссии), `components/Shop.tsx`, `components/Pet.tsx`, `components/Room.tsx`.
 
 ## Программа
 

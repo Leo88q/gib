@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { PracticeTopic } from '@/lib/engine/practice-map';
 import type { CompetencyProgress } from '@/lib/engine/skill-map';
 import type { ActivityDay } from '@/lib/engine/activity-history';
-import { competencyArt, DEFAULT_ART } from '@/lib/art-paths';
+import { competencyArt, DEFAULT_ART, MAP_BANNER_ART } from '@/lib/art-paths';
 import { apiFetch } from '@/lib/telegramClient';
 
 /** Only displays aggregate game participation, never scores or answers. */
@@ -35,6 +35,7 @@ export default function PracticeMap({ profileId }: { profileId: string }) {
     return () => controller.abort();
   }, [profileId, retry]);
   return <section className="panel practice-map" aria-label="Карта практики">
+    <img className="practice-map-banner" src={MAP_BANNER_ART} alt="" loading="lazy" decoding="async" />
     <h2>🗺️ Карта практики</h2>
     <p>Здесь отмечены темы завершённых историй и упражнений. Это не оценка тебя или твоих качеств. Повторы тоже учитываются.</p>
     {error ? <p role="alert">Не удалось загрузить карту. <button className="btn ghost" type="button" onClick={() => setRetry(n => n + 1)}>Попробовать ещё</button></p> : !topics ? <p role="status">Загружаем карту…</p> : <div className="practice-map-grid">

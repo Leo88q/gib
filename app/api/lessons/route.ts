@@ -8,11 +8,13 @@ import { alignYear } from '@/lib/year/fgos.ts';
 import { lessonPage } from '@/lib/year/valued.ts';
 import { meetingPlan } from '@/lib/year/meeting.ts';
 import { entitlementFor, mayStartLesson } from '@/lib/access/entitlement.ts';
+import { teacherCanMark } from '@/lib/teacher/access.ts';
 import {
   attendanceSummary,
   buildSchedule,
   lessonToShow,
   markAttendance,
+  nextLesson,
   type ScheduledLesson,
 } from '@/lib/year/lessons.ts';
 
@@ -66,7 +68,33 @@ export async function GET(req: Request) {
 
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, profileId);
-    if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    if (!profile) {
+      const canTeacherRead = teacherCanMark(
+        { groups: store.groups(), memberships: store.memberships(), profiles: store.profiles() },
+        auth.parentId,
+        profileId,
+      );
+      if (!canTeacherRead) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+      const targetProfile = store.profile(profileId);
+      if (!targetProfile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+      const teacherState = store.programState(targetProfile.id);
+      const teacherSchedule = scheduleOf(targetProfile.id, teacherState.startedAt);
+      const today = new Date().toISOString().slice(0, 10);
+      const upcoming = nextLesson(teacherSchedule, today);
+      return NextResponse.json({
+        lessons: teacherSchedule.map((entry) => ({
+          lesson: entry.lesson,
+          date: entry.date,
+          attended: entry.attended ?? null,
+          unit: YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.unit ?? null,
+          title: YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.title ?? '',
+          isShowcase: YEAR.lessons.find((lesson) => lesson.number === entry.lesson)?.isShowcase ?? false,
+        })),
+        attendance: attendanceSummary(teacherSchedule, today),
+        next: upcoming ? { lesson: upcoming.lesson, date: upcoming.date, attended: upcoming.attended ?? null } : null,
+        total: YEAR.total,
+      });
+    }
 
     const state = store.programState(profile.id);
     const schedule = scheduleOf(profile.id, state.startedAt);
@@ -149,6 +177,12 @@ export async function GET(req: Request) {
           noticeAtHome: page.noticeAtHome,
         };
       })(),
+      managedByGroup: store.memberships().some((m) => m.profileId === profile.id),
+      groupInfo: (() => {
+        const membership = store.memberships().find((m) => m.profileId === profile.id);
+        const group = membership ? store.group(membership.groupId) : undefined;
+        return group ? { id: group.id, name: group.name, year: group.year } : null;
+      })(),
       total: YEAR.total,
     });
   });
@@ -192,6 +226,9 @@ export async function POST(req: Request) {
   return store.transaction(() => {
     const profile = ownedProfile(auth.parentId, profileId);
     if (!profile) return NextResponse.json({ error: 'profile_not_found' }, { status: 404 });
+    if (store.memberships().some((m) => m.profileId === profile.id)) {
+      return NextResponse.json({ error: 'group_managed_by_teacher' }, { status: 403 });
+    }
 
     const state = store.programState(profile.id);
     const schedule = scheduleOf(profile.id, state.startedAt);
