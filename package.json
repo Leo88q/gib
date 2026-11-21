@@ -268,7 +268,8 @@
     "test:funnel-ui": "tsx scripts/test-funnel-ui.tsx",
     "test:launch-ui": "tsx scripts/test-launch-ui.tsx",
     "test:course-complete": "tsx scripts/test-course-complete.ts",
-    "test:design-tokens": "node --experimental-strip-types scripts/test-design-tokens.ts"
+    "test:design-tokens": "node --experimental-strip-types scripts/test-design-tokens.ts",
+    "test:cinema-manifest": "node --experimental-strip-types scripts/test-cinema-manifest.ts"
   },
   "dependencies": {
     "blockly": "^12.5.1",

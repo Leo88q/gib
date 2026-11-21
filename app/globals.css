@@ -3601,3 +3601,45 @@ label[for='receipt-email'] {
   .cookie-notice { flex-direction: column; align-items: stretch; }
   .cookie-notice .cookie-notice-actions { justify-content: flex-end; }
 }
+
+/* Кинематографичный режим: вертикальное ролик-вступление поверх сцены. */
+.cinema-intro {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #1d1526;
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 48px rgba(36, 29, 49, 0.28);
+}
+.cinema-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+}
+.cinema-skip {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  background: rgba(29, 21, 38, 0.72);
+  color: #fdf4e9;
+  border: 1px solid rgba(253, 244, 233, 0.35);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.cinema-skip:focus-visible { outline: 3px solid var(--orange, #f2a65a); outline-offset: 2px; }
+.cinema-blocked { padding: 28px 20px; display: grid; gap: 12px; text-align: center; color: #fdf4e9; }
+.cinema-blocked-text { margin: 0; font-size: 0.95rem; }
+.cinema-play, .cinema-skip-inline { justify-self: center; }
+@media (prefers-reduced-motion: reduce) {
+  .cinema-intro, .cinema-video { animation: none; transition: none; }
+}
