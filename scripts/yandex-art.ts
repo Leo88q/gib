@@ -125,7 +125,16 @@ const artDir = join(OUT_DIR, 'art');
 
 const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d+-\d+)\.ink$/;
 
+// deep/ и week-one/ содержат одни и те же 33 файла (одна история, один герой);
+// генерируем каждый уникальный объект один раз, иначе двойная трата на w1.
+const seenNames = new Set<string>();
 const scenes = walkInk()
+  .filter((file) => {
+    const name = basename(file);
+    if (seenNames.has(name)) return false;
+    seenNames.add(name);
+    return true;
+  })
   .map((file) => ({ file, match: AGE_BAND.exec(basename(file)) }))
   .filter((item): item is { file: string; match: RegExpExecArray } => Boolean(item.match))
   .filter((item) => !only || item.match[1].startsWith(only))

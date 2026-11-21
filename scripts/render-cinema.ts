@@ -28,6 +28,7 @@ const argv = process.argv.slice(2);
 const only = argValue(argv, 'only');
 const fps = Number(argValue(argv, 'fps') ?? '25');
 const fixedSeconds = Number(argValue(argv, 'seconds') ?? '0'); // 0 = по длине голоса + 0.6 c, минимум 5 c
+const forceRender = argv.includes('--force');
 const stillsDir = join(OUT_DIR, 'cinema', '_stills');
 const cinemaDir = join(OUT_DIR, 'cinema');
 const audioDir = join(OUT_DIR, 'audio', 'tts');
@@ -71,6 +72,11 @@ for (const still of plan) {
   const outDir = join(cinemaDir, scene, band);
   mkdirSync(outDir, { recursive: true });
   const out = join(outDir, 'intro.mp4');
+  if (!forceRender && existsSync(out) && statSync(out).size > 4096) {
+    console.log(`  skip ${scene}/${band} (уже есть; --force для пересборки)`);
+    done++;
+    continue;
+  }
 
   const utterance = utteranceByKey.get(`${scene}/${band}`);
   const mp3 = utterance ? join(audioDir, `${utteranceHash(utterance)}.mp3`) : null;
