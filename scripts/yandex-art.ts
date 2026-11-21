@@ -32,6 +32,7 @@ import {
 const argv = process.argv.slice(2);
 const yes = hasYesFlag(argv);
 const only = argValue(argv, 'only'); // например, w1
+const bandFilter = argValue(argv, 'band'); // например, 8-10 — только эта линейка
 const candidates = Number(argValue(argv, 'candidates') ?? '4');
 const limit = Number(argValue(argv, 'limit') ?? 'Infinity');
 const rate = Number(argValue(argv, 'rate') ?? '2.23'); // ₽ за изображение
@@ -56,7 +57,8 @@ const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d-\d+)\.ink$/;
 const scenes = walkInk()
   .map((file) => ({ file, match: AGE_BAND.exec(basename(file)) }))
   .filter((item): item is { file: string; match: RegExpExecArray } => Boolean(item.match))
-  .filter((item) => !only || item.match[1].startsWith(only));
+  .filter((item) => !only || item.match[1].startsWith(only))
+  .filter((item) => !bandFilter || item.match[2] === bandFilter);
 
 const plan = Number.isFinite(limit) ? scenes.slice(0, limit) : scenes;
 const total = plan.length * candidates;
@@ -64,7 +66,7 @@ const cost = total * rate;
 
 console.log('Alice AI ART — сухой расчёт');
 console.log(`  сцен к обработке: ${plan.length} (фильтр only=${only ?? 'все'})`);
-console.log(`  кандидатов на сцену: ${candidates} → генераций: ${total}`);
+console.log(`  кандидатов на сцену: ${candidates} → генераций: ${total}${bandFilter ? ` (линейка ${bandFilter})` : ''}`);
 console.log(`  оценочная стоимость: ${cost.toFixed(2)} ₽ (курс ${rate} ₽/изображение, модель ${model}, размер ${size})`);
 
 if (!yes) {
