@@ -27,7 +27,7 @@
  *  model = art://<folder>/aliceai-image-art-3.0/latest,
  *  base  = https://ai.api.cloud.yandex.net/v1.)
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
   apiKey, appendSpend, argValue, extractUtterances, folderId, hasYesFlag,
@@ -40,6 +40,7 @@ const only = argValue(argv, 'only'); // например, w1
 const bandFilter = argValue(argv, 'band'); // например, 8-10 — только эта линейка
 const candidates = Number(argValue(argv, 'candidates') ?? '4');
 const limit = Number(argValue(argv, 'limit') ?? 'Infinity');
+const force = argv.includes('--force');
 const rate = Number(argValue(argv, 'rate') ?? '2.23'); // ₽ за изображение
 const model = process.env.YANDEX_ART_MODEL ?? `art://${folderId()}/aliceai-image-art-3.0/latest`;
 const size = process.env.YANDEX_ART_SIZE ?? '1024x1024';
@@ -168,14 +169,18 @@ const key = apiKey();
 let generated = 0;
 let failed = 0;
 const jobs: { scene: string; band: string; candidate: number; prompt: string }[] = [];
+let skipped = 0;
 for (const { file, match } of plan) {
   const [, scene, band] = match;
   // Только для оффлайн-эвристики: shotlist из art-stage.ts приоритетнее.
   const sceneText = extractUtterances(readInk(file)).slice(0, 2).join(' ').slice(0, 240);
   for (let candidate = 1; candidate <= candidates; candidate++) {
+    const outFile = join(artDir, `${scene}-${band}-c${candidate}.png`);
+    if (existsSync(outFile) && !force) { skipped++; continue; } // уже сгенерировано — не тратим второй раз
     jobs.push({ scene, band, candidate, prompt: buildPrompt(scene, band, sceneText, candidate) });
   }
 }
+if (skipped > 0) console.log(`  пропущено уже готовых изображений: ${skipped} (--force — перегенерировать)`);
 
 await runPool(jobs, 3, async (job) => {
   const response = await fetch(`${base}/images/generations`, {

@@ -18,6 +18,7 @@
  *   npx tsx scripts/yandex-full-package.ts                    # сухой прогон
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --candidates=2
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --only=tests
+ *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --band=8-10   # арт только под одну линейку
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --skip=art
  */
 import { existsSync, readdirSync } from 'node:fs';
@@ -28,12 +29,13 @@ import { argValue, hasYesFlag } from './yandex-api.ts';
 const argv = process.argv.slice(2);
 const yes = hasYesFlag(argv);
 const candidates = Number(argValue(argv, 'candidates') ?? '2');
+const band = argValue(argv, 'band'); // 5-7 | 8-10 | 11-13 — арт только под одну линейку
 const only = argValue(argv, 'only');           // прогнать только одну фазу
 const skipRaw = argValue(argv, 'skip') ?? '';  // фазы через запятую
 const skip = new Set(skipRaw.split(',').map((s) => s.trim()).filter(Boolean));
 
-const SCENE_FILES = 363; // 121 сцена × 3 линейки
-const artCost = SCENE_FILES * candidates * 2.23;
+const ART_SCENES = band ? 121 : 363; // 121 уникальная сцена; с --band — одна линейка
+const artCost = ART_SCENES * candidates * 2.23;
 
 type Phase = { id: string; title: string; cost: string; run: [string, string[]]; needsKey: boolean; needsStills?: boolean };
 const tsx = (script: string, ...flags: string[]): [string, string[]] => ['npx', ['tsx', script, ...flags]];
@@ -43,7 +45,8 @@ const phases: Phase[] = [
   { id: 'webinar-check', title: 'Самопроверка всех вебинаров LLM (48 файлов)', cost: '≈150 ₽', run: tsx('scripts/yandex-webinar-check.ts', '--yes'), needsKey: true },
   { id: 'storyboards', title: 'Раскадровки 121 сцены × 3 линейки LLM → data/storyboards.json', cost: '≈102 ₽', run: tsx('scripts/yandex-storyboard.ts', '--yes'), needsKey: true },
   { id: 'expand-webinars', title: 'Добор учительских вебинаров до 25–30 мин LLM', cost: '≈125 ₽', run: tsx('scripts/expand-webinars.ts', '--yes'), needsKey: true },
-  { id: 'art', title: `Арт по всем сценам, ${candidates} канд./сцену (${SCENE_FILES * candidates} кадров)`, cost: `≈${artCost.toFixed(0)} ₽`, run: tsx('scripts/yandex-art.ts', '--candidates', String(candidates), '--yes'), needsKey: true },
+  { id: 'art-stage', title: 'Постановка сцен shotlist (LLM, один раз на сцену) — УБИРАЕТ ОДНООБРАЗИЕ', cost: '≈25 ₽', run: tsx('scripts/art-stage.ts', '--yes'), needsKey: true },
+  { id: 'art', title: `Арт ${band ? `линейка ${band}` : 'все линейки'}, ${candidates} канд./сцену (${ART_SCENES * candidates} кадров)`, cost: `≈${artCost.toFixed(0)} ₽`, run: tsx('scripts/yandex-art.ts', `--candidates=${candidates}`, ...(band ? [`--band=${band}`] : []), '--yes'), needsKey: true },
   { id: 'cinema', title: 'Кино: Ken Burns + войс из _stills → out/cinema + manifest', cost: '0 ₽', run: tsx('scripts/render-cinema.ts'), needsKey: false, needsStills: true },
   { id: 'cinema-manifest', title: 'Кино: сборка public/cinema/manifest.json', cost: '0 ₽', run: tsx('scripts/build-cinema-manifest.ts'), needsKey: false },
   { id: 'tests', title: 'Проверки: test:content + test:cinema-manifest + tsc', cost: '0 ₽', run: ['npm', ['run', 'test:content']], needsKey: false },
@@ -61,8 +64,8 @@ for (const phase of selected) {
   const note = phase.needsStills && stillsCount === 0 ? '  ← ПРОПУЩУ (нет _stills — сначала отбор кадров)' : '';
   console.log(`  • ${phase.title} — ${phase.cost}${note}`);
 }
-console.log(`\nИтого денег (без трат, уже совершённых): ≈${(75 + 105 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + арт ${artCost.toFixed(0)})`);
-console.log('Остаток гранта на старте этого прогона ≈ 7 900 ₽. Полный прогон с артом оставит ≈ 6 100 ₽.\n');
+console.log(`\nИтого денег (без трат, уже совершённых): ≈${(150 + 102 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art-stage') ? 0 : 25) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + shotlist 25 + арт ${artCost.toFixed(0)})`);
+console.log('Остаток гранта на старте этого прогона ≈ 7 900 ₽ (минус уже потраченное на сайте Yandex Cloud, если было).\n');
 
 if (!yes) {
   console.log('Это был сухой прогон. Запуск ВСЕГО: добавьте --yes и YANDEX_API_KEY в окружение.');
