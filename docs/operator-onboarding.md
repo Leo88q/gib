@@ -42,6 +42,7 @@
 20. `GIB_ADMIN_TOKEN` — токен для `/admin` и `/api/admin/*`.
 21. `GIB_POSTGRES_URL` (или `DATABASE_URL`) — строка подключения к боевой PostgreSQL; `GIB_PG_DIR` для PGlite только для стенда.
 22. `GIB_PUBLIC_URL` — публичный адрес (для ссылок в письмах и сообщениях бота).
+23. `YANDEX_API_KEY` и `YANDEX_FOLDER_ID` — для скриптов AI Studio (озвучка/арт/ревью); выдаются в Yandex Cloud → AI Studio, хранятся в Lockbox, в репозиторий не коммитятся.
 
 ## F. Решения владельца
 
