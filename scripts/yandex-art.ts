@@ -38,6 +38,11 @@ const rate = Number(argValue(argv, 'rate') ?? '2.23'); // ₽ за изобра�
 const model = process.env.YANDEX_ART_MODEL ?? `art://${folderId()}/aliceai-image-art-3.0/latest`;
 const size = process.env.YANDEX_ART_SIZE ?? '1024x1024';
 const base = process.env.YANDEX_ART_BASE ?? process.env.YANDEX_LLM_BASE ?? 'https://ai.api.cloud.yandex.net/v1';
+// Арт-дирекция проекта: современный стилизованный 3D («как в Pixar / DreamWorks»),
+// а не акварельная книжная иллюстрация. Сменная на случай фиксации стиля
+// другим решением (YANDEX_ART_STYLE=...).
+const artStyle = process.env.YANDEX_ART_STYLE ??
+  'Современная стилизованная 3D-анимация в духе Pixar/DreamWorks: мягкая объёмная модель, большие выразительные глаза, тёплые персиково-оранжевые тона, мягкий студийный свет, чистый тёплый фон; персонаж Лис — рыжая лиса с большими ушами, стоячая композиция';
 const artDir = join(OUT_DIR, 'art');
 
 const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d-\d+)\.ink$/;
@@ -72,10 +77,10 @@ for (const { file, match } of plan) {
   const utterances = extractUtterances(readInk(file));
   const sceneText = utterances[0] ?? basename(file, '.ink');
   const prompt = [
-    'Детская книжная иллюстрация, тёплая акварель, мягкое рассеянное освещение, без текста в кадре.',
+    artStyle,
     `Ситуация: ${sceneText}`,
     `Возраст зрителей: ${band} лет.`,
-    'Добрые выразительные персонажи, безопасная, неспешная сцена. Без узнаваемых брендов и реальных людей.',
+    'Добрые выразительные персонажи, безопасная, неспешная сцена. Без узнаваемых брендов и реальных людей, без текста в кадре.',
   ].join(' ');
   for (let candidate = 1; candidate <= candidates; candidate++) {
     jobs.push({ scene, band, candidate, prompt });
