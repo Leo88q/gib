@@ -52,7 +52,7 @@ const HERO_BY_BAND: Record<string, string> = {
 };
 const artDir = join(OUT_DIR, 'art');
 
-const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d-\d+)\.ink$/;
+const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d+-\d+)\.ink$/;
 
 const scenes = walkInk()
   .map((file) => ({ file, match: AGE_BAND.exec(basename(file)) }))
