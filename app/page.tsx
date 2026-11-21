@@ -13,12 +13,15 @@ import Hud, { type HudData } from '@/components/Hud';
 import Missions, { type MissionView } from '@/components/Missions';
 import BadgeGrid, { type BadgeView } from '@/components/BadgeGrid';
 import Shop, { type ShopItemView } from '@/components/Shop';
+import ParentGate from '@/components/ParentGate';
+import WebAuthPanel from '@/components/WebAuthPanel';
 import Rewards from '@/components/Rewards';
 import DayWelcome from '@/components/DayWelcome';
 import DayReflection from '@/components/DayReflection';
 import PracticeMap from '@/components/PracticeMap';
 import FamilyIdeas from '@/components/FamilyIdeas';
 import Room from '@/components/Room';
+import ChildStudioCard from '@/components/ChildStudioCard';
 import { sfx } from '@/lib/sound';
 import { petVariantOf } from '@/lib/gamification';
 import { petMood, petMoodText } from '@/lib/pet-mood';
@@ -117,7 +120,7 @@ function lessonOfDayLabel(dayIndex: number): string {
 }
 
 export default function Home() {
-  const [stage, setStage] = useState<'boot' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
+  const [stage, setStage] = useState<'boot' | 'auth' | 'onboarding' | 'home' | 'welcome' | 'training' | 'done' | 'reflection'>('boot');
   const [tab, setTab] = useState<'home' | 'map' | 'family' | 'badges' | 'shop'>('home');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [children, setChildren] = useState<{ id: string; name: string; age: number; band: string }[]>([]);
@@ -231,8 +234,18 @@ export default function Home() {
         let wanted = '';
         try { wanted = localStorage.getItem('gib:profileId') ?? ''; } catch { /* storage is optional */ }
         const res = await apiFetch(`/api/profile${wanted ? `?profileId=${encodeURIComponent(wanted)}` : ''}`);
+        if (res.status === 401) {
+          if (!cancelled) setStage('auth');
+          return;
+        }
         if (!res.ok) throw new Error('profile');
         data = await res.json();
+        // Закрепляем серверную HttpOnly-сессию на 7 дней, чтобы переход в ЮKassa или 24ч лимит initData не выбрасывали из аккаунта.
+        void apiFetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'exchange' }),
+        }).catch(() => {});
       } catch {
         if (!cancelled) setRequestError('Не удалось загрузить профиль. Проверьте соединение и перезапустите приложение.');
         return;
@@ -578,7 +591,19 @@ export default function Home() {
       </div>
     );
 
-  if (stage === 'onboarding') return <Onboarding onDone={createProfile} onCancel={children.length > 0 ? () => setAddingChild(false) : undefined} />;
+  if (stage === 'auth') {
+    return <WebAuthPanel onAuthenticated={() => window.location.reload()} />;
+  }
+
+  if (stage === 'onboarding') {
+    const onboardingScreen = (
+      <Onboarding
+        onDone={createProfile}
+        onCancel={children.length > 0 ? () => { setAddingChild(false); setStage('home'); } : undefined}
+      />
+    );
+    return addingChild ? <ParentGate>{onboardingScreen}</ParentGate> : onboardingScreen;
+  }
 
   /*
    * Согласие для существующего профиля.
@@ -685,8 +710,11 @@ export default function Home() {
           heroName={HERO_NAME[profile?.band ?? '8-10'] ?? 'Проводник'}
           pet={petVariantOf(player?.equipped.pet ?? null)}
           petLevel={player?.level ?? 1}
-          bubble={greeting(program, player)}
+          bubble={greeting(program, player, profile?.band)}
           petMood={moodFor(program)}
+          equippedItems={(['head', 'body', 'room'] as const)
+            .map((slot) => shop.find((s) => s.id === player?.equipped[slot]))
+            .filter((s): s is ShopItemView & { slot: 'head' | 'body' | 'room' } => Boolean(s && s.slot !== 'pet'))}
         />
         {player?.equipped.pet && (
           <p className="pet-mood-note muted small">{petMoodText(moodFor(program))}</p>
@@ -716,6 +744,7 @@ export default function Home() {
 
         {tab === 'home' && (
           <>
+            <ChildStudioCard profileId={profile?.id} />
             <div className="panel mission-card">
               {/* Герой линейки — часть интерфейса, а не наклейка: он называет,
                   чья это версия программы. Возраст уже выбран в профиле. */}
@@ -825,6 +854,7 @@ export default function Home() {
               room: player?.equipped.room ?? null,
             }}
             level={player?.level ?? 1}
+            band={profile?.band ?? '8-10'}
             onBuy={buyItem}
             onEquip={equipItem}
           />
@@ -976,9 +1006,10 @@ function moodFor(program: ProgramInfo | null): ReturnType<typeof petMood> {
   return petMood({ completedDays, daysSinceLast });
 }
 
-function greeting(program: ProgramInfo | null, player: PlayerInfo | null): string {
-  if (!program) return 'Лис готов!';
-  if (program.finished) return 'Программа пройдена! Лис гордится тобой. Играем ещё?';
+function greeting(program: ProgramInfo | null, _player: PlayerInfo | null, band?: AgeBand): string {
+  const guide = HERO_NAME[band ?? '8-10'] ?? 'Мира';
+  if (!program) return `${guide} рядом!`;
+  if (program.finished) return `Программа пройдена! ${guide} гордится тобой. Играем ещё?`;
   if (program.completedDays === 0) return `Начинаем! Неделя 1: ${program.weekTitle}. Готов к миссии?`;
   const days = program.completedDays;
   if (days % 7 === 0) return 'Неделя позади — красиво! Что скажешь, продолжим?';
@@ -1034,13 +1065,35 @@ function Onboarding({ onDone, onCancel }: { onDone: (answer: OnboardingAnswer) =
         : 'Не удалось создать профиль. Проверьте соединение и попробуйте снова.');
     } finally { setSaving(false); }
   };
+  const selectedBand: AgeBand = age <= 7 ? '5-7' : age <= 10 ? '8-10' : '11-13';
+  const guideName = HERO_NAME[selectedBand] ?? 'Мира';
   return (
     <div className="wrap">
       <div className="panel center onboarding">
         <img src="/art/v2/places/yard.png" alt="" className="hero-art" />
         {step === 'child' && (
           <>
-            <h1>Привет, я Лис!</h1>
+            {!onCancel && (
+              <div className="onboarding-intro" aria-label="Коротко для взрослого">
+                <span className="chip">Годовая программа для детей 5–13 лет</span>
+                <p className="muted small" style={{ margin: '8px 0 6px' }}>
+                  <strong>36 встреч в году, 12 показов и 60 дней практики</strong> в трёх возрастных линейках —
+                  истории выбора, игры на внимание и память, семейные разговоры без оценок и рейтингов.
+                  Первая встреча открыта бесплатно целиком; дальше — разовая подписка 599 ₽ на 30 дней без автопродления.
+                </p>
+                <p className="muted small" style={{ margin: 0 }}>
+                  <Link href="/offer">Что вы покупаете</Link> · <Link href="/teacher">Кабинет педагога</Link> ·{' '}
+                  <Link href="/school">Для школы</Link> · <Link href="/legal">Документы</Link>
+                </p>
+              </div>
+            )}
+            <div className="onboarding-guide">
+              <img src={heroFace(selectedBand)} alt={guideName} width={64} height={64} />
+              <div>
+                <h1>Привет, я {guideName}!</h1>
+                <span className="muted small">Проводник линейки {BAND_LABEL[selectedBand]}</span>
+              </div>
+            </div>
             <p className="muted">
               В нашем районе 12 тем и 36 встреч: короткие истории, задания и один разговор
               в неделю с кем-то из взрослых.

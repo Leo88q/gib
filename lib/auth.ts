@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifyInitData } from './telegram';
 import { verifyMaxInitData } from './max-auth';
+import { verifySessionCookie } from './session-cookie';
 import { store } from './store';
 
-/** Header-only, platform-scoped authentication. No fallback after invalid signed data. */
+/** Header-first, platform-scoped authentication + signed HttpOnly session cookie. No fallback after invalid signed data. */
 export function requestParent(req: Request): string | null {
   const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
   const maxToken = process.env.MAX_BOT_TOKEN;
@@ -20,6 +21,10 @@ export function requestParent(req: Request): string | null {
   if (hasMax) {
     const verified = verifyMaxInitData(req.headers.get('x-max-init-data') ?? '', maxToken);
     return verified.ok ? verified.subject : null;
+  }
+  if (!req.headers.has('x-demo-parent')) {
+    const cookieParent = verifySessionCookie(req);
+    if (cookieParent) return cookieParent;
   }
   if (telegramToken || maxToken || process.env.NODE_ENV !== 'development' || process.env.GIB_DEMO_MODE !== '1') return null;
   const demo = req.headers.get('x-demo-parent') ?? 'local-demo';

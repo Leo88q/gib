@@ -24,8 +24,18 @@ let mode = 'pglite';
 
 function reply(state, text) {
   const bytes = encoder.encode(text);
-  body.set(bytes.subarray(0, body.length));
-  Atomics.store(control, 1, Math.min(bytes.length, body.length));
+  if (bytes.length > body.length) {
+    const errBytes = encoder.encode(
+      `pg_bridge_buffer_overflow: response ${bytes.length} bytes exceeds shared buffer ${body.length} bytes (increase GIB_PG_BUFFER_MB)`,
+    );
+    body.set(errBytes.subarray(0, body.length));
+    Atomics.store(control, 1, Math.min(errBytes.length, body.length));
+    Atomics.store(control, 0, 2);
+    Atomics.notify(control, 0);
+    return;
+  }
+  body.set(bytes);
+  Atomics.store(control, 1, bytes.length);
   Atomics.store(control, 0, state);
   Atomics.notify(control, 0);
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { LEGAL_DOCUMENTS, OPERATOR, legalDocument, legalMissing, legalReady } from '@/lib/legal/documents';
+import { LEGAL_DOCUMENTS, legalDocument, legalMissing, legalReady, resolveOperator } from '@/lib/legal/documents';
 
 /**
  * Страница одного документа.
@@ -26,7 +26,8 @@ export default async function LegalDocumentPage({ params }: { params: Promise<{ 
   const { doc } = await params;
   const document = legalDocument(doc as never);
   if (!document) notFound();
-  const ready = legalReady();
+  const operator = resolveOperator();
+  const ready = legalReady(operator);
   return (
     <main className="page legal-page legal-document">
       <p className="muted small"><Link href="/legal">← Все документы</Link></p>
@@ -44,13 +45,13 @@ export default async function LegalDocumentPage({ params }: { params: Promise<{ 
         <h2>Реквизиты оператора</h2>
         {ready ? (
           <>
-            <p>{OPERATOR.name}</p>
-            <p className="muted small">{OPERATOR.registration} · {OPERATOR.address}</p>
-            <p className="muted small">{OPERATOR.email}</p>
+            <p>{operator.name}</p>
+            <p className="muted small">{operator.registration} · {operator.address}</p>
+            <p className="muted small">{operator.email}</p>
           </>
         ) : (
           <p role="status" className="muted">
-            Не заполнено: {legalMissing().join(', ')}. До заполнения документ не может считаться опубликованным
+            Не заполнено: {legalMissing(operator).join(', ')}. До заполнения документ не может считаться опубликованным
             в окончательном виде.
           </p>
         )}

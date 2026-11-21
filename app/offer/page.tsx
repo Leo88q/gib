@@ -107,6 +107,8 @@ export default function OfferPage() {
       <p className="offer-links">
         <Link className="btn" href="/">Начать</Link>{' '}
         <Link className="btn secondary" href="/parent">Кабинет и подписка</Link>{' '}
+        <Link className="btn secondary" href="/teacher">Кабинет педагога</Link>{' '}
+        <Link className="btn ghost" href="/school">Для школы</Link>{' '}
         <Link className="btn ghost" href="/legal/terms">Условия</Link>
       </p>
       <p className="muted small">

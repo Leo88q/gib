@@ -312,6 +312,8 @@ const implementation = {
       db.payments = db.payments.filter(p => p.profileId !== profileId);
       db.programStates = db.programStates.filter(s => s.profileId !== profileId);
       db.playerStates = db.playerStates.filter(s => s.profileId !== profileId);
+      db.memberships = db.memberships.filter(m => m.profileId !== profileId);
+      db.events = db.events.filter(e => e.profileId !== profileId);
     });
   },
   skills: (profileId: string) =>
@@ -439,7 +441,13 @@ const implementation = {
   },
   eventCount: () => load().events.length,
   /** Сколько профилей — для проверки хранилища без чтения всех таблиц. */
-  profileCount: () => load().profiles.length,
+  profileCount: () => {
+    if (postgresEnabled && transactionDepth === 0) {
+      const rows = postgres().query('SELECT COUNT(*)::int AS count FROM gib.profiles');
+      return Number(rows[0]?.count ?? 0);
+    }
+    return load().profiles.length;
+  },
   subs: () => load().subs,
   sub: (profileId: string) => load().subs.find((s) => s.profileId === profileId),
   setSub(sub: Subscription) {
@@ -457,6 +465,7 @@ export const store: typeof implementation = sqliteEnabled || postgresEnabled ? n
   get(target, key, receiver) {
     const value = Reflect.get(target, key, receiver);
     if (typeof value !== 'function' || key === 'transaction') return value;
+    if (key === 'profileCount' && postgresEnabled && transactionDepth === 0) return value;
     return (...args: unknown[]) => target.transaction(() => Reflect.apply(value, receiver, args));
   },
 }) : implementation;

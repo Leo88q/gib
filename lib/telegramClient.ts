@@ -1,6 +1,7 @@
 'use client';
 
 import { ensureMaxBridge, maxBridge, maxLaunchRequested } from './max-client.ts';
+import { COLORS } from './design/tokens.ts';
 
 /**
  * Клиентская обвязка Telegram Mini App: инициализация, тема, кнопка «Назад»,
@@ -43,8 +44,8 @@ export function setupTelegram(): void {
   safely(() => app.ready?.());
   safely(() => app.expand?.());
   safely(() => { if (app.isVersion?.('7.7')) app.disableVerticalSwipes?.(); });
-  safely(() => app.setHeaderColor?.('#fff6e5'));
-  safely(() => app.setBackgroundColor?.('#fff6e5'));
+  safely(() => app.setHeaderColor?.(COLORS.cream));
+  safely(() => app.setBackgroundColor?.(COLORS.cream));
   // The illustrated palette has light fixed surfaces: applying a dark Telegram
   // text color alone would make text and outlines invisible on those surfaces.
 }

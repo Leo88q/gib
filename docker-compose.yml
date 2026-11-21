@@ -1,0 +1,136 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gib}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-gib}
+    volumes:
+      - gib_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gib} -d ${POSTGRES_DB:-gib}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      GIB_STORE: postgres
+      GIB_RATE_LIMIT_STORE: postgres
+      GIB_POSTGRES_URL: postgresql://${POSTGRES_USER:-gib}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gib}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+  postgres-backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      GIB_STORE: postgres
+      GIB_POSTGRES_URL: postgresql://${POSTGRES_USER:-gib}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gib}
+      BACKUP_INTERVAL_SEC: ${BACKUP_INTERVAL_SEC:-86400}
+      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-14}
+    volumes:
+      - gib_backups:/app/backups
+    healthcheck:
+      disable: true
+    command: >
+      sh -c 'while true; do
+        if [ -n "$$GIB_BACKUP_KEY_HEX" ]; then
+          STAMP=$$(date -u +"%Y%m%dT%H%M%SZ");
+          node --experimental-strip-types scripts/backup-postgres-encrypted.ts "/app/backups/gib-$$STAMP.gib" &&
+          ls -1t /app/backups/gib-*.gib 2>/dev/null | tail -n +$$(( $${BACKUP_RETENTION_COUNT:-14} + 1 )) | xargs -r rm -f;
+        fi;
+        sleep "$${BACKUP_INTERVAL_SEC:-86400}";
+      done'
+
+  notifications-cron:
+    image: curlimages/curl:8.10.1
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+    command: >
+      sh -c 'while true; do
+        sleep 3600;
+        if [ -n "$$CRON_SECRET" ]; then
+          curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://app:3000/api/cron/notifications || true;
+        fi;
+      done'
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      GIB_SCRAPE_TARGET: app:3000
+      GIB_METRICS_TOKEN: ${GIB_METRICS_TOKEN:-}
+      GIB_ENV: ${NODE_ENV:-production}
+    volumes:
+      - ./ops/prometheus:/etc/prometheus-template:ro
+      - gib_prometheus:/prometheus
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sed -e "s|\$${GIB_SCRAPE_TARGET}|$$GIB_SCRAPE_TARGET|g" \
+            -e "s|\$${GIB_METRICS_TOKEN}|$$GIB_METRICS_TOKEN|g" \
+            -e "s|\$${GIB_ENV}|$$GIB_ENV|g" \
+            /etc/prometheus-template/prometheus.generated.yml > /tmp/prometheus.yml && \
+        cp /etc/prometheus-template/alerts.yml /tmp/alerts.yml && \
+        exec /bin/prometheus \
+          --config.file=/tmp/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=30d
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    volumes:
+      - ./ops/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - gib_alertmanager:/alertmanager
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboard.generated.json:/var/lib/grafana/dashboards/gib.json:ro
+      - gib_grafana:/var/lib/grafana
+
+volumes:
+  gib_pgdata:
+  gib_backups:
+  gib_prometheus:
+  gib_alertmanager:
+  gib_grafana:

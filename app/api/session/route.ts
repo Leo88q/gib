@@ -25,6 +25,14 @@ import { YEAR, lessonOfDay } from '@/lib/content/year';
 import { entitlementFor, mayStartLesson, paywallCopy } from '@/lib/access/entitlement';
 import { CONSENT_VERSION, consentOutdated } from '@/lib/legal/consent';
 import { recordFunnel } from '@/lib/events/funnel-store';
+import { storeModeOf } from '@/lib/store-mode';
+import { getAsyncPool, withAsyncClient, type AsyncQueryable } from '@/lib/postgres/async-pool';
+import {
+  answerOwnedSessionRowLevel,
+  selectOwnedStoryRowLevel,
+  startOwnedSessionRowLevel,
+  ConcurrentRowVersionError,
+} from '@/lib/postgres/row-writer';
 
 export const dynamic = 'force-dynamic';
 
@@ -156,7 +164,28 @@ async function sessionCommand(req: Request) {
     // содержания и не должен наказывать за окончание оплаты.
     if (!body.repeat && !body.review && !mayStartLesson(entitlement)) {
       recordFunnel({ step: 'paywall_seen', ownerId: auth.parentId, lessonNumber: entitlement.lessonNumber, at: Date.now() });
-      return NextResponse.json({ error: 'payment_required', ...paywallCopy(entitlement.reason), access: { lesson: entitlement.lessonNumber, level: entitlement.level } }, { status: 402 });
+      return NextResponse.json({ error: 'payment_required', ...paywallCopy(entitlement.reason, 'session'), access: { lesson: entitlement.lessonNumber, level: entitlement.level } }, { status: 402 });
+    }
+    if (storeModeOf() === 'postgres' && getAsyncPool()) {
+      let out;
+      try {
+        out = await withAsyncClient((client) =>
+          startOwnedSessionRowLevel(client as unknown as AsyncQueryable, auth.parentId, profile.id, {
+            repeat: Boolean(body.repeat),
+            storyChoice: body.storyChoice,
+            journey: body.journey,
+            review: body.review,
+            reviewTopicId: body.reviewTopicId,
+            useGlobalSchemaFlag: true,
+          }),
+        );
+      } catch (err) {
+        if (err instanceof ConcurrentRowVersionError) return NextResponse.json({ error: 'row_version_conflict' }, { status: 409 });
+        throw err;
+      }
+      if ('error' in out) return NextResponse.json(out, { status: 404 });
+      if (out.firstSession) recordFunnel({ step: 'first_session', ownerId: auth.parentId, at: Date.now() });
+      return NextResponse.json(out.started);
     }
     // «Первое занятие» — это первая сессия у этого ребёнка, а не первый клик
     // вообще: повтор и разбор темы не должны считаться активацией.
@@ -170,6 +199,24 @@ async function sessionCommand(req: Request) {
 
   if (body.action === 'select_story') {
     if (typeof body.sessionId !== 'string' || !body.sessionId || typeof body.cardId !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.cardId)) return NextResponse.json({ error: 'invalid_story' }, { status: 400 });
+    if (storeModeOf() === 'postgres' && getAsyncPool()) {
+      let out;
+      try {
+        out = await withAsyncClient((client) =>
+          selectOwnedStoryRowLevel(client as unknown as AsyncQueryable, auth.parentId, body.sessionId!, body.cardId!, {
+            useGlobalSchemaFlag: true,
+          }),
+        );
+      } catch (err) {
+        if (err instanceof ConcurrentRowVersionError) return NextResponse.json({ error: 'row_version_conflict' }, { status: 409 });
+        throw err;
+      }
+      if ('error' in out) {
+        const status = out.error === 'session_not_found' ? 404 : out.error === 'story_conflict' ? 409 : 400;
+        return NextResponse.json(out, { status });
+      }
+      return NextResponse.json(out);
+    }
     return context.transaction(() => {
       const session = store.getSession(body.sessionId!);
       if (!session || !ownedProfile(auth.parentId, session.profileId)) return NextResponse.json({ error: 'session_not_found' }, { status: 404 });
@@ -186,9 +233,38 @@ async function sessionCommand(req: Request) {
   if (body.action === 'answer') {
     if (typeof body.sessionId !== 'string' || !body.sessionId) return NextResponse.json({ error: 'sessionId_required' }, { status: 400 });
     if (body.ms !== undefined && (typeof body.ms !== 'number' || !Number.isFinite(body.ms) || body.ms < 0)) return NextResponse.json({ error: 'invalid_duration' }, { status: 400 });
+    if (!Number.isInteger(body.step) || body.step! < 0) return NextResponse.json({ error: 'step_required' }, { status: 400 });
+    if (storeModeOf() === 'postgres' && getAsyncPool()) {
+      let res;
+      try {
+        res = await withAsyncClient((client) =>
+          answerOwnedSessionRowLevel(
+            client as unknown as AsyncQueryable,
+            auth.parentId,
+            body.sessionId!,
+            body.answer ?? {},
+            Number(body.ms) || 0,
+            body.step!,
+            { useGlobalSchemaFlag: true },
+          ),
+        );
+      } catch (err) {
+        if (err instanceof ConcurrentRowVersionError) return NextResponse.json({ error: 'row_version_conflict' }, { status: 409 });
+        throw err;
+      }
+      if ('error' in res) {
+        const status = ['step_conflict', 'story_selection_required', 'story_flow_conflict'].includes(res.error)
+          ? 409
+          : res.error === 'invalid_answer'
+            ? 400
+            : 404;
+        return NextResponse.json(res, { status });
+      }
+      if (res.done === true) recordFunnel({ step: 'first_finished', ownerId: auth.parentId, at: Date.now() });
+      return NextResponse.json(res);
+    }
     const session = store.getSession(body.sessionId);
     if (!session || !ownedProfile(auth.parentId, session.profileId)) return NextResponse.json({ error: 'session_not_found' }, { status: 404 });
-    if (!Number.isInteger(body.step) || body.step! < 0) return NextResponse.json({ error: 'step_required' }, { status: 400 });
     const res = answerStep(body.sessionId, body.answer ?? {}, Number(body.ms) || 0, body.step!, context);
     if ('error' in res) return NextResponse.json(res, { status: ['step_conflict', 'story_selection_required', 'story_flow_conflict'].includes(res.error) ? 409 : res.error === 'invalid_answer' ? 400 : 404 });
     // Занятие доведено до конца — это второй шаг активации, отдельный от

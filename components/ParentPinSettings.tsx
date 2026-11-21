@@ -59,9 +59,23 @@ export default function ParentPinSettings() {
     if (busy) return;
     setBusy(true); setError(''); setDone('');
     try {
-      const res = await apiFetch('/api/parent-pin', { method: 'DELETE' });
-      if (res.ok) { setStatus(previous => previous ? { ...previous, configured: false } : previous); setDone('Код удалён. Кабинет снова открывается без кода.'); }
-      else setError('Не удалось удалить код.');
+      const res = await apiFetch('/api/parent-pin', {
+        method: 'DELETE',
+        headers: current ? { 'Content-Type': 'application/json' } : undefined,
+        body: current ? JSON.stringify({ current }) : undefined,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCurrent(''); setPin('');
+        setStatus(previous => previous ? { ...previous, configured: false } : previous);
+        setDone('Код удалён. Кабинет снова открывается без кода.');
+      } else if (data.error === 'current_invalid') {
+        setError('Текущий код неверный.');
+      } else if (data.error === 'pin_verification_required') {
+        setError('Введите текущий код выше, чтобы удалить защиту.');
+      } else {
+        setError('Не удалось удалить код.');
+      }
     } catch { setError('Не удалось удалить код. Проверьте соединение.'); }
     finally { setBusy(false); }
   };

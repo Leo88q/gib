@@ -14,6 +14,11 @@ import {
   PIN_MAX_LENGTH,
   PIN_MIN_LENGTH,
 } from '@/lib/family/roles';
+import {
+  clearParentGateCookieHeader,
+  serializeParentGateCookie,
+  verifyParentGateCookie,
+} from '@/lib/parent-gate-cookie';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,8 +41,9 @@ export async function GET(req: Request) {
   const now = Date.now();
   return NextResponse.json({
     configured: Boolean(pin),
+    verified: pin ? verifyParentGateCookie(req, auth.parentId, now) : true,
     locked: Boolean(pin?.lockedUntil && pin.lockedUntil > now),
-    retryAfterMs: pin?.lockedUntil && pin.lockedUntil > now ? pin.lockedUntil - now : 0,
+    retryAfterMs: pin?.lockedUntil && pin?.lockedUntil > now ? pin.lockedUntil - now : 0,
     minLength: PIN_MIN_LENGTH,
     maxLength: PIN_MAX_LENGTH,
     attempts: MAX_PIN_ATTEMPTS,
@@ -59,6 +65,7 @@ export async function POST(req: Request) {
 
   return store.transaction(() => {
     const existing = store.parentPin(auth.parentId);
+    const now = Date.now();
 
     if (body.action === 'set') {
       const pin = body.pin as string;
@@ -67,25 +74,29 @@ export async function POST(req: Request) {
       // один раз открывший кабинет, перезапишет код взрослого.
       if (existing) {
         if (typeof body.current !== 'string') return NextResponse.json({ error: 'current_required' }, { status: 400 });
-        const current = checkPin(existing, body.current, Date.now());
+        const current = checkPin(existing, body.current, now);
         if (!current.result.ok) {
           store.setParentPin(auth.parentId, current.next);
           return NextResponse.json({ error: current.result.reason === 'locked' ? 'pin_locked' : 'current_invalid' }, { status: current.result.reason === 'locked' ? 429 : 401 });
         }
       }
       store.setParentPin(auth.parentId, hashPin(pin));
-      return NextResponse.json({ configured: true, locked: false, retryAfterMs: 0 });
+      const res = NextResponse.json({ configured: true, verified: true, locked: false, retryAfterMs: 0 });
+      res.headers.append('Set-Cookie', serializeParentGateCookie(auth.parentId, now));
+      return res;
     }
 
     // verify
     if (!existing) return NextResponse.json({ error: 'no_pin' }, { status: 404 });
-    const { result, next } = checkPin(existing, body.pin, Date.now());
+    const { result, next } = checkPin(existing, body.pin, now);
     store.setParentPin(auth.parentId, next);
     if (!result.ok) {
       const response = { error: result.reason === 'locked' ? 'pin_locked' : 'pin_invalid', retryAfterMs: result.reason === 'locked' ? result.retryAfterMs ?? 0 : 0 };
       return NextResponse.json(response, { status: result.reason === 'locked' ? 429 : 401 });
     }
-    return NextResponse.json({ ok: true, sessionMs: PARENT_SESSION_MS });
+    const res = NextResponse.json({ ok: true, sessionMs: PARENT_SESSION_MS });
+    res.headers.append('Set-Cookie', serializeParentGateCookie(auth.parentId, now));
+    return res;
   });
 }
 
@@ -93,9 +104,40 @@ export async function DELETE(req: Request) {
   const auth = requireParent(req);
   if (auth.error) return auth.error;
   if (!rateLimit(clientKey(req, 'parent-pin-del', auth.parentId), 30)) return NextResponse.json({ error: 'too_many_requests' }, { status: 429 });
+
+  let currentPin: string | undefined;
+  const contentLength = Number(req.headers.get('content-length') ?? 0);
+  if (contentLength > 0 || req.headers.get('content-type')?.includes('application/json')) {
+    const parsed = await readJsonObject(req);
+    if (parsed.ok && typeof parsed.value.current === 'string' && parsed.value.current.length > 0) {
+      currentPin = parsed.value.current;
+    }
+  }
+
   return store.transaction(() => {
-    if (!store.parentPin(auth.parentId)) return NextResponse.json({ error: 'no_pin' }, { status: 404 });
+    const existing = store.parentPin(auth.parentId);
+    if (!existing) return NextResponse.json({ error: 'no_pin' }, { status: 404 });
+
+    const now = Date.now();
+    if (currentPin !== undefined) {
+      const checked = checkPin(existing, currentPin, now);
+      if (!checked.result.ok) {
+        store.setParentPin(auth.parentId, checked.next);
+        return NextResponse.json(
+          { error: checked.result.reason === 'locked' ? 'pin_locked' : 'current_invalid' },
+          { status: checked.result.reason === 'locked' ? 429 : 401 },
+        );
+      }
+    } else if (!verifyParentGateCookie(req, auth.parentId, now)) {
+      const isLocalDemoReset = process.env.NODE_ENV !== 'production' && auth.parentId.startsWith('demo:');
+      if (!isLocalDemoReset) {
+        return NextResponse.json({ error: 'pin_verification_required' }, { status: 401 });
+      }
+    }
+
     store.removeParentPin(auth.parentId);
-    return NextResponse.json({ configured: false });
+    const res = NextResponse.json({ configured: false });
+    res.headers.append('Set-Cookie', clearParentGateCookieHeader());
+    return res;
   });
 }

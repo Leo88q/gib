@@ -11,7 +11,7 @@ export const LOCK_ID = 726391804;
 export const TABLES = ['profiles', 'skills', 'sessions', 'subscriptions', 'program_states', 'player_states', 'payments', 'events'] as const;
 
 /** Таблицы состояния аккаунта: не данные ребёнка, но нужны для работы. */
-export const ACCOUNT_TABLES = ['parent_pins', 'family_settings', 'notification_settings', 'rate_limits'] as const;
+export const ACCOUNT_TABLES = ['parent_pins', 'family_settings', 'notification_settings', 'groups', 'memberships', 'rate_limits'] as const;
 export const SCHEMA_V1 = `
 CREATE TABLE gib.profiles (
   id TEXT PRIMARY KEY, ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0), parent_id TEXT NOT NULL UNIQUE, age SMALLINT NOT NULL CHECK (age BETWEEN 5 AND 13),
@@ -145,6 +145,107 @@ ALTER TABLE gib.profiles ADD CONSTRAINT profiles_meeting_lead_check
 ALTER TABLE gib.profiles DROP CONSTRAINT IF EXISTS profiles_household_adult_check;
 ALTER TABLE gib.profiles ADD CONSTRAINT profiles_household_adult_check
   CHECK (household_adult IS NULL OR household_adult IN ('parent','other','none'));
+CREATE TABLE IF NOT EXISTS gib.groups (
+  id TEXT PRIMARY KEY,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  teacher_id TEXT NOT NULL,
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+  year INTEGER NOT NULL CHECK (year BETWEEN 2000 AND 2100),
+  join_code TEXT NOT NULL UNIQUE,
+  data JSONB NOT NULL,
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'id' IS NOT DISTINCT FROM id
+    AND data->>'teacherId' IS NOT DISTINCT FROM teacher_id
+    AND data->>'name' IS NOT DISTINCT FROM name
+    AND (data->>'year')::int IS NOT DISTINCT FROM year
+    AND data->>'joinCode' IS NOT DISTINCT FROM join_code
+  )
+);
+CREATE INDEX IF NOT EXISTS groups_teacher ON gib.groups(teacher_id);
+CREATE TABLE IF NOT EXISTS gib.memberships (
+  group_id TEXT NOT NULL REFERENCES gib.groups(id) ON DELETE CASCADE,
+  profile_id TEXT NOT NULL REFERENCES gib.profiles(id) ON DELETE CASCADE,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  joined_at BIGINT NOT NULL CHECK (joined_at > 0),
+  data JSONB NOT NULL,
+  PRIMARY KEY (group_id, profile_id),
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'groupId' IS NOT DISTINCT FROM group_id
+    AND data->>'profileId' IS NOT DISTINCT FROM profile_id
+    AND data->>'joinedAt' IS NOT DISTINCT FROM joined_at::text
+  )
+);
+CREATE INDEX IF NOT EXISTS memberships_profile ON gib.memberships(profile_id);
+CREATE TABLE IF NOT EXISTS gib.payment_ledger (
+  payment_id TEXT PRIMARY KEY,
+  amount TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  applied_at BIGINT CHECK (applied_at >= 0),
+  refunded_at BIGINT CHECK (refunded_at >= 0),
+  offer_version TEXT,
+  archived_at BIGINT NOT NULL CHECK (archived_at >= 0)
+);
+`;
+
+/** Идемпотентная досборка таблиц групп и обезличенного реестра расчётов для уже поднятых баз v3. */
+export const EXTRA_STATE_SCHEMA = `
+CREATE TABLE IF NOT EXISTS gib.groups (
+  id TEXT PRIMARY KEY,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  teacher_id TEXT NOT NULL,
+  name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 40),
+  year INTEGER NOT NULL CHECK (year BETWEEN 2000 AND 2100),
+  join_code TEXT NOT NULL UNIQUE,
+  data JSONB NOT NULL,
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'id' IS NOT DISTINCT FROM id
+    AND data->>'teacherId' IS NOT DISTINCT FROM teacher_id
+    AND data->>'name' IS NOT DISTINCT FROM name
+    AND (data->>'year')::int IS NOT DISTINCT FROM year
+    AND data->>'joinCode' IS NOT DISTINCT FROM join_code
+  )
+);
+CREATE INDEX IF NOT EXISTS groups_teacher ON gib.groups(teacher_id);
+CREATE TABLE IF NOT EXISTS gib.memberships (
+  group_id TEXT NOT NULL REFERENCES gib.groups(id) ON DELETE CASCADE,
+  profile_id TEXT NOT NULL REFERENCES gib.profiles(id) ON DELETE CASCADE,
+  ordinal BIGINT NOT NULL UNIQUE CHECK (ordinal >= 0),
+  joined_at BIGINT NOT NULL CHECK (joined_at > 0),
+  data JSONB NOT NULL,
+  PRIMARY KEY (group_id, profile_id),
+  CHECK (
+    jsonb_typeof(data) = 'object'
+    AND data->>'groupId' IS NOT DISTINCT FROM group_id
+    AND data->>'profileId' IS NOT DISTINCT FROM profile_id
+    AND data->>'joinedAt' IS NOT DISTINCT FROM joined_at::text
+  )
+);
+CREATE INDEX IF NOT EXISTS memberships_profile ON gib.memberships(profile_id);
+CREATE TABLE IF NOT EXISTS gib.payment_ledger (
+  payment_id TEXT PRIMARY KEY,
+  amount TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  applied_at BIGINT CHECK (applied_at >= 0),
+  refunded_at BIGINT CHECK (refunded_at >= 0),
+  offer_version TEXT,
+  archived_at BIGINT NOT NULL CHECK (archived_at >= 0)
+);
+CREATE TABLE IF NOT EXISTS gib.auth_challenges (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('device_link', 'email_otp')),
+  code_hash TEXT NOT NULL,
+  target TEXT NOT NULL,
+  expires_at BIGINT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  used_at BIGINT
+);
 `;
 
 /**
@@ -173,4 +274,69 @@ CREATE TABLE IF NOT EXISTS gib.funnel_events (
   PRIMARY KEY (step, owner_id, lesson_number)
 );
 CREATE INDEX IF NOT EXISTS funnel_events_at ON gib.funnel_events(at);
+`;
+
+/**
+ * Таблица двойного кодирования очных показов для исследовательского контура ВУЗа.
+ * Живёт отдельно от `SCHEMA_VERSION`, как и `gib.funnel_events`, и хранит только
+ * псевдонимизированные наблюдения двух независимых оценщиков по шкале 0 · 1 · 2.
+ */
+export const RESEARCH_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.research_codings (
+  sample_id TEXT PRIMARY KEY,
+  profile_id TEXT,
+  participant_hash TEXT NOT NULL,
+  age_band TEXT NOT NULL CHECK (age_band IN ('5-7', '8-10', '11-13')),
+  lesson INTEGER NOT NULL CHECK (lesson BETWEEN 1 AND 36),
+  stage TEXT NOT NULL CHECK (stage IN ('entry', 'mid', 'final')),
+  rater_a JSONB,
+  rater_b JSONB,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0),
+  updated_at BIGINT NOT NULL CHECK (updated_at >= 0)
+);
+CREATE INDEX IF NOT EXISTS research_codings_lesson ON gib.research_codings(lesson);
+`;
+
+/**
+ * Расширение таблиц состояния для асинхронной построчной записи без глобального
+ * `pg_advisory_xact_lock`: версионирование строк (`row_version`) и независимые
+ * последовательности `ordinal` для параллельной вставки из нескольких реплик.
+ */
+export const ROW_LEVEL_WRITE_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+ALTER TABLE gib.profiles ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.skills ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.sessions ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.program_states ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.player_states ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+ALTER TABLE gib.events ADD COLUMN IF NOT EXISTS row_version BIGINT NOT NULL DEFAULT 1;
+CREATE SEQUENCE IF NOT EXISTS gib.skills_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.sessions_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.program_states_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.player_states_ordinal_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS gib.events_ordinal_seq START WITH 1;
+`;
+
+/**
+ * Таблица обезличенных цифровых бланков опросника качества дружбы
+ * (FQS, Bukowski, Hoza & Boivin, 1994) по пяти шкалам на этапах
+ * `entry` (вход), `mid` (середина) и `final` (итог).
+ */
+export const FQS_SCHEMA = `
+CREATE SCHEMA IF NOT EXISTS gib;
+CREATE TABLE IF NOT EXISTS gib.research_fqs (
+  response_id TEXT PRIMARY KEY,
+  profile_id TEXT,
+  participant_hash TEXT NOT NULL,
+  age_band TEXT NOT NULL CHECK (age_band IN ('5-7', '8-10', '11-13')),
+  stage TEXT NOT NULL CHECK (stage IN ('entry', 'mid', 'final')),
+  lesson INTEGER CHECK (lesson IS NULL OR (lesson BETWEEN 1 AND 36)),
+  items JSONB NOT NULL,
+  subscales JSONB NOT NULL,
+  composite_mean DOUBLE PRECISION NOT NULL,
+  created_at BIGINT NOT NULL CHECK (created_at >= 0)
+);
+CREATE INDEX IF NOT EXISTS research_fqs_stage ON gib.research_fqs(stage);
+CREATE INDEX IF NOT EXISTS research_fqs_participant ON gib.research_fqs(participant_hash);
 `;

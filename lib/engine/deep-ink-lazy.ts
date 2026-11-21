@@ -40,7 +40,7 @@ export function deepInkSource(scenario: Scenario, band: AgeBand, followups: read
 }
 
 const cache = new Map<string, string>();
-const MAX_CACHE = 100;
+const MAX_CACHE = 512;
 
 /** Ink-дерево для истории и возраста; null, если продолжений для неё нет. */
 export function lazyDeepInk(scenario: Scenario, band: AgeBand): string | null {
