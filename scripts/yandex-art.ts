@@ -15,9 +15,12 @@
  *   npx tsx scripts/yandex-art.ts --only=w1        # только неделя 1 (15 сцен × 3 возраста)
  *   YANDEX_API_KEY=... npx tsx scripts/yandex-art.ts --yes --only=w1 --candidates=4
  *
- * Если Images API отвечает 400/404, скопируйте точный model URI из
- * AI Studio → Playground → «Код» в переменную YANDEX_ART_MODEL
- * (по умолчанию gpt://<folder>/yandexart).
+ * Если Images API отвечает ошибкой, сверьте точный model-URI в карточке модели
+ * (AI Studio → Model Gallery → Alice AI ART → «Код») и передайте его через
+ * YANDEX_ART_MODEL; базовый адрес можно сменить через YANDEX_ART_BASE.
+ * (Проверено на каталоге пользователя 21.11.2026:
+ *  model = art://<folder>/aliceai-image-art-3.0/latest,
+ *  base  = https://ai.api.cloud.yandex.net/v1.)
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, basename } from 'node:path';
@@ -32,9 +35,9 @@ const only = argValue(argv, 'only'); // например, w1
 const candidates = Number(argValue(argv, 'candidates') ?? '4');
 const limit = Number(argValue(argv, 'limit') ?? 'Infinity');
 const rate = Number(argValue(argv, 'rate') ?? '2.23'); // ₽ за изображение
-const model = process.env.YANDEX_ART_MODEL ?? `gpt://${folderId()}/yandexart`;
+const model = process.env.YANDEX_ART_MODEL ?? `art://${folderId()}/aliceai-image-art-3.0/latest`;
 const size = process.env.YANDEX_ART_SIZE ?? '1024x1024';
-const base = process.env.YANDEX_LLM_BASE ?? 'https://llm.api.cloud.yandex.net/v1';
+const base = process.env.YANDEX_ART_BASE ?? process.env.YANDEX_LLM_BASE ?? 'https://ai.api.cloud.yandex.net/v1';
 const artDir = join(OUT_DIR, 'art');
 
 const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d-\d+)\.ink$/;

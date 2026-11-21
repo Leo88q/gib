@@ -19,7 +19,7 @@
 - Отбор глазами (человеком): считаем «годные кадры» — это цифра для кейса.
 - Затем вся программа: 264 сцены (88 сюжетных ячеек × 3 возраста) × 4 кандидата ≈ 1 056 генераций ≈ 2 355 ₽.
 - Команда: `YANDEX_API_KEY=... npx tsx scripts/yandex-art.ts --yes --only=w1 --candidates=4`.
-- Если Images API отвечает 400/404: взять точный `model`-URI из AI Studio → Playground → «Код» и передать `YANDEX_ART_MODEL=...`.
+- По умолчанию скрипт использует проверенную на каталоге пару: `https://ai.api.cloud.yandex.net/v1` + `art://<folder>/aliceai-image-art-3.0/latest`. Если Yandex сменит адрес/модель — взять актуальные из AI Studio → Model Gallery → Alice AI ART → «Код» и передать `YANDEX_ART_BASE` / `YANDEX_ART_MODEL`.
 
 ## Этап C. Ревью корпуса моделью — `scripts/yandex-content-review.ts`
 
