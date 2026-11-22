@@ -60,6 +60,11 @@ YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --band=8-10
 # пилот недели 1 вместо всей программы:
 YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --only=art --only=art-stage
 
+# ПОЛНОЦЕННЫЙ ПЕРЕПРОГОН «полноценно всё» — раскадровки и добор с исправленными промптами:
+# ≈600–700 ₽ заново (проверка 150 + раскадровки 102 + добор 75–200). Арт НЕ
+# перегенерируется: готовые кадры пропускаются. Старые .full.md будут заменены.
+YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --force
+
 # отдельная фаза:
 YANDEX_API_KEY=... npx tsx scripts/yandex-storyboard.ts --yes
 YANDEX_API_KEY=... npx tsx scripts/yandex-webinar-check.ts --yes
