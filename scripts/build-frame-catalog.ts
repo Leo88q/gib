@@ -97,9 +97,11 @@ const keepManual = (prev: FrameEntry | undefined) => ({
   ...(prev?.disabled !== undefined ? { disabled: prev.disabled } : {}),
   ...(prev?.note ? { note: prev.note } : {}),
 });
-// needs_review: человек снял флаг (verified) > ручная правка (prev.needs_review) > флаг источника (shotlist parse ok?) > true
+// needs_review берём из ТЕКУЩЕГО источника (shotlist parse ok / эвристика),
+// иначе старые «true» из эвристической сборки залипают навсегда.
+// verified=true (решение человека) неприкосновенен.
 const prevOrNew = (prev: FrameEntry | undefined, refNeedsReview: boolean) =>
-  prev?.verified ? false : prev?.needs_review ?? refNeedsReview;
+  prev?.verified ? false : refNeedsReview;
 
 const frames: Record<string, FrameEntry> = {};
 for (const [key, used] of [...heroUsed].sort()) {
