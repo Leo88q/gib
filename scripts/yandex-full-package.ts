@@ -67,15 +67,16 @@ const phases: Phase[] = [
 ];
 
 const selected = phases.filter((phase) => (!only || phase.id === only) && !skip.has(phase.id));
-const stillsCount = existsSync(join('out', 'cinema', '_stills'))
+const countStills = (): number => existsSync(join('out', 'cinema', '_stills'))
   ? readdirSync(join('out', 'cinema', '_stills')).filter((f) => f.endsWith('.png') || f.endsWith('.jpg') || f.endsWith('.jpeg')).length
   : 0;
+const stillsCount = countStills(); // на момент печати плана (до копирования stills)
 
 console.log('Релиз-пакет контента — план');
 console.log(`выбор: ${selected.map((p) => p.id).join(', ') || 'ничего (всё отфильтровано)'}`);
 console.log(`кадров в _stills: ${stillsCount}`);
 for (const phase of selected) {
-  const note = phase.needsStills && stillsCount === 0 ? '  ← ПРОПУЩУ (нет _stills — сначала отбор кадров)' : '';
+  const note = phase.needsStills && stillsCount === 0 ? '  ← пропущу, ЕСЛИ фаза stills не наполнит _stills до рендера' : '';
   console.log(`  • ${phase.title} — ${phase.cost}${note}`);
 }
 console.log(`\nИтого денег (без трат, уже совершённых): ≈${(150 + 102 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art-stage') ? 0 : 25) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + shotlist 25 + арт по каталогу ${artCost.toFixed(0)})`);
@@ -90,8 +91,9 @@ if (!yes) {
 
 const failures: string[] = [];
 for (const phase of selected) {
-  if (phase.needsStills && stillsCount === 0) {
-    console.log(`\n=== ПРОПУСК: ${phase.id} — нет out/cinema/_stills (нужен ваш отбор кадров)`);
+  if (phase.needsStills && countStills() === 0) { // пересчёт на момент фазы, а не на момент плана
+    const now = countStills();
+    console.log(`\n=== ПРОПУСК: ${phase.id} — кадров в _stills: ${now} (после фазы stills; если 0 — проверьте вывод выше)`);
     continue;
   }
   console.log(`\n=== ${phase.title}`);
