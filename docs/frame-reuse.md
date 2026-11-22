@@ -58,7 +58,13 @@ yandex-art-frames боевой:     YANDEX_API_KEY=... npx tsx scripts/yandex-ar
 stills (dry-run):             npm run stills:link
 stills (применить):           npx tsx scripts/link-frame-stills.ts --yes [--candidate=1] [--force]
 stills (превью 0 ₽):          npx tsx scripts/link-frame-stills.ts --yes --placeholder
+кураторство (c1 → public):   npx tsx scripts/pick-frame.ts           # сухой прогон
+кураторство (применить):     npx tsx scripts/pick-frame.ts --yes [--prefer=2] [--only=<substr>] [--force]
 ```
+
+`public/art/frames/` существует в репозитории (пустая заглушка `.gitkeep`),
+чтобы `cp` и скрипты не падали на «No such file or directory». Файлы туда
+попадают только вашего отбора (см. `scripts/pick-frame.ts`).
 
 `build:frames` идемпотентен: `used_by` пересчитывается из кода, `path`,
 `verified`, `disabled` и `note` — сохраняются. Если кадр кадрируется (нужен
