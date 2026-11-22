@@ -22,6 +22,7 @@ import {
   apiKey, appendSpend, argValue, extractUtterances, folderId, hasYesFlag,
   readInk, runPool, walkInk, OUT_DIR,
 } from './yandex-api.ts';
+import { BANDS, normalizeStoryboard } from './storyboard-schema.ts';
 
 const argv = process.argv.slice(2);
 const yes = hasYesFlag(argv);
@@ -32,7 +33,6 @@ const rate = Number(argValue(argv, 'rate') ?? '0.5');
 const model = process.env.YANDEX_LLM_MODEL ?? `gpt://${folderId()}/aliceai-llm-flash`;
 const base = process.env.YANDEX_LLM_BASE ?? 'https://llm.api.cloud.yandex.net/v1';
 const OUT_JSON = join('data', 'storyboards.json');
-const BANDS = ['5-7', '8-10', '11-13'] as const;
 
 const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(5-7|8-10|11-13)\.ink$/;
 const perScene = new Map<string, string>();
@@ -103,13 +103,15 @@ async function main(): Promise<void> {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     let parsed: Record<string, unknown> = {};
     try { if (jsonMatch) parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>; } catch { /* below */ }
-    const bands = (parsed.bands ?? {}) as Record<string, { shots?: unknown[] }>;
-    const needsReview = !bands || BANDS.some((band) => !Array.isArray(bands?.[band]?.shots));
-    storyboards[scene] = { ...parsed, needs_review: needsReview, source: basename(file) };
+    // нормализация: arrays | {shots:[...]} — одна каноническая схема
+    const sourceText = readInk(file);
+    const norm = normalizeStoryboard(parsed, sourceText, basename(file));
+    const needsReview = norm.needs_review;
+    storyboards[scene] = norm;
     // человекочитаемая копия
     const md: string[] = [`# Раскадровка ${scene}`, '', needsReview ? '**needs_review = true — внимательно проверить глазами**' : '', ''];
     for (const band of BANDS) {
-      const shots = (bands?.[band]?.shots ?? []) as Array<Record<string, unknown>>;
+      const shots = (norm.bands[band] ?? []) as Array<Record<string, unknown>>;
       md.push(`## Линейка ${band}`);
       md.push(''); md.push('| n | план | ракурс | действие | реплика | эмоция | сек | камера |'); md.push('|---|---|---|---|---|---|---|---|');
       for (const shot of shots) {
