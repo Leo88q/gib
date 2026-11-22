@@ -7,6 +7,7 @@ import { YEAR, lessonOfDay } from '@/lib/content/year/index.ts';
 import type { AgeBand } from '@/lib/types';
 import TaskView, { type AnswerPayload, type TaskInstance } from '@/components/TaskView';
 import ScenarioView from '@/components/ScenarioView';
+import CinemaStory from '@/components/CinemaStory';
 import ReadAloud from '@/components/ReadAloud';
 import SupportPractice from '@/components/SupportPractice';
 import Hud, { type HudData } from '@/components/Hud';
@@ -928,7 +929,7 @@ export default function Home() {
           {item?.type === 'task' && item.instance.kind !== 'social-practice' && <TaskView key={`${sessionId}-${step}`} instance={item.instance} band={profile?.band ?? '8-10'} profileId={profile?.id} sessionId={sessionId ?? undefined} step={step} resumedPractice={resumedPractice} draftKey={profile && sessionId ? switchDraftKey(profile.id, sessionId, step) : undefined} selectionKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(payload, ms) => { void answer(payload, ms).catch(() => {}); }} />}
           {item?.type === 'task' && item.instance.kind === 'social-practice' && item.instance.rounds && <SupportPractice key={`${sessionId}-${step}`} rounds={item.instance.rounds} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(cells, ms) => { void answer({ cells }, ms).catch(() => {}); }} onSkip={(ms) => { void answer({ skip: true }, ms).catch(() => {}); }} />}
           {item?.type === 'scenario' && (
-            <ScenarioView key={`${sessionId}-${step}`} band={profile?.band ?? '8-10'} scenario={item} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(a) => answer(a, 0)} />
+            <CinemaStory key={`${sessionId}-${step}`} band={profile?.band ?? '8-10'} scenario={item} draftKey={profile && sessionId ? selectionDraftKey(profile.id, sessionId, step) : undefined} onAnswer={(a) => answer(a, 0)} />
           )}
           </fieldset>
         </div>

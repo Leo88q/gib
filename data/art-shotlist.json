@@ -1,0 +1,1444 @@
+{
+  "w1d1_picture": {
+    "location": "двор",
+    "action": "смотрит вслед листку",
+    "emotion": "озадачен",
+    "props": [
+      "рисунок",
+      "ветер",
+      "листок"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w1d1_music": {
+    "location": "комната",
+    "action": "выбирает музыку",
+    "emotion": "любопытство",
+    "props": [
+      "музыкальный проигрыватель",
+      "наушники",
+      "пластинка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w1d1": {
+    "location": "мастерская",
+    "action": "искал краски, присел",
+    "emotion": "озадачен",
+    "props": [
+      "полка",
+      "краски",
+      "кисть"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w1d3": {
+    "location": "парк",
+    "action": "сел на скамейку",
+    "emotion": "усталость",
+    "props": [
+      "скамейка",
+      "лиса",
+      "листья"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w1d2": {
+    "location": "комната",
+    "action": "размышляет сидя",
+    "emotion": "задумчивая",
+    "props": [
+      "кресло",
+      "блокнот",
+      "карандаш"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w1d3_garden": {
+    "location": "парк",
+    "action": "устраивается рядом с книжкой",
+    "emotion": "спокойствие",
+    "props": [
+      "лиса",
+      "книжка",
+      "скамейка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w1d4": {
+    "location": "площадка",
+    "action": "размышляет над башней",
+    "emotion": "задумчивый",
+    "props": [
+      "башня",
+      "кубики",
+      "лиса"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w1d4_bridge": {
+    "location": "мастерская",
+    "action": "пробует подложить опору",
+    "emotion": "сосредоточенная",
+    "props": [
+      "макет моста",
+      "картонная опора",
+      "материалы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w1d2_postcard": {
+    "location": "комната",
+    "action": "смотрит на предмет в руках",
+    "emotion": "спокойный, добрый",
+    "props": [],
+    "video_role": "start-frame",
+    "needs_review": true
+  },
+  "w1d5": {
+    "location": "комната",
+    "action": "делает карточки",
+    "emotion": "творческий",
+    "props": [
+      "бумага",
+      "карандаши",
+      "ножницы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w2d1_club": {
+    "location": "площадка",
+    "action": "раздумывает над игрой",
+    "emotion": "замешательство",
+    "props": [
+      "шар",
+      "лиса",
+      "правила игры"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w1d5_puppet": {
+    "location": "мастерская",
+    "action": "двигает картонные деревья",
+    "emotion": "нерешительность",
+    "props": [
+      "картонные деревья",
+      "ширма",
+      "кукла"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w2d1": {
+    "location": "комната",
+    "action": "размышляет о правилах",
+    "emotion": "смущение",
+    "props": [
+      "игральная доска",
+      "карточки",
+      "книга правил"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d2": {
+    "location": "двор",
+    "action": "сидит отдыхает",
+    "emotion": "успокоение",
+    "props": [
+      "скамейка",
+      "мяч",
+      "дерево"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d2_library": {
+    "location": "библиотека",
+    "action": "листает книжку",
+    "emotion": "спокойный",
+    "props": [
+      "книжка",
+      "кресло",
+      "лампа"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d3": {
+    "location": "комната",
+    "action": "отходит и думает",
+    "emotion": "раздумье",
+    "props": [
+      "кубики",
+      "стул",
+      "полка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d3_pencil": {
+    "location": "комната",
+    "action": "тянет руку к карандашу",
+    "emotion": "настойчивый",
+    "props": [
+      "карандаш",
+      "друг",
+      "стол"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w2d4": {
+    "location": "мастерская",
+    "action": "присел отдохнуть",
+    "emotion": "усталость",
+    "props": [
+      "инструменты",
+      "верстак",
+      "коробка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d4_station": {
+    "location": "площадка",
+    "action": "ищет тихое место",
+    "emotion": "усталость",
+    "props": [
+      "скамейка",
+      "мяч",
+      "качели"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w2d5": {
+    "location": "комната",
+    "action": "размышляет над коробкой",
+    "emotion": "любопытство",
+    "props": [
+      "коробка с идеями",
+      "карандаш",
+      "лист бумаги"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w2d5_cards": {
+    "location": "мастерская",
+    "action": "придумывает карточки",
+    "emotion": "сосредоточенный",
+    "props": [
+      "бумага",
+      "карандаш",
+      "ножницы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w3d1": {
+    "location": "площадка",
+    "action": "предлагает побыть рядом",
+    "emotion": "сочувствие",
+    "props": [
+      "скамейка",
+      "мяч",
+      "игрушки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w3d1_seedling": {
+    "location": "комната",
+    "action": "смотрит на растение",
+    "emotion": "любопытство",
+    "props": [
+      "горшочек",
+      "растение",
+      "подоконник"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w3d2": {
+    "location": "двор",
+    "action": "спрашивает про правило",
+    "emotion": "замешательство",
+    "props": [
+      "друг",
+      "игра",
+      "карточка с правилами"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w3d2_map": {
+    "location": "карта района",
+    "action": "изучает карту",
+    "emotion": "замешательство",
+    "props": [
+      "карта",
+      "карандаш",
+      "метка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w3d3_kite": {
+    "location": "двор",
+    "action": "предлагает поиграть со змеем",
+    "emotion": "надежда",
+    "props": [
+      "воздушный змей",
+      "верёвка",
+      "трава"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w3d3": {
+    "location": "мастерская",
+    "action": "продолжает мастерить",
+    "emotion": "сосредоточенная",
+    "props": [
+      "материалы для поделки",
+      "ножницы",
+      "клей"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w3d4": {
+    "location": "комната",
+    "action": "рисует тихо",
+    "emotion": "спокойствие",
+    "props": [
+      "кисти",
+      "палитра",
+      "бумага"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w3d4_workshop": {
+    "location": "мастерская",
+    "action": "раскладывает краски",
+    "emotion": "спокойствие",
+    "props": [
+      "краски",
+      "кисти",
+      "палитра"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w3d5_team": {
+    "location": "площадка",
+    "action": "зовёт играть с мячом",
+    "emotion": "радостно",
+    "props": [
+      "мяч",
+      "лиса",
+      "рука"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w3d5": {
+    "location": "площадка",
+    "action": "раздумывает о выборе",
+    "emotion": "нерешительность",
+    "props": [
+      "мяч",
+      "табличка с правилами",
+      "взрослый силуэт вдалеке"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d1": {
+    "location": "комната",
+    "action": "пытается достать коробку",
+    "emotion": "озадачен",
+    "props": [
+      "коробка",
+      "кубики",
+      "полка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d2": {
+    "location": "комната",
+    "action": "рассказывает друзьям о забытом",
+    "emotion": "огорчение",
+    "props": [
+      "лис",
+      "мелки",
+      "друзья"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w4d1_assembly": {
+    "location": "мастерская",
+    "action": "пытается собрать лодку",
+    "emotion": "разочарование",
+    "props": [
+      "игрушечная лодка",
+      "детали",
+      "отвёртка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d2_banner": {
+    "location": "дом",
+    "action": "ищет ленту",
+    "emotion": "озадачен",
+    "props": [
+      "лента",
+      "коробка",
+      "игрушки"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w4d3_book": {
+    "location": "комната",
+    "action": "удерживает книжку",
+    "emotion": "упрямый",
+    "props": [
+      "книжка",
+      "кресло",
+      "плюшевый мишка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w4d3": {
+    "location": "класс",
+    "action": "возражает учителю",
+    "emotion": "несогласие",
+    "props": [
+      "учебник",
+      "доска",
+      "портфель"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d4_route": {
+    "location": "двор",
+    "action": "обсуждают правила игры",
+    "emotion": "недоумение",
+    "props": [
+      "машинки",
+      "фишки",
+      "поле"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d5": {
+    "location": "комната",
+    "action": "извиняется перед другом",
+    "emotion": "сожаление",
+    "props": [
+      "рисунок",
+      "лист бумаги",
+      "карандаши"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w4d4": {
+    "location": "комната",
+    "action": "обсуждают правила игры",
+    "emotion": "задумчивость",
+    "props": [
+      "настольная игра",
+      "фигурки игроков",
+      "карта поля"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w5d1": {
+    "location": "комната",
+    "action": "выбирает между вариантами",
+    "emotion": "раздумье",
+    "props": [
+      "кубики",
+      "альбом",
+      "карандаши"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w4d5_spill": {
+    "location": "комната",
+    "action": "испуганно смотрит на разлив",
+    "emotion": "испуг",
+    "props": [
+      "рисунок",
+      "стакан с водой",
+      "стол"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w5d1_crafts": {
+    "location": "комната",
+    "action": "выбирает между постройкой и рисованием",
+    "emotion": "раздумье",
+    "props": [
+      "кубики",
+      "карандаши",
+      "бумага"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d2": {
+    "location": "мастерская",
+    "action": "проверяет бумагу и краски",
+    "emotion": "сосредоточенность",
+    "props": [
+      "бумага",
+      "краски",
+      "кисть"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d2_materials": {
+    "location": "комната",
+    "action": "рассматривает кубики",
+    "emotion": "любопытство",
+    "props": [
+      "кубики",
+      "игрушка",
+      "коробка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d3": {
+    "location": "площадка",
+    "action": "рассматривает варежку",
+    "emotion": "любопытство",
+    "props": [
+      "варежка",
+      "снежинки",
+      "скамейка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d3_scarf": {
+    "location": "парк",
+    "action": "показывает шарф взрослому",
+    "emotion": "любопытство",
+    "props": [
+      "шарф",
+      "скамейка",
+      "взрослый"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d4": {
+    "location": "двор",
+    "action": "обсуждают выбор игры",
+    "emotion": "спорящие",
+    "props": [
+      "мяч",
+      "настольная игра",
+      "фишки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d4_festival": {
+    "location": "площадка",
+    "action": "предлагают игры друзьям",
+    "emotion": "весёлые",
+    "props": [
+      "мяч",
+      "скакалка",
+      "фрисби"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w5d5": {
+    "location": "площадка",
+    "action": "раздумывает о выборе игры",
+    "emotion": "нерешительность",
+    "props": [
+      "мяч",
+      "скакалка",
+      "качели"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w5d5_choice": {
+    "location": "площадка",
+    "action": "раздумывает о выборе",
+    "emotion": "нерешительность",
+    "props": [
+      "мяч",
+      "друзья",
+      "скамейка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w6d1_map": {
+    "location": "карта района",
+    "action": "изучает карту",
+    "emotion": "задумчивый",
+    "props": [
+      "карта",
+      "дорожка",
+      "домик"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w6d1": {
+    "location": "комната",
+    "action": "пытается нарисовать круг",
+    "emotion": "разочарование",
+    "props": [
+      "карандаш",
+      "бумага",
+      "ластик"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w6d2_tempo": {
+    "location": "мастерская",
+    "action": "выбирает бумагу",
+    "emotion": "сосредоточенный",
+    "props": [
+      "бумага",
+      "ножницы",
+      "рыбки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w6d2": {
+    "location": "комната",
+    "action": "продолжает собирать картинку",
+    "emotion": "спокойный",
+    "props": [
+      "пазл",
+      "стол",
+      "фигурки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w6d3": {
+    "location": "мастерская",
+    "action": "размышляет над мостом",
+    "emotion": "озадачена",
+    "props": [
+      "бумажный мост",
+      "кубик",
+      "материалы"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w6d3_pause": {
+    "location": "дом",
+    "action": "смотрит на крышу",
+    "emotion": "удивление",
+    "props": [
+      "домик",
+      "крыша",
+      "зверь"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w6d4": {
+    "location": "класс",
+    "action": "размышляет над задачей",
+    "emotion": "замешательство",
+    "props": [
+      "тетрадь",
+      "ручка",
+      "учебник"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w6d4_example": {
+    "location": "мастерская",
+    "action": "пытается сложить кораблик",
+    "emotion": "замешательство",
+    "props": [
+      "кораблик",
+      "бумага",
+      "ножницы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w6d5": {
+    "location": "мастерская",
+    "action": "ищет способ построить домик",
+    "emotion": "задумчивый",
+    "props": [
+      "кубики",
+      "инструменты",
+      "чертёж"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w6d5_design": {
+    "location": "площадка",
+    "action": "выбирает детали",
+    "emotion": "раздумье",
+    "props": [
+      "мост",
+      "детали",
+      "инструменты"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w7d1": {
+    "location": "комната",
+    "action": "рисует, отвлекаясь на шум",
+    "emotion": "сосредоточенность",
+    "props": [
+      "кисти",
+      "палитра",
+      "альбом"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d1_space": {
+    "location": "комната",
+    "action": "строит из кубиков",
+    "emotion": "сосредоточенный",
+    "props": [
+      "кубики",
+      "музыкальный проигрыватель"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w7d2": {
+    "location": "площадка",
+    "action": "пытается вспомнить",
+    "emotion": "задумчивость",
+    "props": [
+      "игральные фишки",
+      "карточка",
+      "табличка с правилами"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d2_remember": {
+    "location": "комната",
+    "action": "рисует подсказку",
+    "emotion": "вдохновение",
+    "props": [
+      "карандаш",
+      "бумага",
+      "блокнот"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d3": {
+    "location": "комната",
+    "action": "играют и говорят одновременно",
+    "emotion": "весёлое",
+    "props": [
+      "игрушки",
+      "кубики",
+      "мяч"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w7d3_switch": {
+    "location": "комната",
+    "action": "слушает объяснение",
+    "emotion": "внимательный",
+    "props": [
+      "Лис",
+      "доска",
+      "фишки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w7d4_note": {
+    "location": "класс",
+    "action": "рисует значки",
+    "emotion": "сосредоточенная",
+    "props": [
+      "блокнот",
+      "карандаш",
+      "значки"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d4": {
+    "location": "комната",
+    "action": "записывает шаг проекта",
+    "emotion": "сосредоточенный",
+    "props": [
+      "блокнот",
+      "ручка",
+      "план команды"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d5_check": {
+    "location": "комната",
+    "action": "рассматривает игрушки",
+    "emotion": "удовлетворение",
+    "props": [
+      "игрушки",
+      "полка",
+      "коробка"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w7d5": {
+    "location": "комната",
+    "action": "подбирает материалы для рисования",
+    "emotion": "сосредоточенность",
+    "props": [
+      "кисти",
+      "краски",
+      "палитра"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d1": {
+    "location": "комната",
+    "action": "собирает материалы",
+    "emotion": "сосредоточенность",
+    "props": [
+      "лист бумаги",
+      "карандаш",
+      "детали для поделки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d1_supplies": {
+    "location": "комната",
+    "action": "готовит кубики мяч книжку",
+    "emotion": "сосредоточенный",
+    "props": [
+      "кубики",
+      "мяч",
+      "книжка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d2": {
+    "location": "комната",
+    "action": "рассматривает предметы",
+    "emotion": "сосредоточенный",
+    "props": [
+      "кубик",
+      "мяч",
+      "мелок"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w8d2_path": {
+    "location": "двор",
+    "action": "прокладывает путь игрушкой",
+    "emotion": "сосредоточенный",
+    "props": [
+      "лисёнок",
+      "игрушка",
+      "дорожка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d3": {
+    "location": "комната",
+    "action": "размышляет над планом",
+    "emotion": "задумчивый",
+    "props": [
+      "план",
+      "блокнот",
+      "карандаш"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w8d4_tell": {
+    "location": "комната",
+    "action": "смотрит на предмет в руках",
+    "emotion": "спокойный, добрый",
+    "props": [],
+    "video_role": "start-frame",
+    "needs_review": true
+  },
+  "w8d3_step": {
+    "location": "мастерская",
+    "action": "разглядывает рисунок",
+    "emotion": "задумчивость",
+    "props": [
+      "рисунок домика",
+      "детали",
+      "инструменты"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w8d4": {
+    "location": "комната",
+    "action": "рассказывает историю",
+    "emotion": "воодушевлённый",
+    "props": [
+      "игрушка",
+      "карта",
+      "книга"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d5": {
+    "location": "комната",
+    "action": "собирает вещи для рисунка",
+    "emotion": "сосредоточенный",
+    "props": [
+      "кисти",
+      "краски",
+      "бумага"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w8d5_gallery": {
+    "location": "комната",
+    "action": "рассматривает рисунки",
+    "emotion": "задумчивый",
+    "props": [
+      "рисунки",
+      "мольберт",
+      "кисти"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w9d2": {
+    "location": "комната",
+    "action": "сидит и размышляет",
+    "emotion": "задумчивый",
+    "props": [
+      "окно",
+      "штора",
+      "стул"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w9d1_rules": {
+    "location": "площадка",
+    "action": "раздумывает над правилом",
+    "emotion": "задумчивый",
+    "props": [
+      "дорожка",
+      "карточка с правилами",
+      "игрушечный кубик"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w9d1": {
+    "location": "площадка",
+    "action": "обсуждает новое правило игры",
+    "emotion": "любопытство",
+    "props": [
+      "мяч",
+      "дети",
+      "табличка с правилами"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w9d3_roles": {
+    "location": "комната",
+    "action": "выбирает игрушку",
+    "emotion": "задумчивый",
+    "props": [
+      "игрушка",
+      "сцена",
+      "костюм"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w9d3": {
+    "location": "класс",
+    "action": "размышляет о предложении",
+    "emotion": "сомнение",
+    "props": [
+      "сценарий",
+      "стул",
+      "доска"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w9d2_weather": {
+    "location": "двор",
+    "action": "прячутся от дождя",
+    "emotion": "озадаченные",
+    "props": [
+      "зонт",
+      "лужи",
+      "капли"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w9d4_signal": {
+    "location": "площадка",
+    "action": "останавливается перед карточкой",
+    "emotion": "любопытство",
+    "props": [
+      "синяя карточка",
+      "друзья",
+      "Лис"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w9d5": {
+    "location": "площадка",
+    "action": "обсуждают правила игры",
+    "emotion": "задумчивость",
+    "props": [
+      "настольная игра",
+      "фишки",
+      "кубик"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w9d4": {
+    "location": "комната",
+    "action": "ищет замену кисточке",
+    "emotion": "задумчивый",
+    "props": [
+      "лист бумаги",
+      "мелки",
+      "карандаши"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d1": {
+    "location": "мастерская",
+    "action": "собирает материалы",
+    "emotion": "сосредоточенный",
+    "props": [
+      "инструменты",
+      "листы",
+      "клей"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d1_prepare": {
+    "location": "мастерская",
+    "action": "складывает материалы в коробку",
+    "emotion": "сосредоточенная",
+    "props": [
+      "коробка",
+      "инструменты",
+      "материалы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w9d5_plan": {
+    "location": "площадка",
+    "action": "обсуждает игру с друзьями",
+    "emotion": "нерешительность",
+    "props": [
+      "мяч",
+      "скамейка",
+      "табличка с правилами"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d2": {
+    "location": "мастерская",
+    "action": "делает макет",
+    "emotion": "сосредоточенная",
+    "props": [
+      "детали макета",
+      "клей",
+      "ножницы"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d2_garden": {
+    "location": "мастерская",
+    "action": "выбирает материалы",
+    "emotion": "вдохновение",
+    "props": [
+      "листы бумаги",
+      "ножницы",
+      "клей"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d3": {
+    "location": "комната",
+    "action": "выбирает порядок занятий",
+    "emotion": "раздумье",
+    "props": [
+      "блокнот",
+      "карандаш",
+      "расписание"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w10d3_order": {
+    "location": "комната",
+    "action": "раздумывает над выбором",
+    "emotion": "задумчивый",
+    "props": [
+      "книжка",
+      "инструменты",
+      "дорожка из блоков"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w10d4_change": {
+    "location": "мастерская",
+    "action": "работает над схемой",
+    "emotion": "сосредоточенный",
+    "props": [
+      "схема",
+      "карандаш",
+      "блокнот"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w10d4": {
+    "location": "комната",
+    "action": "выбирает игру",
+    "emotion": "любопытство",
+    "props": [
+      "рисунок",
+      "кубики",
+      "игральные карты"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d5": {
+    "location": "комната",
+    "action": "выбирает игру",
+    "emotion": "раздумье",
+    "props": [
+      "стопка игр",
+      "часы",
+      "карта игр"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w10d5_review": {
+    "location": "комната",
+    "action": "рассматривает рисунок",
+    "emotion": "любопытство",
+    "props": [
+      "рисунок",
+      "карандаш",
+      "блокнот"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w11d1": {
+    "location": "мастерская",
+    "action": "пробует построить мост",
+    "emotion": "любопытство",
+    "props": [
+      "кубики",
+      "игрушка",
+      "инструменты"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d2_game": {
+    "location": "комната",
+    "action": "спрашивает об идеях",
+    "emotion": "ожидание",
+    "props": [
+      "доска",
+      "маркер",
+      "листы бумаги"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d2": {
+    "location": "комната",
+    "action": "обсуждает правила игры",
+    "emotion": "вдохновение",
+    "props": [
+      "кубики",
+      "друзья",
+      "план игры"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d1_cloud": {
+    "location": "комната",
+    "action": "рисует облако игрушке",
+    "emotion": "вдохновение",
+    "props": [
+      "лиса",
+      "игрушка",
+      "карандаш"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d3": {
+    "location": "комната",
+    "action": "показывает складывание кубиков",
+    "emotion": "терпение",
+    "props": [
+      "кубики",
+      "друг",
+      "Лис"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d3_show": {
+    "location": "мастерская",
+    "action": "объясняет идею макета",
+    "emotion": "вдохновлённый",
+    "props": [
+      "схема",
+      "макет",
+      "инструменты"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d4": {
+    "location": "комната",
+    "action": "рассматривает кораблик",
+    "emotion": "любопытство",
+    "props": [
+      "лиса",
+      "бумажный кораблик"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w11d4_shadow": {
+    "location": "комната",
+    "action": "смотрит на тень",
+    "emotion": "любопытство",
+    "props": [
+      "лиса",
+      "игрушка",
+      "стена"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d5": {
+    "location": "мастерская",
+    "action": "придумывает идеи",
+    "emotion": "сосредоточенная",
+    "props": [
+      "коробка",
+      "карандаши",
+      "блокнот"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w11d5_shapes": {
+    "location": "комната",
+    "action": "рисует домик для игрушки",
+    "emotion": "сосредоточенный",
+    "props": [
+      "карандаш",
+      "бумага",
+      "игрушка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w12d1": {
+    "location": "комната",
+    "action": "обсуждают подготовку праздника",
+    "emotion": "радостно",
+    "props": [
+      "игрушки",
+      "украшения",
+      "лента"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w12d1_invite": {
+    "location": "дом",
+    "action": "раздумывает о приглашении",
+    "emotion": "нерешительность",
+    "props": [
+      "письмо",
+      "кресло",
+      "часы"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w12d2": {
+    "location": "комната",
+    "action": "сменяет тему разговора",
+    "emotion": "спокойствие",
+    "props": [
+      "стул",
+      "стол",
+      "книга"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w12d2_comment": {
+    "location": "двор",
+    "action": "отходит от игры",
+    "emotion": "расстроен",
+    "props": [
+      "рисунок",
+      "игрушка",
+      "скамейка"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w12d3": {
+    "location": "площадка",
+    "action": "спрашивает про игру",
+    "emotion": "любопытство",
+    "props": [
+      "лиса",
+      "игра",
+      "знак"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w12d3_new": {
+    "location": "площадка",
+    "action": "рассматривает игру",
+    "emotion": "любопытство",
+    "props": [
+      "игра",
+      "лиса",
+      "игрушки"
+    ],
+    "video_role": "start-frame",
+    "needs_review": false
+  },
+  "w12d4": {
+    "location": "мастерская",
+    "action": "делает паузу над поделкой",
+    "emotion": "сосредоточенный",
+    "props": [
+      "поделка",
+      "инструменты",
+      "материалы"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w12d4_offer": {
+    "location": "мастерская",
+    "action": "остановился за поделкой",
+    "emotion": "задумчивый",
+    "props": [
+      "детали поделки",
+      "инструменты",
+      "коробка с материалами"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w12d5_finish": {
+    "location": "комната",
+    "action": "закрывает альбом и отдыхает",
+    "emotion": "удовлетворение",
+    "props": [
+      "альбом",
+      "карандаши",
+      "карта"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  },
+  "w12d5": {
+    "location": "комната",
+    "action": "размышляет о выборе игры",
+    "emotion": "задумчивый",
+    "props": [
+      "книга с играми",
+      "настольная игра",
+      "фигурка персонажа"
+    ],
+    "video_role": "cutaway",
+    "needs_review": false
+  }
+}
