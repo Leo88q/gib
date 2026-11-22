@@ -7,6 +7,8 @@
  *
  *   dry-run:  npx tsx scripts/link-frame-stills.ts [--candidate=1]
  *   применить: npx tsx scripts/link-frame-stills.ts --yes [--candidate=1] [--force]
+ *   превью 0 ₽: npx tsx scripts/link-frame-stills.ts --yes --placeholder
+ *                (отсутствующие кадры заменяются committed-артом мест v2 — ТОЛЬКО тест кино-пайплайна)
  *
  * Приоритет источника: public/art/frames/<key>.png (отобрано вами) →
  * out/art/frames/<key>-c<N>.png (N из --candidate). Существующие _stills
@@ -21,9 +23,24 @@ const argv = process.argv.slice(2);
 const yes = argv.includes('--yes');
 const force = argv.includes('--force');
 const candidate = Number(argv[argv.findIndex((a) => a.startsWith('--candidate='))]?.split('=')[1] ?? '1') || 1;
+const placeholder = argv.includes('--placeholder'); // подставить committed-арт мест вместо отсутствующих кадров
 const stillsDir = join('out', 'cinema', '_stills');
 const CATALOG = join('data', 'frame-catalog.json');
 const AGE_BAND = /^(w\d+d\d+(?:_[a-z]+)?)-(\d+-\d+)\.ink$/;
+
+// Временные превью из committed-арта (public/art/v2/places) для теста кино-цепочки за 0 ₽.
+const PLACEHOLDER_PLACE: Record<string, string> = {
+  'дом': 'home', 'комната': 'home', 'класс': 'home', 'карта района': 'map',
+  'двор': 'yard', 'площадка': 'playground', 'парк': 'playground',
+  'библиотека': 'library', 'рынок': 'market', 'теплица': 'greenhouse', 'мастерская': 'workshop',
+};
+const placeholderFor = (location: string): string | null => {
+  const slug = PLACEHOLDER_PLACE[location];
+  if (!slug) return null;
+  const file = join('public', 'art', 'v2', 'places', `${slug}.png`);
+  return existsSync(file) ? file : null;
+};
+
 
 if (!existsSync(CATALOG)) {
   console.error(`Нет ${CATALOG}. Сначала: npm run build:frames`);
@@ -66,6 +83,11 @@ for (const [scene, list] of scenes) {
     const dest = join(stillsDir, `${scene}-${band}.png`);
     if (existsSync(dest) && !force) { skippedExisting++; continue; }
     if (!entry || entry.disabled || !src) {
+      if (placeholder) {
+        // stage у нас один на сцену — берём локацию из того же деривач-паса
+        const ph = placeholderFor(stage.location);
+        if (ph) { jobs.push({ scene, band, key, src: ph, dest, review: true }); continue; }
+      }
       missing.set(key, (missing.get(key) ?? 0) + 1);
       continue;
     }
@@ -90,4 +112,15 @@ if (!yes) {
 }
 mkdirSync(stillsDir, { recursive: true });
 for (const job of jobs) copyFileSync(job.src, job.dest);
-console.log(`\nСкопировано ${jobs.length} кадров в ${stillsDir}. Дальше: npm run test:cinema-manifest не нужно (манифест соберёт render), затем: npx tsx scripts/render-cinema.ts`);
+const placeholderCount = jobs.filter((j) => j.src.startsWith(join('public', 'art', 'v2', 'places'))).length;
+if (placeholderCount > 0) {
+  console.log(`  ВНИМАНИЕ: ${placeholderCount} кадров — ВРЕМЕННЫЕ превью из public/art/v2/places (без героев).`);
+  console.log('  Это только проверка кино-цепочки (голос + Ken Burns + выборы). Боевой шаг: сгенерируйте кадры каталога');
+  console.log('  (npm run art:frames -- --yes), отберите глазами в public/art/frames/ и перекопируйте без --placeholder.');
+}
+console.log(`\nСкопировано ${jobs.length} кадров в ${stillsDir}. Дальше: npx tsx scripts/render-cinema.ts`);
+if (jobs.length === 0) {
+  console.log('\nКадров нет. Минимальный путь: npm run art:frames → глазами просмотрите out/art/frames →');
+  console.log('отобранное скопируйте в public/art/frames/ → npx tsx scripts/link-frame-stills.ts --yes → npx tsx scripts/render-cinema.ts');
+  console.log('Для мгновенного превью без трат: npx tsx scripts/link-frame-stills.ts --yes --placeholder');
+}

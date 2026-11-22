@@ -57,12 +57,30 @@ yandex-art-frames dry-run:    npx tsx scripts/yandex-art-frames.ts
 yandex-art-frames боевой:     YANDEX_API_KEY=... npx tsx scripts/yandex-art-frames.ts --yes [--band=8-10] [--candidates=2]
 stills (dry-run):             npm run stills:link
 stills (применить):           npx tsx scripts/link-frame-stills.ts --yes [--candidate=1] [--force]
+stills (превью 0 ₽):          npx tsx scripts/link-frame-stills.ts --yes --placeholder
 ```
 
 `build:frames` идемпотентен: `used_by` пересчитывается из кода, `path`,
 `verified`, `disabled` и `note` — сохраняются. Если кадр кадрируется (нужен
 свой вариант поверх каталожного), добавьте отдельную запись или копию с другим
 ключом; подставить свой файл — просто положить его по `path` из каталога.
+
+## Превью без единой генерации (0 ₽)
+
+Если кино нужно посмотреть **до** того, как нарисованы кадры, — committed-арт
+мест из v2 можно временно подставить вместо отсутствующих кадров:
+
+```bash
+npx tsx scripts/link-frame-stills.ts --yes --placeholder
+npx tsx scripts/render-cinema.ts
+```
+
+`--placeholder` копирует `public/art/v2/places/<place>.png` в `_stills` только
+для тех сцен, у которых нет ни `public/art/frames/<key>.png`, ни кандидата в
+`out/art/frames/`. Это тест цепочки (голос + Ken Burns + выборы), а не
+кино-контент: сцены без героев, места приближённые (дом/класс/парк →
+`home.png` / `playground.png`). Боевой шаг — сгенерировать кадры каталога и
+перекопировать **без** `--placeholder`.
 
 ## Честно об ограничениях
 
