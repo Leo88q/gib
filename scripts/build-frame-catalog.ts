@@ -97,7 +97,9 @@ const keepManual = (prev: FrameEntry | undefined) => ({
   ...(prev?.disabled !== undefined ? { disabled: prev.disabled } : {}),
   ...(prev?.note ? { note: prev.note } : {}),
 });
-const prevOrNew = (prev: FrameEntry | undefined, key: string) => prev?.verified ? false : prev?.needs_review ?? true;
+// needs_review: человек снял флаг (verified) > ручная правка (prev.needs_review) > флаг источника (shotlist parse ok?) > true
+const prevOrNew = (prev: FrameEntry | undefined, refNeedsReview: boolean) =>
+  prev?.verified ? false : prev?.needs_review ?? refNeedsReview;
 
 const frames: Record<string, FrameEntry> = {};
 for (const [key, used] of [...heroUsed].sort()) {
@@ -114,7 +116,7 @@ for (const [key, used] of [...heroUsed].sort()) {
     path: prev?.path ?? `/art/frames/${key}.png`,
     used_by: [...used].sort(),
     source: ref.stage.source,
-    needs_review: prevOrNew(prev, key),
+    needs_review: prevOrNew(prev, ref.stage.needs_review),
     ...keepManual(prev),
   };
 }
@@ -127,7 +129,7 @@ for (const [key, used] of [...locUsed].sort()) {
     path: prev?.path ?? `/art/frames/${key}.png`,
     used_by: [...used].sort(),
     source: ref.stage.source,
-    needs_review: prevOrNew(prev, key),
+    needs_review: prevOrNew(prev, ref.stage.needs_review),
     ...keepManual(prev),
   };
 }
