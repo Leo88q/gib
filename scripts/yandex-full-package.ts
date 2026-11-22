@@ -36,6 +36,7 @@ const yes = hasYesFlag(argv);
 const candidates = Number(argValue(argv, 'candidates') ?? '2');
 const band = argValue(argv, 'band'); // 5-7 | 8-10 | 11-13 — арт только под одну линейку
 const only = argValue(argv, 'only');           // прогнать только одну фазу
+const force = argv.includes('--force'); // перегенерация раскадровок и добора вебинаров
 const skipRaw = argValue(argv, 'skip') ?? '';  // фазы через запятую
 const skip = new Set(skipRaw.split(',').map((s) => s.trim()).filter(Boolean));
 
@@ -54,8 +55,8 @@ const tsx = (script: string, ...flags: string[]): [string, string[]] => ['npx', 
 const phases: Phase[] = [
   { id: 'parent-webinars', title: 'Родительская серия вебинаров (12 файлов, код)', cost: '0 ₽', run: tsx('scripts/gen-parent-webinars.ts'), needsKey: false },
   { id: 'webinar-check', title: 'Самопроверка всех вебинаров LLM (48 файлов)', cost: '≈150 ₽', run: tsx('scripts/yandex-webinar-check.ts', '--yes'), needsKey: true },
-  { id: 'storyboards', title: 'Раскадровки 121 сцены × 3 линейки LLM → data/storyboards.json', cost: '≈102 ₽', run: tsx('scripts/yandex-storyboard.ts', '--yes'), needsKey: true },
-  { id: 'expand-webinars', title: 'Добор учительских вебинаров до 25–30 мин LLM', cost: '≈125 ₽', run: tsx('scripts/expand-webinars.ts', '--yes'), needsKey: true },
+  { id: 'storyboards', title: 'Раскадровки 121 сцены × 3 линейки LLM → data/storyboards.json', cost: '≈102 ₽', run: tsx('scripts/yandex-storyboard.ts', '--yes', ...(force ? ['--force'] : [])), needsKey: true },
+  { id: 'expand-webinars', title: 'Добор учительских вебинаров до 25–30 мин LLM', cost: '≈125 ₽', run: tsx('scripts/expand-webinars.ts', '--yes', ...(force ? ['--force'] : [])), needsKey: true },
   { id: 'art-stage', title: 'Постановка сцен shotlist (LLM, один раз на сцену) — УБИРАЕТ ОДНООБРАЗИЕ', cost: '≈25 ₽', run: tsx('scripts/art-stage.ts', '--yes'), needsKey: true },
   { id: 'catalog', title: 'Каталог переиспользуемых кадров → data/frame-catalog.json (0 ₽)', cost: '0 ₽', run: tsx('scripts/build-frame-catalog.ts'), needsKey: false },
   { id: 'art', title: `Арт ПО КАТАЛОГУ${band ? ` (линейка ${band})` : ''}: ${artFrames} кадров × ${candidates} канд. = ${artFrames * candidates} генераций (вместо ${(band ? 121 : 363) * candidates})`, cost: `≈${artCost.toFixed(0)} ₽`, run: tsx('scripts/yandex-art-frames.ts', `--candidates=${candidates}`, ...(band ? [`--band=${band}`] : []), '--yes'), needsKey: true },
@@ -78,6 +79,7 @@ for (const phase of selected) {
   console.log(`  • ${phase.title} — ${phase.cost}${note}`);
 }
 console.log(`\nИтого денег (без трат, уже совершённых): ≈${(150 + 102 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art-stage') ? 0 : 25) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + shotlist 25 + арт по каталогу ${artCost.toFixed(0)})`);
+if (force) console.log('  --force: раскадровки 121 сцена и добор всех 38 вебинаров перегенерируются заново (весь объём оплачивается повторно).');
 console.log('Остаток гранта на старте этого прогона ≈ 7 900 ₽ (минус уже потраченное на сайте Yandex Cloud, если было).\n');
 
 if (!yes) {
