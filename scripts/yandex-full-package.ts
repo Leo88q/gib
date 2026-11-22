@@ -5,9 +5,12 @@
  *   1. родительская серия вебинаров (локально, 0 ₽)
  *   2. проверка всех вебинаров LLM'ом (~80 ₽)
  *   3. раскадровки всех 121 сцены LLM'ом (~105 ₽)
- *   4. арт: Alice AI ART по всем сценам (N кандидатов; каждый кадр 2,23 ₽)
- *   5. кино: Ken Burns + войс поверх отобранных кадров (0 ₽; требует _stills)
- *   6. тесты: test:content + test:cinema-manifest + tsc
+ *   4. постановка сцен shotlist (LLM, ≈25 ₽) — снимает однообразие кадров
+ *   5. каталог переиспользуемых кадров (0 ₽) → data/frame-catalog.json
+ *   6. арт ПО КАТАЛОГУ: кадров ~24–120, а не 363 (см. docs/frame-reuse.md)
+ *   7. stills: каталог → out/cinema/_stills (копии, 0 ₽)
+ *   8. кино: Ken Burns + войс поверх кадров (0 ₽; требует _stills)
+ *   9. тесты: test:content + test:cinema-manifest + test:frames + tsc
  *
  * БЕЗ --yes — сухой прогон: печатает, что будет сделано, объёмы и деньги.
  *
@@ -20,8 +23,10 @@
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --only=tests
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --band=8-10   # арт только под одну линейку
  *   YANDEX_API_KEY=КЛЮЧ npx tsx scripts/yandex-full-package.ts --yes --skip=art
+ *   npm run build:frames      # пересобрать каталог кадров вручную (0 ₽)
+ *   npm run stills:link       # разложить кадры по _stills вручную (0 ₽)
  */
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { argValue, hasYesFlag } from './yandex-api.ts';
@@ -34,8 +39,14 @@ const only = argValue(argv, 'only');           // прогнать только 
 const skipRaw = argValue(argv, 'skip') ?? '';  // фазы через запятую
 const skip = new Set(skipRaw.split(',').map((s) => s.trim()).filter(Boolean));
 
-const ART_SCENES = band ? 121 : 363; // 121 уникальная сцена; с --band — одна линейка
-const artCost = ART_SCENES * candidates * 2.23;
+// Кадры считаем по каталогу (он коммитится); нет файла — эвристика «24 кадра».
+let artFrames = 24;
+try {
+  const parsed = JSON.parse(readFileSync(join('data', 'frame-catalog.json'), 'utf8')) as { frames?: Record<string, { kind?: string; band?: string; disabled?: boolean }> };
+  const usable = Object.values(parsed.frames ?? {}).filter((f) => !f.disabled);
+  artFrames = usable.filter((f) => !band || f.kind === 'location' || f.band === band).length;
+} catch { /* каталог ещё не собран — показываем пессимистичную оценку */ }
+const artCost = artFrames * candidates * 2.23;
 
 type Phase = { id: string; title: string; cost: string; run: [string, string[]]; needsKey: boolean; needsStills?: boolean };
 const tsx = (script: string, ...flags: string[]): [string, string[]] => ['npx', ['tsx', script, ...flags]];
@@ -46,7 +57,9 @@ const phases: Phase[] = [
   { id: 'storyboards', title: 'Раскадровки 121 сцены × 3 линейки LLM → data/storyboards.json', cost: '≈102 ₽', run: tsx('scripts/yandex-storyboard.ts', '--yes'), needsKey: true },
   { id: 'expand-webinars', title: 'Добор учительских вебинаров до 25–30 мин LLM', cost: '≈125 ₽', run: tsx('scripts/expand-webinars.ts', '--yes'), needsKey: true },
   { id: 'art-stage', title: 'Постановка сцен shotlist (LLM, один раз на сцену) — УБИРАЕТ ОДНООБРАЗИЕ', cost: '≈25 ₽', run: tsx('scripts/art-stage.ts', '--yes'), needsKey: true },
-  { id: 'art', title: `Арт ${band ? `линейка ${band}` : 'все линейки'}, ${candidates} канд./сцену (${ART_SCENES * candidates} кадров)`, cost: `≈${artCost.toFixed(0)} ₽`, run: tsx('scripts/yandex-art.ts', `--candidates=${candidates}`, ...(band ? [`--band=${band}`] : []), '--yes'), needsKey: true },
+  { id: 'catalog', title: 'Каталог переиспользуемых кадров → data/frame-catalog.json (0 ₽)', cost: '0 ₽', run: tsx('scripts/build-frame-catalog.ts'), needsKey: false },
+  { id: 'art', title: `Арт ПО КАТАЛОГУ${band ? ` (линейка ${band})` : ''}: ${artFrames} кадров × ${candidates} канд. = ${artFrames * candidates} генераций (вместо ${(band ? 121 : 363) * candidates})`, cost: `≈${artCost.toFixed(0)} ₽`, run: tsx('scripts/yandex-art-frames.ts', `--candidates=${candidates}`, ...(band ? [`--band=${band}`] : []), '--yes'), needsKey: true },
+  { id: 'stills', title: 'Разложить кадры каталога по out/cinema/_stills (копии, 0 ₽)', cost: '0 ₽', run: tsx('scripts/link-frame-stills.ts', '--yes'), needsKey: false },
   { id: 'cinema', title: 'Кино: Ken Burns + войс из _stills → out/cinema + manifest', cost: '0 ₽', run: tsx('scripts/render-cinema.ts'), needsKey: false, needsStills: true },
   { id: 'cinema-manifest', title: 'Кино: сборка public/cinema/manifest.json', cost: '0 ₽', run: tsx('scripts/build-cinema-manifest.ts'), needsKey: false },
   { id: 'tests', title: 'Проверки: test:content + test:cinema-manifest + tsc', cost: '0 ₽', run: ['npm', ['run', 'test:content']], needsKey: false },
@@ -64,7 +77,7 @@ for (const phase of selected) {
   const note = phase.needsStills && stillsCount === 0 ? '  ← ПРОПУЩУ (нет _stills — сначала отбор кадров)' : '';
   console.log(`  • ${phase.title} — ${phase.cost}${note}`);
 }
-console.log(`\nИтого денег (без трат, уже совершённых): ≈${(150 + 102 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art-stage') ? 0 : 25) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + shotlist 25 + арт ${artCost.toFixed(0)})`);
+console.log(`\nИтого денег (без трат, уже совершённых): ≈${(150 + 102 + (skip.has('expand-webinars') || only === 'tests' ? 0 : 125) + (skip.has('art-stage') ? 0 : 25) + (skip.has('art') ? 0 : artCost)).toFixed(0)} ₽ (проверка 150 + раскадровки 102 + добор 125 + shotlist 25 + арт по каталогу ${artCost.toFixed(0)})`);
 console.log('Остаток гранта на старте этого прогона ≈ 7 900 ₽ (минус уже потраченное на сайте Yandex Cloud, если было).\n');
 
 if (!yes) {
@@ -84,7 +97,7 @@ for (const phase of selected) {
   const result = spawnSync(bin, args, { stdio: 'inherit', env: process.env, shell: false });
   if (result.status !== 0) failures.push(phase.id);
   if (phase.id === 'tests') {
-    for (const extra of [['npm', 'run', 'test:cinema-manifest'], ['npx', 'tsc', '--noEmit']]) {
+    for (const extra of [['npm', 'run', 'test:cinema-manifest'], ['npm', 'run', 'test:frames'], ['npx', 'tsc', '--noEmit']]) {
       const r = spawnSync(extra[0], extra.slice(1), { stdio: 'inherit', env: process.env });
       if (r.status !== 0) failures.push(`tests:${extra.slice(1).join(' ')}`);
     }

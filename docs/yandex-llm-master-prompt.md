@@ -32,12 +32,14 @@ YANDEX_API_KEY=<ваш ключ AI Studio> npx tsx scripts/yandex-full-package.t
 | 3 | storyboards | LLM раскадровывает каждую из 121 уникальной сцены × 3 линейки: 6–8 кадров, план/ракурс/действие/реплика (дословно из ink)/эмоция/секунды/камера → `data/storyboards.json` + `out/storyboards/<scene>.md` | `scripts/yandex-storyboard.ts` | ≈102 ₽ |
 | 4 | expand-webinars | LLM добирает учительские вебинары до 25–30 мин голоса alena, не переписывая готовое | `scripts/expand-webinars.ts` | ≈125 ₽ |
 | 5 | art-stage | LLM разворачивает каждую из 121 сцены в постановку (локация из канона, действие глаголом, эмоция, до 3 предметов) → `data/art-shotlist.json`. **Без этой фазы все кадры рисуются по одной оффлайн-эвристике («комната, спокойный, добрый») и выходят одинаковыми.** Уже сгенерированные записи сохраняются | `scripts/art-stage.ts` | ≈25 ₽ |
-| 6 | art | Alice AI ART: постановка берётся из `art-shotlist.json`; все сцены × `--candidates=2` (726 кадров, `deep/` и `week-one/` — дубликаты, генерируются один раз) → `out/art/`; уже готовые файлы пропускаются (`--force` — иначе) | `scripts/yandex-art.ts` | ≈1 620 ₽ |
-| 7 | cinema | Ken Burns + войс из **отобранных вами** кадров `out/cinema/_stills/` → `out/cinema/` | `scripts/render-cinema.ts` | 0 ₽ |
-| 8 | cinema-manifest | Сборка `public/cinema/manifest.json` | `scripts/build-cinema-manifest.ts` | 0 ₽ |
-| 9 | tests | `test:content` + `test:cinema-manifest` + `tsc --noEmit` | пакет | 0 ₽ |
+| 6 | catalog | Сборка переиспользуемых кадров: hero+локация+эмоция → `data/frame-catalog.json` (0 ₽, оффлайн). Принцип владельца: один кадр вставляется во все сцены с той же постановкой — см. docs/frame-reuse.md | `scripts/build-frame-catalog.ts` | 0 ₽ |
+| 7 | art | Alice AI ART **по каталогу** (не по сценам): ~24–120 кадров × `--candidates=2` вместо 726 → `out/art/frames/`; уже готовые пропускаются; `--band=8-10` — только одна линейка | `scripts/yandex-art-frames.ts` | ≈60–270 ₽ (при 24 кадрах ≈107 ₽) |
+| 8 | stills | Разложить отобранные/сгенерированные кадры по `out/cinema/_stills/<scene>-<band>.png` (копии, дублируются из каталога) | `scripts/link-frame-stills.ts` | 0 ₽ |
+| 9 | cinema | Ken Burns + войс из **отобранных вами** кадров `out/cinema/_stills/` → `out/cinema/` | `scripts/render-cinema.ts` | 0 ₽ |
+| 10 | cinema-manifest | Сборка `public/cinema/manifest.json` | `scripts/build-cinema-manifest.ts` | 0 ₽ |
+| 11 | tests | `test:content` + `test:cinema-manifest` + `tsc --noEmit` | пакет | 0 ₽ |
 
-Фаза 7 сама пропустится, пока в `out/cinema/_stills/` нет кадров — сначала
+Фаза 9 сама пропустится, пока в `out/cinema/_stills/` нет кадров — сначала
 ваш отбор глазами из `out/art/` (ошибка/каша → `out/art-rejects/`).
 
 Полезные флаги:
@@ -52,7 +54,7 @@ YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --only=tests
 # пропустить дорогую арт-фазу (только тексты и раскадровки, ≈400 ₽):
 YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --skip=art
 
-# арт только под одну возрастную линейку (242 кадра, ≈540 ₽):
+# арт только под одну возрастную линейку (герои одной линейки + все B-roll):
 YANDEX_API_KEY=... npx tsx scripts/yandex-full-package.ts --yes --band=8-10
 
 # пилот недели 1 вместо всей программы:
