@@ -279,7 +279,8 @@
     "webinars:tts": "tsx scripts/webinar-tts.ts",
     "webinars:art": "tsx scripts/webinar-art.ts",
     "webinars:render": "tsx scripts/render-webinar-video.ts",
-    "test:webinar-video-plan": "node --experimental-strip-types scripts/test-webinar-video-plan.ts"
+    "test:webinar-video-plan": "node --experimental-strip-types scripts/test-webinar-video-plan.ts",
+    "webinars:slides": "tsx scripts/gen-webinar-slides.ts"
   },
   "dependencies": {
     "blockly": "^12.5.1",
