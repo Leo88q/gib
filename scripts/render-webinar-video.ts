@@ -12,7 +12,7 @@
  *
  * Текст на кадре (нижняя треть: название слайда; верх: линейка и счётчик слайдов)
  * включается по возможности: шрифт берётся из --font / WEBINAR_FONT_FILE /
- * public/fonts/opendyslexic-regular.woff2 / системного fc-list, и только если
+ * public/fonts/opendyslexic-regular.ttf (конвертирован из woff2) / системного fc-list, и только если
  * ffmpeg реально его жуёт. Иначе рендер идёт без текста с предупреждением.
  *
  * Требования: ffmpeg и ffprobe в PATH (brew install ffmpeg).
@@ -66,6 +66,8 @@ const FORMAT_LABEL: Record<WebinarAudience, string> = { teacher: 'Для учи�
 // --- Шрифт для drawtext: берём первый, который ffmpeg реально использует ----
 const fontCandidates = [
   fontArg,
+  // .ttf — первым: libfreetype его читает всегда; .woff2 многих сборок не жуёт.
+  join('public', 'fonts', 'opendyslexic-regular.ttf'),
   join('public', 'fonts', 'opendyslexic-regular.woff2'),
 ].filter((v): v is string => Boolean(v));
 // Системные кандидаты (mac + linux)
@@ -82,16 +84,25 @@ try {
   if (fc) fontCandidates.push(fc);
 } catch { /* fc-list нет — не беда */ }
 
-const probeFont = (font: string): boolean => {
-  if (!existsSync(font)) return false;
+const probeFont = (font: string): { ok: boolean; note: string } => {
+  if (!existsSync(font)) return { ok: false, note: 'файл не найден' };
   try {
     execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=black:s=64x64:d=0.1', '-vf', `drawtext=text='a':fontfile=${font.replace(/:/g, '\\:')}:fontsize=24:fontcolor=white`, '-frames:v', '1', '-f', 'null', '-'], { stdio: ['ignore', 'ignore', 'pipe'] });
-    return true;
-  } catch { return false; }
+    return { ok: true, note: '' };
+  } catch (error) {
+    const stderr = (error as { stderr?: Buffer })?.stderr?.toString().trim() ?? '';
+    const last = stderr.split('\n').filter(Boolean).pop() ?? String(error);
+    return { ok: false, note: last.slice(0, 120) };
+  }
 };
-let fontFile: string | null = overlayMode === 'off' ? null : fontCandidates.find(probeFont) ?? null;
+const probeResults = fontCandidates.map((font) => ({ font, ...probeFont(font) }));
+const foundFont = overlayMode === 'off' ? undefined : probeResults.find((r) => r.ok);
+const fontFile: string | null = foundFont?.font ?? null;
 if (overlayMode !== 'off' && !fontFile) {
-  console.warn('! Ни один шрифт не подошёл для drawtext — рендер без текста на кадре (только картинка + голос).');
+  console.warn('! Ни один шрифт не подошёл для drawtext:');
+  for (const r of probeResults.slice(0, 8)) console.warn(`   - ${r.font}: ${r.note}`);
+  console.warn('   Если ffmpeg собран без libfreetype (нет фильтра drawtext): brew install ffmpeg');
+  console.warn('   Продолжаю рендер без текста на кадре (картинка + голос).');
 }
 
 /** Экранирование текста для drawtext: внутрь single quotes, спецсимволы с бэкслешием. */

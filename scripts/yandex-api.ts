@@ -26,6 +26,19 @@ export function apiKey(): string {
         'Ключ никогда не коммитится и не выводится в лог.',
     );
   }
+  // Заголовок Authorization — ByteString: кириллица в переменной даёт мистический
+  // «Cannot convert argument to a ByteString». Лучше сказать прямо, что и где не так.
+  for (let i = 0; i < key.length; i += 1) {
+    const code = key.charCodeAt(i);
+    if (code > 0x7e || code < 0x21) {
+      throw new Error(
+        `YANDEX_API_KEY содержит не-ASCII или служебный символ на позиции ${i} — ` +
+          'похоже, в переменную попал не ключ (например, русское слово из инструкции). ' +
+          'Проверьте без печати ключа: python3 -c "import os; k=os.environ.get(\'YANDEX_API_KEY\',\'\'); print(len(k), any(ord(c)>127 for c in k))". ' +
+          'Ожидается «False». Ключ: латиница, цифры и знаки вроде - _ =, без пробелов и кавычек-«ёлочек».',
+      );
+    }
+  }
   return key;
 }
 
