@@ -1,179 +1,209 @@
-/* Гиб · Вебинар для родителей · «Кто я и что я чувствую» — код-презентация.
-   Фирменный тёмный «технологичный» стиль: уголь, плум, коралл→янтарь. */
-/* Осознанно без OpenDyslexic: он для детского экрана продукта; вебинар — взрослая аудитория. */
+/* Гиб · «Открытая мастерская» · вебинар — редакторский печатный стиль.
+   Пара: PT Serif (дисплей, цитаты) · системный гротеск (текст) · ui-monospace (капсьюлы/рубрика).
+   Один акцент — киноварь #BE3D1E; вторичный — глубокий сливовый; латунь для орнаментов. */
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-latin-400-normal.woff2') format('woff2'); font-weight: 400; unicode-range: U+0000-00FF; font-display: swap; }
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-cyrillic-400-normal.woff2') format('woff2'); font-weight: 400; unicode-range: U+0400-04FF,U+2116; font-display: swap; }
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-latin-700-normal.woff2') format('woff2'); font-weight: 700; unicode-range: U+0000-00FF; font-display: swap; }
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-cyrillic-700-normal.woff2') format('woff2'); font-weight: 700; unicode-range: U+0400-04FF,U+2116; font-display: swap; }
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-latin-400-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; unicode-range: U+0000-00FF; font-display: swap; }
+@font-face { font-family: 'PT Serif'; src: url('assets/pt-serif-cyrillic-400-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; unicode-range: U+0400-04FF,U+2116; font-display: swap; }
+
 :root {
-  --bg: #141020;
-  --panel: #1b1528;
-  --panel-2: #221a31;
-  --line: #372f49;
-  --line-soft: #2a2338;
-  --txt: #f2ede4;
-  --muted: #a79eb5;
-  --coral: #ff7a45;
-  --coral-deep: #e8572a;
-  --amber: #ffc46b;
-  --teal: #35c4a0;
-  --grad: linear-gradient(135deg, #ff7a45 0%, #ffc46b 100%);
+  --paper: #FAF3E8;
+  --paper-2: #F1E7D6;
+  --panel: #FFFFFF;
+  --ink: #221E26;
+  --ink-soft: #4C4652;
+  --muted: #6E6774;
+  --hairline: #DED2BF;
+  --hairline-strong: #C9BBA6;
+  --vermilion: #BE3D1E;
+  --plum: #34212F;
+  --brass: #A67C2E;
+  --teal: #2E6E63;
+  --tape: #E9DFCC;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body { height: 100%; }
-
-body {
-  background: #0b0812;
-  color: var(--txt);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  overflow: hidden;
-}
+body { background: #16120C; overflow: hidden; color: var(--ink); }
 
 /* ---------- сцена ---------- */
 .stage { position: fixed; inset: 0; display: grid; place-items: center; }
-
 .slide {
   position: absolute;
-  width: min(100vw, 177.78vh);  /* 16:9 */
-  height: min(56.25vw, 100vh);
-  transform: scale(var(--scale, 1));
+  width: min(100vw, 177.78vh); height: min(56.25vw, 100vh);
   background:
-    radial-gradient(1200px 700px at 8% -10%, rgba(255, 122, 69, .16), transparent 55%),
-    radial-gradient(900px 600px at 105% 110%, rgba(255, 196, 107, .10), transparent 50%),
-    linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px) 0 0 / 100% 72px,
-    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px) 0 0 / 72px 100%,
-    var(--bg);
+    radial-gradient(1100px 700px at 100% -20%, rgba(190, 61, 30, .05), transparent 60%),
+    linear-gradient(175deg, rgba(34, 30, 38, .028), transparent 32%),
+    var(--paper);
   overflow: hidden;
   display: none;
-  padding: 46px 64px 108px;
+  padding: 34px 76px 96px;
   flex-direction: column;
   justify-content: center;
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
-.slide.active { display: flex; animation: slideIn .55s cubic-bezier(.2,.7,.25,1); }
-@keyframes slideIn { from { opacity: 0; transform: translateY(18px) scale(.99); } to { opacity: 1; } }
+.slide.active { display: flex; animation: slideIn .45s cubic-bezier(.25, .7, .3, 1); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
-/* ---------- шапка/подвал ---------- */
+/* двойная линейка сверху и снизу как в книжной вёрстке */
+.slide::before { content: ''; position: absolute; left: 0; right: 0; top: 18px; height: 3px; border-top: 1px solid var(--hairline-strong); border-bottom: 1px solid var(--hairline-strong); }
+.slide::after { content: ''; position: absolute; left: 76px; right: 76px; bottom: 60px; height: 1px; background: var(--hairline); }
+
+/* ---------- рубрика и подвал ---------- */
 .kicker {
-  font-family: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
-  font-size: 15px; letter-spacing: .22em; text-transform: uppercase;
-  color: var(--coral); display: flex; align-items: center; gap: 14px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px; letter-spacing: .26em; text-transform: uppercase;
+  color: var(--vermilion); display: flex; align-items: center; gap: 14px;
 }
-.kicker::after { content: ''; flex: 0 0 84px; height: 1px; background: linear-gradient(90deg, var(--coral), transparent); }
-
+.kicker .num { color: var(--ink); border: 1px solid var(--ink); border-radius: 2px; padding: 1px 7px; font-size: 12px; }
 .footer {
-  position: absolute; left: 64px; right: 64px; bottom: 38px;
-  display: flex; justify-content: space-between; align-items: baseline;
-  border-top: 1px solid var(--line-soft); padding-top: 14px;
-  font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted);
-  letter-spacing: .08em;
+  position: absolute; left: 76px; right: 76px; bottom: 30px; z-index: 2;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 18px;
+  font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--muted);
+  letter-spacing: .12em; text-transform: uppercase;
 }
-.counter { font-variant-numeric: tabular-nums; color: var(--amber); }
+.footer .diamond { color: var(--vermilion); }
+.counter { font-variant-numeric: tabular-nums; color: var(--ink); }
+.pagenum { font-family: 'PT Serif', serif; font-size: 15px; color: var(--ink); letter-spacing: 0; text-transform: none; }
 
 /* ---------- типографика ---------- */
-h1.display {
-  font-size: clamp(64px, 9.2vw, 128px); line-height: .98; letter-spacing: -.04em;
-  font-weight: 700; margin-top: 26px;
+h1.display, h2.title, .serif { font-family: 'PT Serif', Georgia, 'Times New Roman', serif; }
+h1.display { font-size: clamp(64px, 7.4vw, 104px); line-height: 1.02; letter-spacing: -.015em; font-weight: 700; margin: 18px 0 0; color: var(--ink); }
+h2.title { font-size: clamp(34px, 4vw, 52px); line-height: 1.06; letter-spacing: -.01em; font-weight: 700; margin: 12px 0 18px; }
+.accent { color: var(--vermilion); font-style: italic; }
+.lede { font-size: clamp(16px, 1.35vw, 19px); line-height: 1.52; color: var(--ink-soft); max-width: 62ch; }
+.lede strong { color: var(--ink); }
+
+/* цитата-якорь */
+.anchor-quote { font-family: 'PT Serif', serif; font-style: italic; font-size: clamp(30px, 3.2vw, 44px); line-height: 1.16; max-width: 30ch; color: var(--ink); }
+.anchor-quote .qmark { color: var(--vermilion); font-style: normal; }
+
+/* ---------- карточки и панели ---------- */
+.panel {
+  background: var(--panel); border: 1px solid var(--hairline); border-radius: 4px;
+  padding: 18px 22px; position: relative;
+  box-shadow: 0 1px 0 rgba(34, 30, 38, .05);
 }
-h1.display .accent { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.panel.vermilion { border-top: 3px solid var(--vermilion); }
+.panel.plum { border-top: 3px solid var(--plum); }
+.panel.brass { border-top: 3px solid var(--brass); }
+.panel h3 { font-family: 'PT Serif', serif; font-size: 19px; margin: 6px 0 8px; letter-spacing: 0; }
+.panel p { font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.panel .idx { font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: .18em; color: var(--vermilion); text-transform: uppercase; }
+.panel.brass .idx { color: var(--brass); }
+.panel.plum .idx { color: var(--plum); }
 
-h2.title { font-size: clamp(38px, 4.6vw, 62px); line-height: 1.04; letter-spacing: -.03em; font-weight: 700; margin: 18px 0 22px; }
-
-.lede { font-size: clamp(19px, 1.7vw, 24px); line-height: 1.45; color: var(--muted); max-width: 58ch; }
-.lede strong { color: var(--txt); }
-
-.quote-big {
-  font-size: clamp(30px, 3.4vw, 46px); line-height: 1.18; letter-spacing: -.02em; font-weight: 700; max-width: 34ch;
-}
-.quote-mark { font-size: 1.5em; line-height: 0; vertical-align: -.28em; color: var(--coral); }
-
-/* ---------- прогрессивное раскрытие ---------- */
-.frag { opacity: 0; transform: translateY(14px); filter: blur(4px); transition: all .5s cubic-bezier(.2,.7,.25,1); }
-.frag.on { opacity: 1; transform: none; filter: none; }
-
-/* ---------- карточки ---------- */
-.cards { display: grid; gap: 22px; }
+.cards { display: grid; gap: 18px; }
 .cards.c3 { grid-template-columns: repeat(3, 1fr); }
 .cards.c2 { grid-template-columns: repeat(2, 1fr); }
-.card {
-  background: linear-gradient(160deg, var(--panel-2), var(--panel));
-  border: 1px solid var(--line); border-radius: 20px; padding: 26px 26px 22px;
-  position: relative; overflow: hidden;
-}
-.card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: var(--grad); opacity: .85; }
-.card h3 { font-size: 21px; letter-spacing: -.02em; margin-bottom: 10px; }
-.card p { font-size: 15.5px; line-height: 1.5; color: var(--muted); }
-.card .idx { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 13px; letter-spacing: .15em; }
 
-/* ---------- счётчики «год одной строкой» ---------- */
-.fact-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; margin-top: 30px; }
-.fact { border-left: 1px solid var(--line); padding-left: 22px; }
-.fact .num {
-  font-size: clamp(52px, 6vw, 84px); font-weight: 700; letter-spacing: -.04em;
-  font-variant-numeric: tabular-nums; background: var(--grad);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.fact .num small { font-size: .38em; letter-spacing: .02em; }
-.fact .cap { margin-top: 8px; font-size: 14px; color: var(--muted); line-height: 1.4; }
+/* сноски-источники на слайде */
+.footnote { margin-top: 14px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; line-height: 1.6; color: var(--muted); border-top: 1px solid var(--hairline); padding-top: 8px; max-width: 78ch; }
+.footnote b { color: var(--ink-soft); font-weight: 600; }
 
-/* ---------- диаграмма-донат ---------- */
-.donut-wrap { display: flex; align-items: center; gap: 48px; margin-top: 8px; }
-.donut { width: 300px; height: 300px; transform: rotate(-90deg); }
-.donut circle { fill: none; stroke-width: 30; transition: stroke-dasharray 1.1s cubic-bezier(.2,.7,.25,1); }
-.legend { display: grid; gap: 8px; font-size: 14.5px; }
-.legend li { list-style: none; display: flex; align-items: center; gap: 12px; color: var(--muted); }
-.legend b { color: var(--txt); font-variant-numeric: tabular-nums; min-width: 2ch; }
-.legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+/* ---------- большие числа «досье» ---------- */
+.fact-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 22px; border-top: 1px solid var(--hairline-strong); border-bottom: 1px solid var(--hairline-strong); }
+.fact { padding: 18px 18px 16px; border-right: 1px solid var(--hairline); }
+.fact:last-child { border-right: none; }
+.fact .num { font-family: 'PT Serif', serif; font-weight: 700; font-size: clamp(42px, 4.6vw, 64px); line-height: .95; color: var(--vermilion); font-variant-numeric: tabular-nums lining-nums; }
+.fact .num small { font-size: .42em; color: var(--muted); }
+.fact .cap { margin-top: 10px; font-size: 12.5px; line-height: 1.42; color: var(--ink-soft); }
+
+/* ---------- повестка с отточием ---------- */
+.agenda { margin-top: 10px; }
+.agenda li {
+  list-style: none; display: flex; align-items: baseline; gap: 16px;
+  padding: 9px 2px; border-bottom: 1px dotted var(--hairline-strong);
+  font-size: 16.5px;
+}
+.agenda li:last-child { border-bottom: none; }
+.agenda .t { font-family: 'PT Serif', serif; font-weight: 700; color: var(--vermilion); min-width: 5ch; font-variant-numeric: tabular-nums; }
+.agenda .d { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: .1em; margin-left: auto; text-transform: uppercase; }
+
+/* ---------- карта года: 12 тем ---------- */
+.year-map { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 14px; }
+.year-cell {
+  border: 1px solid var(--hairline); background: var(--panel); border-radius: 4px;
+  padding: 10px 10px 12px; min-height: 92px; position: relative;
+}
+.year-cell .n { font-family: 'PT Serif', serif; font-weight: 700; font-size: 22px; color: var(--muted); }
+.year-cell .t { font-size: 11.5px; line-height: 1.35; margin-top: 6px; color: var(--ink-soft); }
+.year-cell.current { border: 2px solid var(--vermilion); box-shadow: 0 0 0 3px rgba(190, 61, 30, .12); }
+.year-cell.current .n { color: var(--vermilion); }
+.year-cell.current .t { color: var(--ink); font-weight: 600; }
+.year-cell .mark { position: absolute; top: 8px; right: 10px; font-family: ui-monospace, monospace; font-size: 9.5px; letter-spacing: .15em; color: var(--vermilion); }
+
+/* ---------- диаграммы ---------- */
+.donut-wrap { display: flex; align-items: center; gap: 44px; margin-top: 4px; }
+.donut { width: 260px; height: 260px; }
+.donut circle { fill: none; stroke-width: 26; transition: stroke-dasharray 1.1s cubic-bezier(.2, .7, .25, 1); }
+.donut text { font-family: 'PT Serif', serif; fill: var(--ink); }
+.legend { display: grid; gap: 7px; font-size: 13.5px; }
+.legend li { list-style: none; display: flex; align-items: center; gap: 10px; color: var(--ink-soft); }
+.legend b { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 2ch; }
+.legend i { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+
+/* поток «ситуация → тело → пауза → выбор» */
+.flow { display: flex; align-items: stretch; gap: 0; margin-top: 16px; }
+.flow .step { flex: 1; border: 1px solid var(--hairline); background: var(--panel); padding: 14px 16px; position: relative; }
+.flow .step + .step { border-left: none; }
+.flow .step:first-child { border-radius: 4px 0 0 4px; }
+.flow .step:last-child { border-radius: 0 4px 4px 0; }
+.flow .k { font-family: ui-monospace, monospace; font-size: 10.5px; letter-spacing: .18em; color: var(--vermilion); text-transform: uppercase; }
+.flow .v { font-family: 'PT Serif', serif; font-size: 17px; margin-top: 5px; line-height: 1.3; }
+.flow .s { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+
+/* ---------- прогрессивное раскрытие ---------- */
+.frag { opacity: 0; transform: translateY(8px); transition: all .4s ease; }
+.frag.on { opacity: 1; transform: none; }
+
+/* ---------- таблицы (паспорт исследования) ---------- */
+.table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+.table th, .table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--hairline); vertical-align: baseline; }
+.table th { font-family: ui-monospace, monospace; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--hairline-strong); }
+.table td.ev { font-family: ui-monospace, monospace; font-size: 12px; color: var(--plum); }
+.table tr:last-child td { border-bottom: none; }
 
 /* ---------- шкала года ---------- */
-.year-track { position: relative; margin: 40px 8px 0; height: 132px; border-top: 2px solid var(--line); }
-.year-track .pt { position: absolute; top: -13px; transform: translateX(-50%); text-align: center; width: 230px; }
-.year-track .pt .dot {
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--bg); border: 2px solid var(--coral); margin: 0 auto 10px;
-  box-shadow: 0 0 0 6px rgba(255,122,69,.12);
-}
-.year-track .pt.mid .dot { border-color: var(--amber); box-shadow: 0 0 0 6px rgba(255,196,107,.12); }
-.year-track .pt.end .dot { border-color: var(--teal); box-shadow: 0 0 0 6px rgba(53,196,160,.12); }
-.year-track .pt b { display: block; font-size: 17px; }
-.year-track .pt span { font-size: 12.5px; color: var(--muted); line-height: 1.4; display: block; }
-.year-track .flow { position: absolute; top: 46px; left: 0; right: 0; text-align: center; color: var(--muted); font-size: 13.5px; font-family: ui-monospace, Menlo, monospace; letter-spacing: .06em; }
+.year-track { position: relative; margin: 26px 12px 0; height: 112px; border-top: 2px solid var(--hairline-strong); }
+.year-track .pt { position: absolute; top: -12px; transform: translateX(-50%); text-align: center; width: 210px; }
+.year-track .pt .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--paper); border: 2px solid var(--vermilion); margin: 0 auto 8px; }
+.year-track .pt.mid .dot { border-color: var(--brass); }
+.year-track .pt.end .dot { border-color: var(--teal); }
+.year-track .pt b { display: block; font-family: 'PT Serif', serif; font-size: 16px; }
+.year-track .pt span { font-size: 11.5px; color: var(--muted); line-height: 1.4; display: block; }
 
-/* ---------- таблица «три колонки +» ---------- */
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 6px; }
-.col { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px 26px; }
-.col h4 { font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 12px; }
+/* ---------- две колонки «ждать / не ждать» ---------- */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+.col { border: 1px solid var(--hairline); border-radius: 4px; background: var(--panel); padding: 16px 20px; }
+.col h4 { font-family: ui-monospace, monospace; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; margin-bottom: 10px; }
 .col.good h4 { color: var(--teal); }
-.col.bad h4 { color: var(--coral); }
-.col ul { padding-left: 20px; }
-.col li { font-size: 16px; line-height: 1.5; color: #cdc6d8; margin-bottom: 10px; }
-
-/* ---------- этапы прогресс-бара ---------- */
-.progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 50; background: transparent; }
-.progress i { display: block; height: 100%; background: var(--grad); width: 0%; transition: width .35s ease; box-shadow: 0 0 12px rgba(255,150,80,.6); }
+.col.bad h4 { color: var(--vermilion); }
+.col li { font-size: 14.5px; line-height: 1.48; color: var(--ink-soft); margin-bottom: 8px; list-style: none; padding-left: 18px; position: relative; }
+.col li::before { content: '·'; position: absolute; left: 2px; color: var(--brass); font-weight: 700; }
 
 /* ---------- служебные ---------- */
-.hud { position: fixed; right: 18px; bottom: 14px; z-index: 50; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); letter-spacing: .1em; }
-.hud kbd { border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; background: var(--panel); }
-.notes {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; max-height: 34vh; overflow: auto;
-  background: rgba(11,8,18,.92); border-top: 1px solid var(--line); padding: 18px 28px;
-  font-size: 14px; line-height: 1.55; color: #cdc6d8; display: none; backdrop-filter: blur(8px);
-}
+.progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 50; }
+.progress i { display: block; height: 100%; background: var(--vermilion); width: 0; transition: width .3s ease; }
+.hud { position: fixed; right: 16px; bottom: 10px; z-index: 50; font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: #8f8672; letter-spacing: .1em; }
+.hud kbd { border: 1px solid #4a4232; border-radius: 4px; padding: 0 5px; background: #221d12; color: #cbbf9f; }
+.notes { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; max-height: 32vh; overflow: auto; background: rgba(22, 18, 12, .94); color: #ded4c2; padding: 14px 26px; font-size: 13.5px; line-height: 1.55; display: none; border-top: 1px solid #3d3524; }
 .notes.show { display: block; }
-.notes b { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: .15em; }
+.notes b { color: #e8c87a; font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: .15em; }
 
-/* арт-заставка в кольца */
-.orbit { position: absolute; right: -140px; top: -120px; width: 640px; height: 640px; border-radius: 50%;
-  border: 1px solid rgba(255,196,107,.35); }
-.orbit::before, .orbit::after { content: ''; position: absolute; border-radius: 50%; border: 1px solid rgba(255,122,69,.30); }
-.orbit::before { inset: 60px; }
-.orbit::after { inset: 130px; border-color: rgba(255,196,107,.18); }
+/* орнамент для титула */
+.ornament { display: flex; align-items: center; gap: 12px; margin: 14px 0; color: var(--brass); letter-spacing: .3em; font-size: 12px; }
+.ornament::before, .ornament::after { content: ''; height: 1px; background: var(--hairline-strong); flex: 1; }
 
-/* ---------- печать: PDF-раздатка ---------- */
 @page { size: 338.7mm 190.5mm; margin: 0; }
 @media print {
-  body { overflow: visible; background: #fff; }
+  body { background: #fff; overflow: visible; }
   .progress, .hud, .notes { display: none !important; }
   .stage { position: static; display: block; }
-  .slide { position: static; display: flex !important; width: 100%; height: 100vh; page-break-after: always; transform: none !important; break-after: page; }
-  .frag { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .slide { position: static; display: flex !important; width: 100%; height: 100vh; transform: none !important; break-after: page; animation: none; }
+  .frag { opacity: 1 !important; transform: none !important; }
   .donut circle { transition: none; }
 }
+@media (prefers-reduced-motion: reduce) { .slide.active, .frag { animation: none; transition: none; } }

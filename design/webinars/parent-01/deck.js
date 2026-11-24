@@ -62,13 +62,13 @@ function animateCounters(slide) {
 
 /* ---------- донат-диаграмма «48 навыков» ---------- */
 const COMPETENCIES = [
-  { name: 'Саморегуляция', n: 8, color: '#ffc46b' },
-  { name: 'Отношения', n: 8, color: '#35c4a0' },
-  { name: 'Ответственные решения', n: 8, color: '#ff7a45' },
-  { name: 'Самопознание', n: 7, color: '#ff9e6d' },
-  { name: 'Эмпатия', n: 7, color: '#7de3bd' },
-  { name: 'Творческое мышление', n: 5, color: '#b9c1ff' },
-  { name: 'Мышление роста', n: 5, color: '#e6a1ff' },
+  { name: 'Саморегуляция', n: 8, color: '#3E4A6E' },
+  { name: 'Отношения', n: 8, color: '#2E6E63' },
+  { name: 'Ответственные решения', n: 8, color: '#BE3D1E' },
+  { name: 'Самопознание', n: 7, color: '#A67C2E' },
+  { name: 'Эмпатия', n: 7, color: '#7A8B4F' },
+  { name: 'Творческое мышление', n: 5, color: '#6E4A5E' },
+  { name: 'Мышление роста', n: 5, color: '#B98A44' },
 ];
 const TOTAL = COMPETENCIES.reduce((s, c) => s + c.n, 0); // 48
 
@@ -78,7 +78,9 @@ function buildDonut() {
   if (!svg || !legend) return;
   const R = 42, C = 2 * Math.PI * R;
   let offset = 0;
-  svg.innerHTML = `<circle cx="60" cy="60" r="${R}" stroke="#2a2338" stroke-width="30"/>`;
+  svg.innerHTML = `<circle cx="60" cy="60" r="${R}" stroke="#EAE0CE" stroke-width="26"/>`
+    + '<text x="60" y="58" text-anchor="middle" font-size="23" font-weight="700">48</text>'
+    + '<text x="60" y="72" text-anchor="middle" font-size="7.2" letter-spacing="1.6" fill="#6E6774">НАВЫКОВ</text>';
   const segments = COMPETENCIES.map(c => {
     const len = (c.n / TOTAL) * C;
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -129,6 +131,10 @@ window.addEventListener('touchend', e => {
 }, { passive: true });
 
 /* ---------- печать: все фрагменты в кадре ---------- */
-window.addEventListener('beforeprint', () => document.querySelectorAll('.frag').forEach(f => f.classList.add('on')));
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('.frag').forEach(f => f.classList.add('on'));
+  document.querySelectorAll('[data-count]').forEach(el => { el.textContent = el.dataset.count; });
+  buildDonut();
+});
 
 show(0, 'fwd');
