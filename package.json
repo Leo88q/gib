@@ -274,11 +274,13 @@
     "test:frames": "node --experimental-strip-types scripts/test-frames.ts",
     "art:frames": "tsx scripts/yandex-art-frames.ts",
     "stills:link": "tsx scripts/link-frame-stills.ts",
+    "gen:cast": "tsx scripts/gen-cast-tasya-syopa.ts",
     "webinars:plan": "tsx scripts/build-webinar-video-plan.ts",
     "webinars:tts": "tsx scripts/webinar-tts.ts",
     "webinars:art": "tsx scripts/webinar-art.ts",
     "webinars:render": "tsx scripts/render-webinar-video.ts",
-    "test:webinar-video-plan": "node --experimental-strip-types scripts/test-webinar-video-plan.ts"
+    "test:webinar-video-plan": "node --experimental-strip-types scripts/test-webinar-video-plan.ts",
+    "webinars:slides": "tsx scripts/gen-webinar-slides.ts"
   },
   "dependencies": {
     "blockly": "^12.5.1",
