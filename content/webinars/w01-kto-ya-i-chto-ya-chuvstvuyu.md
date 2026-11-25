@@ -53,12 +53,20 @@
 
 А пока — приглашаю открыть вместе день первый. Там Лис с красками и тот самый вопрос «как поддержать?». Десять минут. Без оценок и подсказок. Увидимся на следующей теме.
 
+## Мини-кейс (смоделированный, но типичный): «норм» через пять вечеров
+
+Взрослый один раз даёт пример слова про состояние («у меня сегодня было слово — „разбитая чашка“»), больше ничего не допрашивая. Через пять вечеров ребёнок сам отвечает: «У меня сегодня „неудобная обувка“». Словарь приходит через чужой пример, не через допрос — это и есть механизм недели.
+
+## Что в руки
+
+Бумага и карандаши без телефона; договорённость о «сигнале» (плечо) заранее; десять тихих минут вечером во вторник на День 1.
+
 ---
 
 ## Источники (для ревью, не для озвучки)
 
 - `lib/content/program/weeks-01-03.ts` — WEEK_1: competency self_awareness, focusSkills [attention, inhibition], 5 сценариев, parentNote, homeIdeas, weekQuestion — использованы дословно по смыслу.
-- Durlak J.A., Weissberg R.P., Dymnicki A.B., Taylor R.D., Schellinger K.B. (2011). The impact of enhancing students' social and emotional learning: A meta-analysis of school-based universal interventions. Child Development, 82(1), 405–432. 213 программ.
+- Durlak, J. A., Weissberg, R. P., Dymnicki, A. B., Taylor, R. D., & Schellinger, K. B. (2011). The impact of enhancing students' social and emotional learning: A meta-analysis of school-based universal interventions. Child Development, 82(1), 405–432. DOI 10.1111/j.1467-8624.2010.01564.x. Сводка — `content/webinars/SOURCES.md` (S1).
 - Формат и CTA: один призыв — день 1 в приложении.
 
 ## Открытые вопросы для методиста

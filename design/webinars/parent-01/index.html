@@ -1,220 +1,325 @@
 <!doctype html>
-<!-- Гиб · Вебинар для родителей · Неделя 1 «Кто я и что я чувствую» — код-презентация.
-     Открыть: index.html (file://) · печать в PDF: ⌘P (по слайду на страницу) · .fonts → ../../../public/fonts. -->
+<!-- Гиб · Открытая мастерская · Вебинар №01 «Кто я и что я чувствую» — редакторская версия.
+     PT Serif + Inter, бумага/чернила/киноварь, сноски источников на слайдах.
+     Управление: ← → (раскрытие) · S заметки · F экран · ⌘P печать в PDF. -->
 <html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Гиб · Вебинар для родителей · Кто я и что я чувствую</title>
+<title>Гиб · Открытая мастерская · №01 Кто я и что я чувствую</title>
 <link rel="stylesheet" href="deck.css">
 </head>
 <body>
-
 <div class="progress"><i id="progressBar"></i></div>
 <div class="stage">
 
-  <!-- 01 · Заставка -->
-  <section class="slide active" data-title="Заставка" data-notes="Открыть встречу, обозначить рамку: 13 минут, один спикер, вопросы в конце. Не извиняться за длину.">
-    <div class="orbit"></div>
-    <p class="kicker">Гиб · Вебинар для родителей · Неделя 1</p>
-    <h1 class="display">Кто я и<br>что я <span class="accent">чувствую</span></h1>
-    <p class="lede" style="margin-top:26px">Вход в год: знакомимся с ребёнком как с человеком — <strong>без оценок и сравнений</strong>. Компетенция недели: <strong>самопознание</strong>. Возраст 5–13 лет.</p>
-    <div class="footer"><span>Занятие 1 из 36 · Вход в год</span><span class="counter">01 / 17</span></div>
+  <!-- 01 · Титульный лист -->
+  <section class="slide active" data-title="Титул" data-notes="Открыть тихо: «это встреча на 13 минут, вопросы — в конце». Не перегружать приветствием.">
+    <p class="kicker"><span class="num">ВЫПУСК №01</span> Журнал программы «Гиб» · Неделя 1</p>
+    <h1 class="display">Кто я<br>и что я<br><em class="accent">чувствую</em></h1>
+    <div class="ornament">◆ ◆ ◆</div>
+    <p class="lede">Вебинар для родителей детей 5–13 лет · компетенция недели — <strong>самопознание</strong> · 12 тем · <strong>≈ 13 минут</strong><br>
+    Методика «Гиб»: Злата Бабенко · разработка симулятора: Леонид Холматов</p>
+    <div class="footer"><span>Открытая мастерская · Родительская линейка</span><span class="pagenum">01 / 23</span></div>
   </section>
 
-  <!-- 02 · Год одной строкой -->
-  <section class="slide" data-title="Год одной строкой" data-notes="Четыре цифры — ответ на «зачем я тут». После них пауза: дайте посчитать самому.">
-    <p class="kicker">Досье программы</p>
-    <h2 class="title">Год одной строкой</h2>
+  <!-- 02 · Повестка -->
+  <section class="slide" data-title="Повестка" data-notes="Проговорить порядок и время. Сказать: «всё, что здесь, привязано к программе, которую проходит ваш ребёнок».">
+    <p class="kicker"><span class="num">ПОВЕСТКА</span> Что будет на этих 13 минутах</p>
+    <h2 class="title" style="font-size:38px; margin-bottom:10px">Ход встречи</h2>
+    <ul class="agenda">
+      <li><span class="t">0:00</span> Зачем этот выпуск — три строки, с которых начинается год<span class="d">открытие</span></li>
+      <li><span class="t">1:30</span> Год одной строкой: цифры программы и 12 тем<span class="d">досье</span></li>
+      <li><span class="t">3:00</span> Что ребёнок делает в приложении на этой неделе<span class="d">пять дней</span></li>
+      <li><span class="t">5:00</span> Компетенция недели и что говорит наука<span class="d">доказательства</span></li>
+      <li><span class="t">7:30</span> Три ошибки любящих родителей — и три дела по десять минут<span class="d">практика</span></li>
+      <li><span class="t">9:30</span> Чего ждать и чего не ждать от недели<span class="d">границы</span></li>
+      <li><span class="t">11:00</span> Вопрос за ужином и одно действие всей недели<span class="d">договор</span></li>
+      <li><span class="t">12:30</span> Что дальше: неделя 2 «Пауза и выбор»<span class="d">финал</span></li>
+    </ul>
+    <div class="footer"><span>Открытая мастерская · №01 · Родительская линейка</span><span class="pagenum">02 / 23</span></div>
+  </section>
+
+  <!-- 03 · Досье программы -->
+  <section class="slide" data-title="Досье" data-notes="«Всё, что вы услышите дальше, — это не обещание, а устройство продукта». Пройтись по каждой цифре коротко.">
+    <p class="kicker"><span class="num">ДОСЬЕ</span> Программа одной строкой</p>
+    <h2 class="title">Год в пяти числах</h2>
     <div class="fact-grid">
-      <div class="fact"><div class="num"><span data-count="36">0</span></div><div class="cap">занятий в году<br>12 тем × 3 занятия</div></div>
-      <div class="fact"><div class="num"><span data-count="48">0</span></div><div class="cap">гибких навыков<br>в 7 компетенциях</div></div>
-      <div class="fact"><div class="num"><span data-count="180">0</span></div><div class="cap">возрастных вариантов<br>60 историй × 3 возраста</div></div>
-      <div class="fact"><div class="num"><span data-count="3">0</span></div><div class="cap">точки замера<br>сентябрь · январь · май</div></div>
+      <div class="fact"><div class="num"><span data-count="36">0</span></div><div class="cap">встреч в году — три занятия на каждую из 12 тем</div></div>
+      <div class="fact"><div class="num"><span data-count="48">0</span></div><div class="cap">гибких навыков в 7 компетенциях — полное покрытие проверено тестами</div></div>
+      <div class="fact"><div class="num"><span data-count="180">0</span></div><div class="cap">возрастных вариантов сценариев — 60 историй × 3 линейки</div></div>
+      <div class="fact"><div class="num"><span data-count="7">0</span></div><div class="cap">типов событий фиксирует движок — без оценочных суждений о личности</div></div>
+      <div class="fact"><div class="num"><span data-count="3">0</span></div><div class="cap">точки замера за год: сентябрь · январь · май</div></div>
     </div>
-    <div class="footer"><span>Гиб · «Театральная мастерская» · 5–13 лет</span><span class="counter">02 / 17</span></div>
+    <p class="footnote"><b>Проверяется по коду:</b> каталог навыков и карт истории — <i>lib/content/skills-catalog.ts</i> (тест: 48 навыков, полное покрытие; 127 историй), события — <i>lib/events/journal.ts</i>, распределение 7 компетенций: саморегуляция 8 · отношения 8 · решения 8 · самопознание 7 · эмпатия 7 · творчество 5 · мышление роста 5.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Досье</span><span class="pagenum">03 / 23</span></div>
   </section>
 
-  <!-- 03 · Как устроено занятие -->
-  <section class="slide" data-title="Как устроено занятие" data-notes="Смысл: продукт делает рутину сам, взрослый не «звонит в колокольчик». Миссия — не экзамен.">
-    <p class="kicker">Механика одного дня</p>
-    <h2 class="title">История → практика → разговор дома</h2>
-    <div class="cards c3" style="margin-top:6px">
-      <div class="card frag"><div class="idx">01 · 6–8 МИН</div><h3>История</h3><p>Короткий сценарий в приложении: Лис, Мира или Тима в привычной ситуации. Ребёнок выбирает ход — без «правильных» и «неправильных» ответов.</p></div>
-      <div class="card frag"><div class="idx">02 · ПО СИЛАМ</div><h3>Практика</h3><p>Необязательная мастерская из трёх карточек. Отказ от практики — тоже выбор; никакого стыда и никакой потери награды.</p></div>
-      <div class="card frag"><div class="idx">03 · ДОМА</div><h3>Разговор</h3><p>Одна фраза или один жест от вас — «как-то тихо сегодня играл, всё хорошо?» — без опроса и подсказок. Это всё.</p></div>
+  <!-- 04 · Карта года -->
+  <section class="slide" data-title="Карта года" data-notes="«Семь взрослых встреч в первом полугодии» — показать последовательность тем, подсветить неделю 1. Не читать все 12.">
+    <p class="kicker"><span class="num">КАРТА ГОДА</span> Двенадцать тем родительской линейки</p>
+    <h2 class="title" style="font-size:36px">Год — это маршрут, а не список</h2>
+    <div class="year-map">
+      <div class="year-cell current"><span class="mark">ВЫ ЗДЕСЬ</span><div class="n">01</div><div class="t">Кто я и что я чувствую</div></div>
+      <div class="year-cell"><div class="n">02</div><div class="t">Пауза и выбор</div></div>
+      <div class="year-cell"><div class="n">03</div><div class="t">Я и другие</div></div>
+      <div class="year-cell"><div class="n">04</div><div class="t">Договорённости</div></div>
+      <div class="year-cell"><div class="n">05</div><div class="t">Решения и последствия</div></div>
+      <div class="year-cell"><div class="n">06</div><div class="t">Ошибка — это данные</div></div>
+      <div class="year-cell"><div class="n">07</div><div class="t">Внимание</div></div>
+      <div class="year-cell"><div class="n">08</div><div class="t">Память</div></div>
+      <div class="year-cell"><div class="n">09</div><div class="t">Гибкость</div></div>
+      <div class="year-cell"><div class="n">10</div><div class="t">План и порядок</div></div>
+      <div class="year-cell"><div class="n">11</div><div class="t">Творчество</div></div>
+      <div class="year-cell"><div class="n">12</div><div class="t">Всё вместе</div></div>
     </div>
-    <p class="lede frag" style="margin-top:22px">Ориентир длительности дня — <strong>8–10 минут</strong>; время нужно замерить на ваших линейках, это не обещание.</p>
-    <div class="footer"><span>Гиб · занятие из 36</span><span class="counter">03 / 17</span></div>
+    <p class="footnote"><b>Структура:</b> 12 тем по 3 занятия = 36 встреч в год; порядок нарастает от телесного («чувствую») к когнитивному («внимание», «память», «гибкость») и замыкается интеграцией («всё вместе»). Родитель видит свой выпуск в той же последовательности, что и ребёнок в продукте.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Карта года</span><span class="pagenum">04 / 23</span></div>
   </section>
 
-  <!-- 04 · Пять дней недели -->
-  <section class="slide" data-title="Пять дней недели" data-notes="Говорить по одному дню, каждый раскрывается кликом. День 5 — ключевой: право оставить при себе.">
-    <p class="kicker">Неделя 1 · Что с ребёнком в приложении</p>
-    <h2 class="title">Пять дней «Кто я и что я чувствую»</h2>
-    <div class="cards" style="grid-template-columns:repeat(5,1fr); gap:14px; margin-top:2px">
-      <div class="card frag" style="padding:18px"><div class="idx">ДЕНЬ 1</div><h3 style="font-size:17px">Как предложить поддержку</h3><p style="font-size:13px">Лис искал краски — их нет. Ребёнок выбирает: предложить помощь или уважать выбор побыть одному.</p></div>
-      <div class="card frag" style="padding:18px"><div class="idx">ДЕНЬ 2</div><h3 style="font-size:17px">Отметить или пропустить</h3><p style="font-size:13px">Значок, рисунок или ничего. Не отмечать — тоже навык, и программа это тренирует специально.</p></div>
-      <div class="card frag" style="padding:18px"><div class="idx">ДЕНЬ 3</div><h3 style="font-size:17px">Замечать сигналы</h3><p style="font-size:13px">Лис устал после игры. «Мне тяжело» начинается не в голове, а в плечах — и это видно.</p></div>
-      <div class="card frag" style="padding:18px"><div class="idx">ДЕНЬ 4</div><h3 style="font-size:17px">Пробовать по-своему</h3><p style="font-size:13px">Башня Лиса наклонилась. Неудача здесь — материал для решения, а не характеристика ребёнка.</p></div>
-      <div class="card frag" style="padding:18px"><div class="idx">ДЕНЬ 5</div><h3 style="font-size:17px">Рассказать или оставить себе</h3><p style="font-size:13px">Карточки для друзей: что показать, а что оставить личным. Право приватности — закрепляем специально.</p></div>
+  <!-- 05 · Механика занятия -->
+  <section class="slide" data-title="Как устроено занятие" data-notes="Медленно по шагам: ситуация → тело → пауза → выбор. Главное — сказать: «правильных ответов нет, выбор есть всегда».">
+    <p class="kicker"><span class="num">МЕХАНИКА</span> Как устроено одно занятие</p>
+    <h2 class="title" style="font-size:38px">Сцена, а не тест</h2>
+    <div class="flow">
+      <div class="step"><div class="k">01 · Сцена</div><div class="v">Лис, Мира или Тима</div><div class="s">Короткая история в приложении: привычная ситуация из жизни ребёнка — истерика, обида, нет краски, «я не хочу».</div></div>
+      <div class="step"><div class="k">02 · Тело</div><div class="v">Реакция до слов</div><div class="s">«Мне тяжело» начинается не в голове, а в плечах, животе и челюсти — ребёнок учится замечать это раньше голоса.</div></div>
+      <div class="step"><div class="k">03 · Пауза</div><div class="v">Окно выбора</div><div class="s">Между стимулом и действием — пауза. Её длительность растёт с практикой: это единственная честная метрика недели.</div></div>
+      <div class="step"><div class="k">04 · Ход</div><div class="v">Выбор ребёнка</div><div class="s">Вариантов ответа нет «верных»: есть выбор и его последствия. Награда одинакова за любой ход — мы поощряем осмысленный выбор.</div></div>
+      <div class="step"><div class="k">05 · След</div><div class="v">Что остаётся взрослому</div><div class="s">Родитель видит не «оценку характера», а поведение: что выбрано, сколько пауз, сколько времени занял ответ.</div></div>
     </div>
-    <div class="footer"><span>Гиб · неделя 1 из 12</span><span class="counter">04 / 17</span></div>
+    <div class="footer"><span>Открытая мастерская · №01 · Механика</span><span class="pagenum">05 / 23</span></div>
   </section>
 
-  <!-- 05 · Компетенция недели -->
-  <section class="slide" data-title="Компетенция самопознание" data-notes="Объяснить «замечаем и называем» на себе: «усталость» уже слово, «злость» уже слово — оценка не нужна.">
-    <p class="kicker">Компетенция недели</p>
-    <h2 class="title">Замечаем и <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">называем</span></h2>
-    <p class="quote-big"><span class="quote-mark">«</span>Никаких шкал и «уровней чувств»: мы учимся замечать и называть, не оценивая.<span class="quote-mark">»</span></p>
-    <div class="cards c2" style="margin-top:26px">
-      <div class="card frag"><h3>Навык · внимания</h3><p>Поймать своё состояние и чужой взгляд раньше, чем он «сорвётся» в слово.</p></div>
-      <div class="card frag"><h3>Навык · торможения ответа</h3><p>Пауза между стимулом и словом: не я «ни с того ни с сего», а я замечаю — потом говорю.</p></div>
+  <!-- 06 · Пять дней недели -->
+  <section class="slide" data-title="Пять дней недели" data-notes="Каждый день — одна фраза и один паттерн. День 5 выделить: право оставить личное при себе закрепляется специально.">
+    <p class="kicker"><span class="num">НЕДЕЛЯ 1</span> Что ребёнок делает в приложении</p>
+    <h2 class="title" style="font-size:36px">Пять дней «Кто я и что я чувствую»</h2>
+    <div class="cards" style="grid-template-columns:repeat(5,1fr); gap:10px; margin-top:6px">
+      <div class="panel vermilion frag" style="padding:13px"><div class="idx">День 1</div><h3 style="font-size:15px">Как предложить поддержку</h3><p style="font-size:12px">Лис искал краски — их нет на полке. Ребёнок учится предлагать помощь и уважать выбор побыть одному.</p></div>
+      <div class="panel frag" style="padding:13px"><div class="idx">День 2</div><h3 style="font-size:15px">Отметить или пропустить</h3><p style="font-size:12px">Отметить значком, нарисовать или не отмечать вовсе. Не отмечать — тоже навык, и мы его тренируем.</p></div>
+      <div class="panel frag" style="padding:13px"><div class="idx">День 3</div><h3 style="font-size:15px">Замечать сигналы</h3><p style="font-size:12px">Лис устал после игры. Связь «ситуация → телесный сигнал»: плечи, живот, челюсть раньше слов.</p></div>
+      <div class="panel frag" style="padding:13px"><div class="idx">День 4</div><h3 style="font-size:15px">Пробовать по-своему</h3><p style="font-size:12px">Башня наклонилась. Неудача — материал для решения, а не характеристика ребёнка.</p></div>
+      <div class="panel frag" style="padding:13px"><div class="idx">День 5</div><h3 style="font-size:15px">Рассказать или оставить себе</h3><p style="font-size:12px">Карточки для друзей: что показать, а что личным. Право приватности закрепляем специально.</p></div>
     </div>
-    <div class="footer"><span>Самопознание · 7 навыков · по «Карте гибких навыков»</span><span class="counter">05 / 17</span></div>
+    <p class="footnote"><b>Фокус недели:</b> внимание и торможение ответа. Тексты дней дословно сверены с программой (неделя 1, компетенция <i>self_awareness</i>).</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Неделя 1</span><span class="pagenum">06 / 23</span></div>
   </section>
 
-  <!-- 06 · Почему это работает -->
-  <section class="slide" data-title="Что говорит наука" data-notes="Два пункта только, не читать лекцию. Обязательно оговорку: программа — не исследование.">
-    <p class="kicker">Что говорит наука</p>
-    <h2 class="title">Три факта, проверяемые по источникам</h2>
+  <!-- 07 · Компетенция недели -->
+  <section class="slide" data-title="Компетенция самопознание" data-notes="«Замечаем и называем» — повторить трижды, медленно. Это рамка всей недели.">
+    <p class="kicker"><span class="num">КОМПЕТЕНЦИЯ</span> Самопознание · 7 навыков</p>
+    <h2 class="title">Замечаем и <span class="accent">называем</span></h2>
+    <p class="anchor-quote"><span class="qmark">«</span>Никаких шкал и «уровней чувств»: мы учимся замечать и называть, <span class="accent">не оценивая</span>.<span class="qmark">»</span></p>
+    <div class="cards c2" style="margin-top:22px">
+      <div class="panel vermilion frag"><div class="idx">Навык · внимания</div><h3>Поймать сигнал раньше слова</h3><p>Телесные маркеры (плечи, живот, челюсть) и чужой взгляд — раньше, чем они «сорвутся» в поступок или фразу.</p></div>
+      <div class="panel vermilion frag"><div class="idx">Навык · торможения</div><h3>Пауза перед ответом</h3><p>Не «характер железный», а навык: остановиться между стимулом и ответом настолько, чтобы выбор успел появиться.</p></div>
+    </div>
+    <div class="footer"><span>Открытая мастерская · №01 · Компетенция</span><span class="pagenum">07 / 23</span></div>
+  </section>
+
+  <!-- 08 · Наука -->
+  <section class="slide" data-title="Что говорит наука" data-notes="Три факта — и сразу честная граница. Не читать DOIs вслух, названия и цифры.">
+    <p class="kicker"><span class="num">ДОКАЗАТЕЛЬСТВА</span> Три проверяемых факта</p>
+    <h2 class="title" style="font-size:40px">Что известно до нас — и что мы не присваиваем себе</h2>
     <div class="cards c3" style="margin-top:4px">
-      <div class="card"><div class="idx">МЕТА-АНАЛИЗ · DURLAK 2011</div><h3>+11 перцентилей</h3><p>213 школьных SEL-программ, 270 034 ребёнка 5–13 лет: измеримый прирост учебной успеваемости — не «атмосфера в классе», а тест.</p></div>
-      <div class="card"><div class="idx">BLAIR &amp; RAZZA · CHILD DEV 2007</div><h3>Торможение = ковариата</h3><p>Ингибирующий контроль — значимая связь с ранним чтением и математикой, независимо от общего интеллекта ребёнка.</p></div>
-      <div class="card"><div class="idx">DIAMOND · ANN REV PSYCHOL 2013</div><h3>Исполнительные функции</h3><p>Рабочая память, торможение и переключение — ядро школьной готовности; тренируются в игровых сценариях и до 12 лет.</p></div>
+      <div class="panel plum"><div class="idx">Мета-анализ · 2011</div><h3>+11 перцентилей</h3><p>213 универсальных SEL-программ, 270 034 ребёнка 5–13 лет: устойчивый прирост успеваемости против контроля — не «климат в классе», а измеримый тест.</p></div>
+      <div class="panel vermilion"><div class="idx">Тормозной контроль · 2007</div><h3>Торможение = ковариата</h3><p>Ингибирующий контроль значимо связан с ранней грамотностью и счётом — независимо от общего интеллекта ребёнка.</p></div>
+      <div class="panel brass"><div class="idx">Исполнительные функции · 2013</div><h3>EF обучаемы</h3><p>Рабочая память, торможение и переключение — тренируются практикой в игровых форматах вплоть до 12 лет; стресс и переутомление их разрушают первыми.</p></div>
     </div>
-    <p class="lede frag" style="margin-top:20px; font-size:15px">Честная граница: «Гиб» — <strong>регистратор поведения и вовлечённости</strong>, а не измеритель «уровня чувств». Эффект программа даёт практикой, а не диагностикой: docs/research-passport.md.</p>
-    <div class="footer"><span>Источники — на слайде 16</span><span class="counter">06 / 17</span></div>
+    <p class="footnote"><b>Durlak, J. A. et al.</b> Child Development, 82(1), 405–432. DOI 10.1111/j.1467-8624.2010.01564.x · <b>Blair, C. &amp; Razza, R. P.</b> Child Development, 78(2), 647–663. DOI 10.1111/j.1467-8624.2007.01019.X · <b>Diamond, A.</b> Annual Review of Psychology, 64, 135–168. DOI 10.1146/annurev-psych-113011-143750 · SEL-рамка: <b>CASEL</b>, casel.org.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Доказательства</span><span class="pagenum">08 / 23</span></div>
   </section>
 
-  <!-- 07 · Как устроен год -->
-  <section class="slide" data-title="Как устроен год" data-notes="Три точки: просили измерять не «градус счастья», а перенос в жизнь. Середина года отделяет рост от привычки к игре.">
-    <p class="kicker">Архитектура замера</p>
-    <h2 class="title">Три точки: вход · середина · итог</h2>
-    <div class="year-track">
-      <div class="pt" style="left:10%"><div class="dot"></div><b>Сентябрь</b><span>вход · привычные сценарии, «до»</span></div>
-      <div class="pt mid" style="left:50%"><div class="dot"></div><b>Январь</b><span>середина · отделяет рост навыка от игры</span></div>
-      <div class="pt end" style="left:90%"><div class="dot"></div><b>Май</b><span>итог · «после» · перенос в жизнь</span></div>
+  <!-- 09 · Чего мы НЕ утверждаем -->
+  <section class="slide" data-title="Чего мы не утверждаем" data-notes="Это самый важный слайд доверия. Читать ровно, без оправданий. «Мы продаём практику, а не диагнозы».">
+    <p class="kicker"><span class="num">ЧЕСТНЫЕ ГРАНИЦЫ</span> Что «Гиб» не делает</p>
+    <h2 class="title" style="font-size:40px">Список того, чего <span class="accent">нет</span></h2>
+    <div class="cards c2" style="margin-top:2px">
+      <div class="panel"><div class="idx">Нет диагнозов</div><h3>«Уровень эмпатии» не считается</h3><p>Продукт — регистратор вовлечённости и поведения в сценариях: что выбрал, сколько паузил, сколько времени занял ответ. Оценки личности не выставляются.</p></div>
+      <div class="panel"><div class="idx">Нет сравнений</div><h3>Ребёнок не сравнивается ни с кем</h3><p>Ни с другими детьми, ни с нормой возраста, ни с «как было в семье раньше». В коде явно: награда одинакова за любой выбор.</p></div>
+      <div class="panel"><div class="idx">Нет «правильного ответа»</div><h3>Ветка — не экзамен</h3><p>Каждый выбор получает ту же награду; мы поощряем осмысленный выбор, а не угадывание «одобренного взрослыми» хода.</p></div>
+      <div class="panel"><div class="idx">Нет замены врачу</div><h3>Кризис — к специалисту</h3><p>Ночные страхи, отказ от еды, смена настроения дольше двух недель, самоповреждение — повод к детскому психологу очно. См. слайд 18.</p></div>
     </div>
-    <p class="lede frag" style="margin-top:16px">Один цикл «60 дней» давал две точки и путал навык с привыканием к игре. Год даёт три — этого хватает, чтобы видеть динамику без ложных обещаний.</p>
-    <div class="footer"><span>docs/program-year-design.md</span><span class="counter">07 / 17</span></div>
+    <p class="footnote"><b>Проверяется по коду:</b> <i>lib/events/journal.ts</i> — семь типов событий (session_started … profile_created), оценки личности нет; <i>lib/engine/session.ts</i> — любой выбор завершает сцену с равной наградой; паспорт исследования — <i>docs/research-passport.md</i>.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Границы</span><span class="pagenum">09 / 23</span></div>
   </section>
 
-  <!-- 08 · Карта навыков -->
-  <section class="slide" data-title="48 навыков" data-notes="Кольцо — шерсть по каталогу навыков репозитория, сверено тестами. Компетенции: названия как в продукте.">
-    <p class="kicker">Карта гибких навыков</p>
-    <h2 class="title">48 навыков · 7 компетенций</h2>
+  <!-- 10 · Паспорт исследования -->
+  <section class="slide" data-title="Паспорт исследования" data-notes="Если в зале методологи/исследователи — это их слайд: продукт как «нулевой уровень» данных.">
+    <p class="kicker"><span class="num">ПАСПОРТ</span> Что продукт фиксирует на самом деле</p>
+    <h2 class="title" style="font-size:38px">Семь типов событий — и ни одного сверх</h2>
+    <table class="table">
+      <thead><tr><th>Событие</th><th>Что несёт</th><th>Что даёт</th></tr></thead>
+      <tbody>
+        <tr><td class="ev">session_started</td><td>день, повтор, journey</td><td>факт начала занятия и возврата</td></tr>
+        <tr><td class="ev">story_selected</td><td>cardId, offerSize</td><td>какую историю и из скольких выбрал</td></tr>
+        <tr><td class="ev">story_answered</td><td>choiceIndex, itemCount</td><td>какой ход, из скольких вариантов</td></tr>
+        <tr><td class="ev">practice_answered</td><td>skipped</td><td>прошёл практику или отказался</td></tr>
+        <tr><td class="ev">task_answered</td><td>taskKind, taskSkill, ms</td><td>верность, помощь, время ответа</td></tr>
+        <tr><td class="ev">session_completed</td><td>steps, correct, stars, seconds</td><td>завершение дня и ритм прохождения</td></tr>
+        <tr><td class="ev">profile_created</td><td>band</td><td>линейка возраста</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote"><b>Зачем нам это на вебинаре:</b> это не «про науку», а про доверие: вы всегда знаете, что о вашем ребёнке известно программе — и чего она о нём принципиально не знает.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Паспорт</span><span class="pagenum">10 / 23</span></div>
+  </section>
+
+  <!-- 11 · Инженерия программы -->
+  <section class="slide" data-title="Инженерия программы" data-notes="Короткий инженерный штрих: программа — это проверяемая разметка, а не тексты в PDF.">
+    <p class="kicker"><span class="num">ИНЖЕНЕРИЯ</span> Как программа держится честной</p>
+    <div class="cards c2" style="margin-top:8px">
+      <div class="panel vermilion"><div class="idx">Карта навыков</div><h3>48 навыков — руками, не по ключам</h3><p>Каждая история отнесена к навыку по тексту вопроса и вариантов — автоматическая разметка ошибалась бы в обе стороны («сдался» похоже на «отказался»).</p></div>
+      <div class="panel vermilion"><div class="idx">Найденные расхождения</div><h3>14 ошибок разметки — закрыты</h3><p>Недели 7–10 когнитивные, их истории разметили «ближайшей социальной» компетенцией; после разбора расхождений не осталось. Проверка встроена в тесты.</p></div>
+      <div class="panel plum"><div class="idx">Практики</div><h3>В каждой сессии — мастерская из трёх карточек</h3><p>Пропуск без потери награды: отказ от практики — тоже выбор. Для дней 16–60 все карточки тематические; 27 сочетаний × 3 возраста проверены в тестах.</p></div>
+      <div class="panel plum"><div class="idx">Протокол</div><h3>Замеры: сентябрь · январь · май</h3><p>Год даёт три точки вместо «до/после» — так рост навыка отделяется от привычки к самой игре. Шкала показа — без процентов и нумерации этапов.</p></div>
+    </div>
+    <p class="footnote"><b>Репозиторий:</b> <i>lib/content/skills-catalog.ts</i> · <i>lib/content/story-skills.ts</i> · <i>scripts/skills-map.ts</i> · <i>lib/year/stages.ts</i>. Тесты: 48 навыков / полное покрытие / отсутствие расхождений компетенции истории.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Инженерия</span><span class="pagenum">11 / 23</span></div>
+  </section>
+
+  <!-- 12 · 48 навыков донат -->
+  <section class="slide" data-title="48 навыков" data-notes="Показать плотность: программа — конструктор из 48 деталей, не «история про дружбу».">
+    <p class="kicker"><span class="num">КАРТА</span> 48 навыков · 7 компетенций</p>
+    <h2 class="title" style="font-size:38px">Из чего собран год</h2>
     <div class="donut-wrap">
       <svg class="donut" id="donut" viewBox="0 0 120 120" role="img" aria-label="Распределение 48 навыков по 7 компетенциям"></svg>
       <ul class="legend" id="legend"></ul>
     </div>
-    <div class="footer"><span>lib/content/skills-catalog.ts · 14 расхождений размечены и закрыты</span><span class="counter">08 / 17</span></div>
+    <p class="footnote"><b>Распределение:</b> саморегуляция 8 · отношения 8 · решения 8 · самопознание 7 · эмпатия 7 · творчество 5 · мышление роста 5. Один навык — ровно одна компетенция; проверено тестом согласования.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Карта навыков</span><span class="pagenum">12 / 23</span></div>
   </section>
 
-  <!-- 09 · Три линейки -->
-  <section class="slide" data-title="Три линейки" data-notes="Герой — не маскот, а «значащий взрослый в кадре»: у 5–7 он держит фразу мягче, чем у 11–13.">
-    <p class="kicker">Возрастные линейки</p>
-    <h2 class="title">Один мир, три проводника</h2>
+  <!-- 13 · Три линейки -->
+  <section class="slide" data-title="Три линейки" data-notes="«У первоклашки и семиклассника разные миры — мы не делаем вид, что они одинаковые».">
+    <p class="kicker"><span class="num">ЛИНЕЙКИ</span> Возраст — не настройка, а другой мир</p>
+    <h2 class="title" style="font-size:38px">Один метод, три языка</h2>
     <div class="cards c3" style="margin-top:4px">
-      <div class="card"><div class="idx" style="color:#ffb28a">5–7 ЛЕТ · ЛИС</div><h3>Тело и первая опора</h3><p>Медленные истории, короткие фразы, «потрогал плечо — заметил себя». Опора — взрослый рядом.</p></div>
-      <div class="card"><div class="idx" style="color:#7de3bd">8–10 ЛЕТ · МИРА</div><h3>Слова и сверстники</h3><p>Конфликт и договорённость; «вижу, что тебе обидно» вместо оценки — модель фразы для жизни.</p></div>
-      <div class="card"><div class="idx" style="color:#b9c1ff">11–13 ЛЕТ · ТИМА</div><h3>Пауза и ответственность</h3><p>Выборы с последствиями; приватность как право; «пауза — навык, а не характер».</p></div>
+      <div class="panel plum"><div class="idx">5–7 лет · Лис</div><h3>Тело и первая опора</h3><p>Медленные истории, короткие фразы, «потрогал плечо — заметил себя». Опора — взрослый рядом. Акцент: телесные сигналы до слов.</p></div>
+      <div class="panel vermilion"><div class="idx">8–10 лет · Мира</div><h3>Слова и сверстники</h3><p>Конфликт и договорённость: «вижу, что тебе обидно» вместо оценки — готовая модель фразы для жизни. Акцент: отношения и решения.</p></div>
+      <div class="panel brass"><div class="idx">11–13 лет · Тима</div><h3>Пауза и ответственность</h3><p>Выборы с последствиями, приватность как право, «пауза — навык, а не характер». Акцент: самопознание и решения без надзора.</p></div>
     </div>
-    <div class="footer"><span>Одна методика · тексты по линейкам · 2 сценария: 5–7 и 8–13</span><span class="counter">09 / 17</span></div>
+    <p class="footnote"><b>Тексты:</b> одна ситуация программно размечена на три возрастных варианта; переключение внутри приложения, родитель видит отчёты своей линейки.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Линейки</span><span class="pagenum">13 / 23</span></div>
   </section>
 
-  <!-- 10 · Три ошибки -->
-  <section class="slide" data-title="Три ошибки родителя" data-notes="Узнавание — самое сильное действие этого слайда. После каждой — пауза 2 секунды.">
-    <p class="kicker">Три ошибки, которые делают даже любящие</p>
-    <h2 class="title">Фраза слышна как <span style="color:var(--coral)">приговор</span></h2>
-    <div class="cards" style="gap:14px; margin-top:2px">
-      <div class="card frag" style="padding:18px 22px"><div class="idx">ОШИБКА 1</div><h3 style="font-size:19px">«Ну сколько можно расстраиваться»</h3><p style="font-size:14px">Слышится как: твоё чувство неправильное. Чувство не отменяется — ребёнок просто перестаёт говорить, а оно уходит в тело и выходит по ночам.</p></div>
-      <div class="card frag" style="padding:18px 22px"><div class="idx">ОШИБКА 2</div><h3 style="font-size:19px">«Что с тобой?!» ×5 подряд</h3><p style="font-size:14px">Пятый вопрос превращает разговор в обыск; после третьего ребёнок обычно решил, что говорить не стоит. Один вопрос — и тишина в ответ — нормально.</p></div>
-      <div class="card frag" style="padding:18px 22px"><div class="idx">ОШИБКА 3</div><h3 style="font-size:19px">«Ты смелый, не плачь»</h3><p style="font-size:14px">Оценку защищают или опровергают. Наблюдение принимают: «вижу, тебе больно» — и ребёнок остаётся в контакте.</p></div>
-    </div>
-    <div class="footer"><span>Блок «Три ошибки» — авторский, проверяется методистом</span><span class="counter">10 / 17</span></div>
-  </section>
-
-  <!-- 11 · Три дела по десять минут -->
-  <section class="slide" data-title="Три дела по десять минут" data-notes="Произнесите вслух каждое и попросите выбрать одно. Не все три.">
-    <p class="kicker">Дома · без расписания</p>
-    <h2 class="title">Три дела по десять минут</h2>
-    <div class="cards c3" style="margin-top:4px">
-      <div class="card frag"><div class="idx">01</div><h3>Поговорите о дне</h3><p>Так, как говорите вы, — «как-то тихо сегодня играл, всё хорошо?». Без настаивания на ответе.</p></div>
-      <div class="card frag"><div class="idx">02</div><h3>Нарисуйте любую картинку</h3><p>Если ребёнку хочется. Не «нарисуй злость», а просто картинка — у вас своя, у него своя.</p></div>
-      <div class="card frag"><div class="idx">03</div><h3>Договоритесь о сигнале</h3><p>Ребёнок трогает плечо, когда закипает. Сигнал — не «нанеси мне карту перед взрывом», а признак: мы заметили до кипения.</p></div>
-    </div>
-    <p class="lede frag" style="margin-top:20px">Заметка на эту неделю, написанная заранее: ребёнок учится <strong>замечать сигналы тела и называть эмоции словами</strong>. Не ждите «взрослых» формулировок.</p>
-    <div class="footer"><span>Идеи недели — дословно из программы</span><span class="counter">11 / 17</span></div>
-  </section>
-
-  <!-- 12 · Вопрос за ужином -->
-  <section class="slide" data-title="Вопрос за ужином" style="justify-content:center; text-align:left" data-notes="Произнести медленно один раз вслух, потом спросить «кто запишет?» — самый тихий слайд, самый сильный.">
-    <p class="kicker">Вопрос за ужином</p>
-    <p class="quote-big" style="font-size:clamp(34px,4vw,54px); max-width:38ch; margin-top:14px"><span class="quote-mark">«</span>Какое слово про состояние ребёнок <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">за эту неделю узнал первым</span>?<span class="quote-mark">»</span></p>
-    <p class="lede" style="margin-top:24px">Ровно один вопрос — и без оценивания ответа. «Усталость» — правильный ответ. «Злость» — правильный ответ. «Ничего» — тоже ответ: на этой неделе он присматривался к словам молча.</p>
-    <p class="lede" style="margin-top:14px; color:var(--amber)">Слушайте ответ дольше, чем говорите в нём сами.</p>
-    <div class="footer"><span>Единственный вопрос недели</span><span class="counter">12 / 17</span></div>
-  </section>
-
-  <!-- 13 · Чего ждать и чего не ждать -->
-  <section class="slide" data-title="Чего ждать" data-notes="Правая колонка — способ снизить родительское «не сработало» после первой недели.">
-    <p class="kicker">Честные границы недели</p>
-    <h2 class="title">Что ждать и чего не ждать</h2>
-    <div class="cols">
-      <div class="col good"><h4>Ждите малое</h4><ul><li>одно слово новое за неделю — «усталость», «злость», «нормально»</li><li>одна пауза перед ответом</li><li>одна картинка, на которой «злость» — чёрная клякса</li><li>отказ говорить — законный выбор, как и любой другой</li></ul></div>
-      <div class="col bad"><h4>Не ждите</h4><ul><li>красивых отчётов о чувствах к воскресенью</li><li>благодарных глаз за «спроси у папы»</li><li>сравнения с другими детьми или с вами в его возрасте</li><li>берегите себя: чужие взрослые слова не обязаны повториться в его доме</li></ul></div>
-    </div>
-    <div class="footer"><span>Гиб · неделя 1 из 12</span><span class="counter">13 / 17</span></div>
-  </section>
-
-  <!-- 14 · Если неделя отозвалась острее -->
-  <section class="slide" data-title="Если стало заметно больнее" data-notes="Читать ровно, без интонации «тревожного ролика». Это медицинская граница, не страшилка.">
-    <p class="kicker" style="color:var(--amber)">Если неделя отозвалась острее, чем ожидалось</p>
-    <h2 class="title" style="font-size:46px">Это не «неделя такая»</h2>
-    <div class="cards c2" style="margin-top:6px">
-      <div class="card"><h3>Сигналы, которые нельзя пропустить</h3><p style="font-size:15.5px; color:#e8e2d6">Повторяющиеся ночные страхи · отказ от еды · резкие смены настроения дольше двух недель · самоповреждение · явное нежелание жить.</p></div>
-      <div class="card"><h3>Что делать</h3><p style="font-size:15.5px; color:#e8e2d6">К детскому психологу <strong style="color:var(--amber)">очно</strong>. Программа дополняет наблюдение взрослого, а не заменяет специалиста; диагнозов не ставит и ставить не просим. Если сомневаетесь — начните с одного визита, без ожидания «диагноза».</p></div>
-    </div>
-    <div class="footer"><span>Гиб · медицинская граница программы</span><span class="counter">14 / 17</span></div>
-  </section>
-
-  <!-- 15 · Одно действие -->
-  <section class="slide" data-title="Одно действие на неделю" data-notes="Последнее обещание встречи. Одна просьба — только одна. Остальное программа сделает сама.">
-    <p class="kicker">Если взять только одно</p>
-    <h2 class="title" style="font-size:52px">Откройте <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">день 1 вместе</span></h2>
-    <p class="lede" style="margin-top:10px">Десять минут любого вечера недели. Без оценок и без подсказок. Вы рядом с чаем — не с проверкой. Всё остальное программа сделает сама.</p>
-    <p class="lede frag" style="margin-top:18px; color:var(--muted)">Дальше по программе: <strong style="color:var(--txt)">неделя 2 — «Пауза и выбор»</strong>: как остановиться между стимулом и ответом. Там будет разговор о том, что пауза — навык, а не характер.</p>
-    <div class="footer"><span>Гиб · вебинар для родителей · неделя 1</span><span class="counter">15 / 17</span></div>
-  </section>
-
-  <!-- 16 · Источники -->
-  <section class="slide" data-title="Источники" data-notes="Если спросят «а вы точно всё по науке?» — показать этот слайд целиком.">
-    <p class="kicker">Источники и честные оговорки</p>
-    <h2 class="title" style="font-size:40px">Что мы можем доказать — и чего не можем</h2>
+  <!-- 14 · Три ошибки -->
+  <section class="slide" data-title="Три ошибки родителя" data-notes="После каждой ошибки — пауза. «Узнавание» здесь сильнее любой лекции.">
+    <p class="kicker"><span class="num">ОШИБКИ</span> Три фразы, которые слышат иначе, чем мы думаем</p>
+    <h2 class="title" style="font-size:38px">Прежде чем чинить ребёнка</h2>
     <div class="cards" style="gap:12px; margin-top:2px">
-      <div class="card" style="padding:16px 22px"><p style="font-size:15px; color:#d8d2e2"><b>Durlak, J. A. et al.</b> (2011). The Impact of Enhancing Students’ Social and Emotional Learning: A Meta-Analysis… <i>Child Development, 82</i>(1), 405–432. — 213 программ, 270 034 ребёнка, +11 перцентилей к успеваемости.</p></div>
-      <div class="card" style="padding:16px 22px"><p style="font-size:15px; color:#d8d2e2"><b>Blair, C. &amp; Razza, R. P.</b> (2007). Relating effortful control, executive function… to emerging math and literacy ability in kindergarten. <i>Child Development, 78</i>(2), 647–663.</p></div>
-      <div class="card" style="padding:16px 22px"><p style="font-size:15px; color:#d8d2e2"><b>Diamond, A.</b> (2013). Executive Functions. <i>Annual Review of Psychology, 64</i>, 135–168. + <b>CASEL</b>: 5 компетенций SEL как внешний каркас (casel.org).</p></div>
-      <div class="card" style="padding:16px 22px"><p style="font-size:15px; color:#d8d2e2"><b>Программа «Гиб»</b>: 36 занятий · 12 тем · 60 историй × 3 возраста · 48 навыков · замеры сентябрь/январь/май. <b>Оговорка:</b> продукт фиксирует вовлечённость и поведение в сценариях, а не «уровень эмпатии»; эффект программы не равен эффекту исследования.</p></div>
+      <div class="panel frag" style="padding:13px 18px"><div class="idx">01 · «Ну сколько можно расстраиваться»</div><p style="font-size:14px; margin-top:4px">Слышится как: твоё чувство неправильное. Чувство не отменяется — ребёнок перестаёт говорить, а оно уходит в тело и выходит по ночам.</p></div>
+      <div class="panel frag" style="padding:13px 18px"><div class="idx">02 · «Что с тобой?!» ×5 подряд</div><p style="font-size:14px; margin-top:4px">Пятый вопрос превращает разговор в обыск; после третьего ребёнок обычно решил, что говорить не стоит. Один вопрос — и тишина в ответ — нормально.</p></div>
+      <div class="panel frag" style="padding:13px 18px"><div class="idx">03 · «Ты смелый, не плачь»</div><p style="font-size:14px; margin-top:4px">Оценку защищают или опровергают. Наблюдение принимают: «вижу, тебе больно» — и контакт сохраняется.</p></div>
     </div>
-    <div class="footer"><span>docs/research-passport.md · docs/skills-map.md</span><span class="counter">16 / 17</span></div>
+    <p class="footnote"><b>Механизм под всеми тремя:</b> чувство → тело → молчание. Тело говорит раньше слов; если хочется спросить «что чувствуешь», попробуйте сначала «где ты чувствуешь это сейчас?» — ответ приходит быстрее.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Ошибки</span><span class="pagenum">14 / 23</span></div>
   </section>
 
-  <!-- 17 · Закрытие -->
-  <section class="slide" data-title="Закрытие" data-notes="Спасибо, вопрос зальный, ссылка на приложение и USP: год, 36 встреч, без оценки и без спешки.">
-    <div class="orbit" style="right:-220px; top:auto; bottom:-240px; width:720px; height:720px; border-color:rgba(255,122,69,.3)"></div>
-    <p class="kicker">Гиб · «Театральная мастерская»</p>
-    <h1 class="display" style="font-size:84px; margin-top:14px">Тихо<br>войти в <span class="accent">год</span></h1>
-    <p class="lede" style="margin-top:22px">Не «вырастить чемпиона», а <strong>дать ребёнку язык для себя</strong> — годом, в 36 встречах, без оценок и без спешки.</p>
-    <div class="footer"><span>Следующая встреча: неделя 2 · «Пауза и выбор» · пригласительная ссылка: <b style="color:var(--amber)">[ССЫЛКА — впишите]</b></span><span class="counter">17 / 17</span></div>
+  <!-- 15 · Три дела по десять минут -->
+  <section class="slide" data-title="Три дела по десять минут" data-notes="Попросить выбрать одно, не больше. «Домашнее задание» у взрослого? одно.">
+    <p class="kicker"><span class="num">ДОМА</span> Три вещи, которые стоят вечера</p>
+    <h2 class="title" style="font-size:38px">Десять минут — и никакого расписания</h2>
+    <div class="cards c3" style="margin-top:4px">
+      <div class="panel vermilion frag"><div class="idx">01</div><h3>Поговорите о дне</h3><p>Как говорите вы сами: «как-то тихо сегодня играл, всё хорошо?» Без настаивания на ответе — отсутствие ответа тоже ответ.</p></div>
+      <div class="panel vermilion frag"><div class="idx">02</div><h3>Нарисуйте любую картинку</h3><p>Если ребёнку хочется. Не «нарисуй злость» — просто картинка; у вас своя, у него своя; рядом, не вместе — и этого достаточно.</p></div>
+      <div class="panel vermilion frag"><div class="idx">03</div><h3>Договоритесь о сигнале</h3><p>Ребёнок трогает плечо, когда закипает. Сигнал — не «предупреди перед взрывом», а признак: мы заметили до кипения.</p></div>
+    </div>
+    <p class="footnote"><b>Заметка недели, написанная заранее:</b> ребёнок замечает сигналы тела и называет эмоции словами. Не ждите «взрослых» формулировок — привычка останавливаться и спрашивать себя «что я сейчас чувствую?» важнее словарного запаса.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Дома</span><span class="pagenum">15 / 23</span></div>
+  </section>
+
+  <!-- 16 · Вопрос за ужином -->
+  <section class="slide" data-title="Вопрос за ужином" data-notes="Прочитать вслух один раз. Спросить «кто запишет?» Самый тихий слайд — самый дорогой.">
+    <p class="kicker"><span class="num">ВОПРОС</span> Один вопрос — один ответ</p>
+    <p class="anchor-quote" style="font-size:clamp(28px,3.4vw,42px); max-width:34ch; margin-top:10px"><span class="qmark">«</span>Какое слово про состояние ребёнок <span class="accent">за эту неделю узнал первым</span>?<span class="qmark">»</span></p>
+    <p class="lede" style="margin-top:20px">Без оценивания. «Усталость» — правильный ответ. «Злость» — правильный ответ. «Ничего» — тоже ответ: он просто присматривался к словам молча.</p>
+    <p class="lede" style="margin-top:12px; color:var(--vermilion); font-weight:600">Слушайте ответ дольше, чем говорите в нём сами.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Вопрос</span><span class="pagenum">16 / 23</span></div>
+  </section>
+
+  <!-- 17 · Чего ждать -->
+  <section class="slide" data-title="Чего ждать и чего не ждать" data-notes="Правая колонка снимает ожидание «не сработало» заранее.">
+    <p class="kicker"><span class="num">ГРАНИЦЫ</span> Что ждать и чего не ждать от недели</p>
+    <h2 class="title" style="font-size:36px">Реалистичная неделя</h2>
+    <div class="cols">
+      <div class="col good"><h4>Ждите малое</h4><ul><li>одно новое слово — «усталость», «злость», «нормально»</li><li>одну паузу перед ответом, которой не было</li><li>одну картинку, на которой «злость» — чёрная клякса</li><li>отсутствие показухи — и это заметно лучшая метрика</li></ul></div>
+      <div class="col bad"><h4>Не ждите</h4><ul><li>красивых отчётов о чувствах к воскресенью</li><li>благодарности за «спроси у папы»</li><li>сравнений с другими детьми или с вами в его возрасте</li><li>чуда за неделю: год — это год, не девятидневный курс</li></ul></div>
+    </div>
+    <p class="footnote"><b>Отказ говорить — тоже осмысленный ответ.</b> Его не нужно «додавливать». Программа засчитывает его как выбор: оставайтесь рядом, без опроса.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Границы</span><span class="pagenum">17 / 23</span></div>
+  </section>
+
+  <!-- 18 · Если стало острее -->
+  <section class="slide" data-title="Если стало заметно острее" data-notes="Читать ровно. Это медицинская граница, не страшилка и не топливо для тревоги.">
+    <p class="kicker" style="color:var(--vermilion)"><span class="num">ГРАНИЦА</span> Если неделя вскрыла больше, чем ожидалось</p>
+    <h2 class="title" style="font-size:38px">Это не «неделя такая»</h2>
+    <div class="cols" style="margin-top:2px">
+      <div class="col bad"><h4>Поводы, которые нельзя пропустить</h4><ul><li>повторяющиеся ночные страхи</li><li>отказ от еды</li><li>резкие смены настроения дольше двух недель</li><li>самоповреждение</li><li>явное нежелание жить</li></ul></div>
+      <div class="col good" style="border-color:var(--brass)"><h4 style="color:var(--brass)">Что делать</h4><ul><li>к детскому психологу <strong>очно</strong> — программа дополняет наблюдение взрослого, не заменяет специалиста</li><li>диагнозов программа не ставит и ставить не просим</li><li>сомневаетесь — начните с одного визита, без ожидания «диагноза»: часто это просто разговор, после которого всем спокойнее</li></ul></div>
+    </div>
+    <div class="footer"><span>Открытая мастерская · №01 · Медицинская граница</span><span class="pagenum">18 / 23</span></div>
+  </section>
+
+  <!-- 19 · FAQ -->
+  <section class="slide" data-title="Три возражения" data-notes="Если зал молчит — задать себе первым. Возражения снимаются фактами, а не тоном.">
+    <p class="kicker"><span class="num">ВОПРОСЫ</span> Три возражения, которые мы слышим чаще всего</p>
+    <h2 class="title" style="font-size:36px">Честные ответы</h2>
+    <div class="cards" style="gap:12px; margin-top:2px">
+      <div class="panel" style="padding:13px 18px"><div class="idx">«Ещё один экран?»</div><p style="font-size:14px; margin-top:4px">Да — на дозированный контакт с обучающей средой под надзором. Сценарий — 8–10 минут, не бесконечная лента; плюс живое занятие с педагогом раз в неделю. Экран здесь — инструмент практики, не развлечение-заполнитель.</p></div>
+      <div class="panel" style="padding:13px 18px"><div class="idx">«У него и так всё нормально»</div><p style="font-size:14px">Прекрасно: программа не лечит здорового ребёнка — она даёт ему язык раньше, чем понадобится. «Нормально» — не диагноз; привычка замечать себя — капитал на кризис.</p></div>
+      <div class="panel" style="padding:13px 18px"><div class="idx">«А оценки не просядут?»</div><p style="font-size:14px">Мы не обещаем ни роста, ни падения оценок — мы их не измеряем. Мы измеряем вовлечённость и перенос ситуаций; успеваемость — следствие перегруженной нервной системы или её отсутствия, а не наших баллов.</p></div>
+    </div>
+    <div class="footer"><span>Открытая мастерская · №01 · Вопросы</span><span class="pagenum">19 / 23</span></div>
+  </section>
+
+  <!-- 20 · Одно действие -->
+  <section class="slide" data-title="Одно действие на неделю" data-notes="Последняя просьба встречи. Одна — и только одна.">
+    <p class="kicker"><span class="num">ДЕЙСТВИЕ</span> Если взять только одно</p>
+    <h2 class="title" style="font-size:42px">Откройте <span class="accent">день 1</span> вместе</h2>
+    <p class="lede" style="margin-top:6px">Десять минут любого вечера недели. Без оценок, без подсказок. Вы рядом с чаем — не с проверкой. Всё остальное программа сделает сама.</p>
+    <p class="footnote"><b>Дальше по программе:</b> неделя 2 — «Пауза и выбор»: как остановиться между стимулом и ответом. Там будет разговор о том, что пауза — навык, а не характер.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Действие</span><span class="pagenum">20 / 23</span></div>
+  </section>
+
+  <!-- 21 · Как устроены замеры -->
+  <section class="slide" data-title="Как устроены замеры" data-notes="Показать шкалу года и сказать: «нас интересует динамика, не балл».">
+    <p class="kicker"><span class="num">ЗАМЕРЫ</span> Год в трёх точках</p>
+    <h2 class="title" style="font-size:38px">Сентябрь · январь · май</h2>
+    <div class="year-track">
+      <div class="pt" style="left:8%"><div class="dot"></div><b>Сентябрь</b><span>вход · привычные сценарии, «до»</span></div>
+      <div class="pt mid" style="left:50%"><div class="dot"></div><b>Январь</b><span>середина · отделяет рост навыка от привычки к игре</span></div>
+      <div class="pt end" style="left:92%"><div class="dot"></div><b>Май</b><span>итог · «после» · перенос в жизнь</span></div>
+    </div>
+    <p class="footnote"><b>Почему не «до/после»:</b> один цикл «60 дней» давал две точки и путал рост навыка с привыканием к игре. Три точки за год дают динамику без ложных обещаний — и ни одной цифры «уровня» в отчёте родителя.</p>
+    <div class="footer"><span>Открытая мастерская · №01 · Заметки методиста</span><span class="pagenum">21 / 23</span></div>
+  </section>
+
+  <!-- 22 · Источники -->
+  <section class="slide" data-title="Источники" data-notes="Показывать, если спросят «откуда цифры». Читать не надо.">
+    <p class="kicker"><span class="num">ИСТОЧНИКИ</span> Что мы можем доказать</p>
+    <h2 class="title" style="font-size:34px">Все цифры на слайдах имеют адрес</h2>
+    <div class="cards" style="gap:8px; margin-top:2px">
+      <div class="panel" style="padding:11px 16px"><p style="font-size:13px; line-height:1.45; color:var(--ink-soft)"><b>Durlak, J. A., Weissberg, R. P., Dymnicki, A. B., Taylor, R. D., &amp; Schellinger, K. B.</b> (2011). The Impact of Enhancing Students’ SEL… <i>Child Development, 82</i>(1), 405–432. DOI 10.1111/j.1467-8624.2010.01564.x</p></div>
+      <div class="panel" style="padding:11px 16px"><p style="font-size:13px; line-height:1.45; color:var(--ink-soft)"><b>Blair, C., &amp; Razza, R. P.</b> (2007). Relating effortful control, executive function, and false belief understanding to emerging math and literacy ability in kindergarten. <i>Child Development, 78</i>(2), 647–663. DOI 10.1111/j.1467-8624.2007.01019.X</p></div>
+      <div class="panel" style="padding:11px 16px"><p style="font-size:13px; line-height:1.45; color:var(--ink-soft)"><b>Diamond, A.</b> (2013). Executive Functions. <i>Annual Review of Psychology, 64</i>, 135–168. DOI 10.1146/annurev-psych-113011-143750 · <b>CASEL</b> Five Core Competencies, casel.org</p></div>
+      <div class="panel" style="padding:11px 16px"><p style="font-size:13px; line-height:1.45; color:var(--ink-soft)"><b>Программа «Гиб»:</b> 36 занятий · 12 тем · 60 историй × 3 линейки · 48 навыков · замеры сентябрь/январь/май. <b>Документы:</b> <i>docs/research-passport.md</i> · <i>docs/skills-map.md</i> · <i>docs/program-year-design.md</i> · <i>lib/events/journal.ts</i></p></div>
+    </div>
+    <div class="footer"><span>Открытая мастерская · №01 · Источники</span><span class="pagenum">22 / 23</span></div>
+  </section>
+
+  <!-- 23 · Закрытие -->
+  <section class="slide" data-title="Закрытие" data-notes="Спасибо, вопросы. Не продавать — помогать решить, подходит ли.">
+    <p class="kicker"><span class="num">ФИНАЛ</span> Гиб · Открытая мастерская</p>
+    <h1 class="display" style="font-size:clamp(56px,6.6vw,84px)">Тихо войти<br>в <em class="accent">год</em></h1>
+    <p class="lede" style="margin-top:18px">Не «вырастить чемпиона», а <strong>дать ребёнку язык для себя</strong> — годом, в 36 встречах, без оценок и без спешки.</p>
+    <p class="lede" style="margin-top:10px; color:var(--muted); font-size:16px">Следующая неделя — «Пауза и выбор» · пригласительная ссылка: <strong style="color:var(--vermilion)">[ССЫЛКА — впишите]</strong></p>
+    <div class="footer"><span>Открытая мастерская · №01 · Спасибо за вопросы</span><span class="pagenum">23 / 23</span></div>
   </section>
 
 </div>
-
 <div class="hud"><kbd>←</kbd> <kbd>→</kbd> · <kbd>S</kbd> заметки · <kbd>F</kbd> во весь экран</div>
 <aside class="notes" id="notes"><b>ЗАМЕТКИ ВЕДУЩЕГО · </b><span id="notesText"></span></aside>
-
 <script src="deck.js"></script>
 </body>
 </html>
