@@ -22,12 +22,13 @@ check(byAudience('parent').length === 12, `родительская серия 1
 check(new Set(plan.webinars.map((w) => w.id)).size === 48, 'id выпусков уникальны');
 
 const allSlides = plan.webinars.flatMap((w) => w.slides);
-check(allSlides.length === 618, `618 слайдов (есть ${allSlides.length})`);
+check(allSlides.length === 930, `930 слайдов (есть ${allSlides.length})`);
 check(new Set(allSlides.map((s) => s.id)).size === allSlides.length, 'id слайдов уникальны');
 check(new Set(allSlides.map((s) => s.webinarId)).size === 48, 'каждый слайд привязан к выпуску');
 
 for (const w of plan.webinars) {
-  check(w.slides.length >= 8 && w.slides.length <= 20, `${w.id}: слайдов в разумных пределах (${w.slides.length})`);
+  // потолок поднят до 22 после обогащения учительской линейки (PR #10): выпуски до 21 слайда
+  check(w.slides.length >= 8 && w.slides.length <= 22, `${w.id}: слайдов в разумных пределах (${w.slides.length})`);
   w.slides.forEach((s, i) => {
     if (s.index !== i) { failures++; console.error(`  FAIL ${s.id}: index ${s.index} != ${i}`); }
     if (!/^[\p{L}\p{N}-]+$/u.test(w.slug)) { failures++; console.error(`  FAIL ${w.id}: slug «${w.slug}»`); }
@@ -41,13 +42,13 @@ for (const w of plan.webinars) {
 }
 
 const totalChars = allSlides.reduce((sum, s) => sum + s.chars, 0);
-check(Math.abs(totalChars - 398229) <= 50, `объём озвучки стабилен (${totalChars} симв.)`);
+check(Math.abs(totalChars - 673844) <= 50, `объём озвучки стабилен (${totalChars} симв.)`);
 const unique = new Set(allSlides.map((s) => s.hash)).size;
 check(unique === allSlides.length || unique > 0, `уникальных реплик: ${unique}`);
 const estTts = (allSlides.reduce((sum, s) => sum + s.chars, 0) / 1000) * TTS_RATE_RUB_PER_1K;
 const estArt = allSlides.length * ART_RATE_RUB_PER_IMAGE;
 check(Number.isFinite(estTts) && estTts > 0, `оценка TTS ≈ ${estTts.toFixed(2)} ₽`);
-check(Number.isFinite(estArt) && estArt > 0, `оценка ART ≈ ${estArt.toFixed(2)} ₽ за 618 кадров`);
+check(Number.isFinite(estArt) && estArt > 0, `оценка ART ≈ ${estArt.toFixed(2)} ₽ за 930 кадров`);
 
 // Порядок выпусков: teacher 01..36, parent 01..12, у каждого своя нумерация.
 for (const aud of AUDIENCES) {
