@@ -1,0 +1,9 @@
+/* Фон титула и закрытия выпуска: ART в стиле «Занавес» (без людей). */
+.slide--velvet {
+  background:
+    var(--grain),
+    linear-gradient(90deg, rgba(23, 7, 24, .88) 0%, rgba(23, 7, 24, .62) 34%, rgba(23, 7, 24, .18) 52%, rgba(23, 7, 24, .05) 68%, rgba(23, 7, 24, .38) 100%),
+    linear-gradient(180deg, rgba(23, 7, 24, .4) 0%, rgba(23, 7, 24, .05) 26%, rgba(23, 7, 24, .12) 66%, rgba(23, 7, 24, .6) 100%),
+    url('assets/bg-hero.jpg') right center / cover no-repeat,
+    linear-gradient(180deg, #3C1836 0%, #2C102A 48%, #200A20 100%);
+}
