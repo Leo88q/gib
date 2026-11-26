@@ -341,3 +341,14 @@ h2.title { font-size: clamp(34px, 4vw, 52px); line-height: 1.06; letter-spacing:
 .hero-window img { width: 100%; height: 100%; object-fit: cover; object-position: center 12%; display: block; }
 .hero-window.mira img { object-position: center 22%; }
 .hero-window.tima img { object-position: center 8%; }
+
+/* печать: по одному слайду на страницу, без служебного хрома */
+@page { size: 338.7mm 190.5mm; margin: 0; }
+@media print {
+  body { background: #fff; overflow: visible; background-image: none; }
+  .progress, .hud, .notes { display: none !important; }
+  .stage { position: static; display: block; }
+  .slide { position: static; display: flex !important; width: 100%; height: 100vh; transform: none !important; break-after: page; animation: none; }
+  .frag { opacity: 1 !important; transform: none !important; }
+  .donut circle { transition: none; }
+}
