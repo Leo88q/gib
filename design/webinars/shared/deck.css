@@ -345,10 +345,10 @@ h2.title { font-size: clamp(34px, 4vw, 52px); line-height: 1.06; letter-spacing:
 
 /* ---------- слайд-арт «Занавес» №02–12 (веб-арт недели: символ и «что в руки») ---------- */
 .art-symbol {
-  height: 340px; margin: 4px auto 0; border-radius: 10px; overflow: hidden;
+  height: 470px; margin: 2px auto 0; border-radius: 10px; overflow: hidden;
   border: 1px solid var(--line-strong); background: var(--velvet-deep);
   box-shadow: 0 24px 60px rgba(23, 7, 24, .35), inset 0 0 0 1px rgba(242, 181, 68, .35);
-  max-width: 560px;
+  max-width: 720px;
 }
 .art-symbol img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .art-wide {
