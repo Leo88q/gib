@@ -60,15 +60,17 @@ function animateCounters(slide) {
   });
 }
 
-/* ---------- донат-диаграмма «48 навыков» ---------- */
+/* ---------- донат-диаграмма «48 навыков» ----------
+   Цвета — из арт-палитры (lib/design/tokens.ts + docs/art-direction.md):
+   Тима-сlate · Лис-рыже-оранж · латунь/золото · Мира-бирюза · бархат · охра · олива. */
 const COMPETENCIES = [
-  { name: 'Саморегуляция', n: 8, color: '#3E4A6E' },
-  { name: 'Отношения', n: 8, color: '#2E6E63' },
-  { name: 'Ответственные решения', n: 8, color: '#BE3D1E' },
-  { name: 'Самопознание', n: 7, color: '#A67C2E' },
-  { name: 'Эмпатия', n: 7, color: '#7A8B4F' },
-  { name: 'Творческое мышление', n: 5, color: '#6E4A5E' },
-  { name: 'Мышление роста', n: 5, color: '#B98A44' },
+  { name: 'Саморегуляция', n: 8, color: '#5A68C6' },
+  { name: 'Отношения', n: 8, color: '#EC6F38' },
+  { name: 'Ответственные решения', n: 8, color: '#F2B544' },
+  { name: 'Самопознание', n: 7, color: '#2E9E80' },
+  { name: 'Эмпатия', n: 7, color: '#A04A63' },
+  { name: 'Творческое мышление', n: 5, color: '#C97B2D' },
+  { name: 'Мышление роста', n: 5, color: '#6F8F5E' },
 ];
 const TOTAL = COMPETENCIES.reduce((s, c) => s + c.n, 0); // 48
 
@@ -78,9 +80,9 @@ function buildDonut() {
   if (!svg || !legend) return;
   const R = 42, C = 2 * Math.PI * R;
   let offset = 0;
-  svg.innerHTML = `<circle cx="60" cy="60" r="${R}" stroke="#EAE0CE" stroke-width="26"/>`
+  svg.innerHTML = `<circle cx="60" cy="60" r="${R}" stroke="#ECE0D2" stroke-width="26"/>`
     + '<text x="60" y="58" text-anchor="middle" font-size="23" font-weight="700">48</text>'
-    + '<text x="60" y="72" text-anchor="middle" font-size="7.2" letter-spacing="1.6" fill="#6E6774">НАВЫКОВ</text>';
+    + '<text x="60" y="72" text-anchor="middle" font-size="7.2" letter-spacing="1.6" fill="#7D7590">НАВЫКОВ</text>';
   const segments = COMPETENCIES.map(c => {
     const len = (c.n / TOTAL) * C;
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
