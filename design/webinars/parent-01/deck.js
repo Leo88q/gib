@@ -80,9 +80,15 @@ function buildDonut() {
   if (!svg || !legend) return;
   const R = 42, C = 2 * Math.PI * R;
   let offset = 0;
-  svg.innerHTML = `<circle cx="60" cy="60" r="${R}" stroke="#ECE0D2" stroke-width="26"/>`
-    + '<text x="60" y="58" text-anchor="middle" font-size="23" font-weight="700">48</text>'
-    + '<text x="60" y="72" text-anchor="middle" font-size="7.2" letter-spacing="1.6" fill="#7D7590">НАВЫКОВ</text>';
+  svg.innerHTML = `<defs><radialGradient id="coin" cx="42%" cy="36%" r="78%">
+    <stop offset="0" stop-color="#FFDF8A"/><stop offset="0.4" stop-color="#E0A32E"/>
+    <stop offset="0.8" stop-color="#A9741D"/><stop offset="1" stop-color="#6E4A0E"/>
+  </radialGradient></defs>
+  <circle cx="60" cy="60" r="${R}" stroke="#ECE0D2" stroke-width="26"/>
+  <circle cx="60" cy="60" r="31" fill="url(#coin)" stroke="#8A5A14" stroke-width="1.6"/>
+  <circle cx="60" cy="60" r="27" fill="none" stroke="#FFF6D0" stroke-width="0.9" stroke-opacity="0.85"/>`
+    + '<text x="60" y="57.5" text-anchor="middle" font-size="21" font-weight="700" fill="#3A2404">48</text>'
+    + '<text x="60" y="71" text-anchor="middle" font-size="6.6" font-weight="700" letter-spacing="1.5" fill="#5B3E06">НАВЫКОВ</text>';
   const segments = COMPETENCIES.map(c => {
     const len = (c.n / TOTAL) * C;
     const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
