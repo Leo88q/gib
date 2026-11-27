@@ -7,8 +7,9 @@
  * (уже готовые пропускаются, --force перегенерирует) и пишет расход в журнал.
  *
  * Постановка кадра собирается из вычитанного текста слайда (только ключевые
- * слова для локации/действия, без пересказа) + ротация камеры/эмоции по индексу
- * слайда, поэтому все 930 кадров разные. Без текста и букв в кадре.
+ * слова для локации/действия, без пересказа) + детерминированный разброс по
+ * хэшу id слайда (герой, камера, эмоция, мотив, свет, фактура), поэтому все
+ * 930 кадров разные даже у одинаково озаглавленных секций. Без текста и букв в кадре.
  *
  * Запуск:
  *   npx tsx scripts/webinar-art.ts                        # сухой прогон
@@ -55,26 +56,75 @@ const LOC_HINTS: [RegExp, string][] = [
   [/парк|алле/i, 'парк'],
   [/экран|планшет|телефон|приложен/i, 'комната с планшетом на столе'],
 ];
-const EMOTIONS = ['спокойный, добрый', 'заинтересованный, внимательный', 'мягкая улыбка', 'сосредоточенный', 'удивлённый, любопытный'];
+const EMOTIONS = ['спокойный, добрый', 'заинтересованный, внимательный', 'мягкая улыбка', 'сосредоточенный', 'удивлённый, любопытный'] as const;
 const CAMERAS = [
   'общий план, камера вровень, анфас, симметричная композиция',
   'средний план, ракурс три четверти, правило третей',
   'крупный план, лёгкий верхний ракурс',
   'средний общий план, лёгкий нижний ракурс, ведущая линия',
 ] as const;
-// Один кадр — один герой программы; ротация по слайду, чтобы все кадры были разными.
+// Один кадр — один герой программы; выбор по хэшу id слайда, а не по позиции:
+// одинаковые секции разных выпусков («Что говорит наука» и т.п.) так не собираются в пары.
 const CAST = [
   'Лис: рыжий лис-механик в спецовке с карманами, большие уши',
   'Мира: девочка с косичкой-«антенной» из трёх резинок, комбинезон, блокнот в руках',
   'Тима: мальчик лет одиннадцати, серо-синее худи, наушники на шее, планшет под мышкой',
 ] as const;
+// Оси композиционного разнообразия — тоже по хэшу id слайда.
+const MOTIFS = [
+  'круг и арка как основа композиции',
+  'диагональная ведущая линия',
+  'ритм из трёх повторяющихся предметов',
+  'симметрия с центральной осью',
+  'рамка из предметов на переднем плане',
+  'пустое пространство с одной стороны для воздуха',
+] as const;
+const ATMOSPHERES = [
+  'мягкий утренний свет из окна',
+  'тёплые ламповые тени вечером',
+  'рассеянный дневной свет',
+  'контровой свет из-за предмета',
+] as const;
+const TEXTURES = [
+  'лёгкая золотая кайма света на герое',
+  'мягкая глубина резкости',
+  'едва заметная пыль в луче света',
+  'тёплый отблеск на гладких поверхностях',
+] as const;
 
-export function slidePrompt(slide: WebinarSlide, slideIndex: number, audience: WebinarAudience, webinarTitle: string): string {
+/** FNV-1a 32-бит + fmix32 (MurmurHash3): FNV даёт слабую лавину на похожих суффиксах
+ *  («:hero» vs «:camera»), без финального перемешивания выборы осей коррелируют. */
+function hash32(input: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < input.length; i += 1) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+function pick<T>(list: readonly T[], id: string, salt: string): T {
+  return list[hash32(`${id}:${salt}`) % list.length];
+}
+/** id слайда вида `<audience>-<slug>-sNN` — стабилен между запусками. */
+function slideId(slide: WebinarSlide): string {
+  return slide.id;
+}
+
+export function slidePrompt(slide: WebinarSlide, audience: WebinarAudience, webinarTitle: string): string {
+  const id = slideId(slide);
   const hay = `${slide.title}. ${slide.narration.slice(0, 400)}`;
   const location = LOC_HINTS.find(([re]) => re.test(hay))?.[1] ?? (audience === 'teacher' ? 'класс' : 'дом: гостиная');
-  const hero = CAST[slideIndex % CAST.length];
-  const camera = CAMERAS[slideIndex % CAMERAS.length];
-  const emotion = EMOTIONS[slideIndex % EMOTIONS.length];
+  const hero = pick(CAST, id, 'hero');
+  const camera = pick(CAMERAS, id, 'camera');
+  const emotion = pick(EMOTIONS, id, 'emotion');
+  const motif = pick(MOTIFS, id, 'motif');
+  const atmosphere = pick(ATMOSPHERES, id, 'light');
+  const texture = pick(TEXTURES, id, 'texture');
   const context = audience === 'teacher'
     ? 'Кадр к вебинару для педагогов программы «Гиб»: учебная ситуация, один герой в кадре.'
     : 'Кадр к вебинару для родителей программы «Гиб»: тёплая сцена про дом и ребёнка, один герой в кадре.';
@@ -84,6 +134,8 @@ export function slidePrompt(slide: WebinarSlide, slideIndex: number, audience: W
     `Герой: ${hero}.`,
     `Кадр: ${camera}.`,
     `Локация: ${location}.`,
+    `Композиция: ${motif}.`,
+    `Свет: ${atmosphere}; ${texture}.`,
     `О чём кадр (без текста в изображении): тема «${webinarTitle}» — ${slide.title}.`,
     `Эмоция: ${emotion}.`,
     'Без надписей, букв и цифр в кадре; без брендов; без реальных людей; без motion blur; один персонаж, воздух над головой.',
@@ -98,7 +150,7 @@ for (const w of plan.webinars) {
     for (let candidate = 1; candidate <= candidates; candidate += 1) {
       const outFile = join(artDir, `${slide.id}-c${candidate}.png`);
       if (existsSync(outFile) && !force) { skipped++; continue; }
-      jobs.push({ slide, audience: w.audience, webinarTitle: w.title, candidate, prompt: slidePrompt(slide, slide.index, w.audience, w.title), outFile });
+      jobs.push({ slide, audience: w.audience, webinarTitle: w.title, candidate, prompt: slidePrompt(slide, w.audience, w.title), outFile });
     }
   }
 }
@@ -108,6 +160,10 @@ const cost = jobs.length * rate;
 console.log('Видео-вебинары — Alice AI ART (кадр на слайд, все разные)');
 console.log(`  выпусков: ${plan.webinars.length} | слайдов: ${totalSlides} | кандидатов на слайд: ${candidates}`);
 console.log(`  уже готовы (пропущено): ${skipped} | к генерации: ${jobs.length} → ≈ ${cost.toFixed(2)} ₽ (${rate} ₽/изображение, ${model}, ${size})`);
+const promptList = jobs.map((j) => j.prompt);
+const uniquePrompts = new Set(promptList).size;
+const normalized = new Set(promptList.map((p) => p.replace(/тема «[^»]+»/g, 'тема «X»'))).size;
+console.log(`  уникальных промптов: ${uniquePrompts}/${promptList.length} | одинаковых без учёта названия вебинара: ${promptList.length - normalized}`);
 if (jobs[0]) console.log(`\nПример промпта (${jobs[0].slide.id}):\n${jobs[0].prompt}`);
 
 if (!yes) {

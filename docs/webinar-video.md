@@ -19,7 +19,7 @@
 | --- | --- | --- |
 | План и смета | `content/webinars/*/…full.md` | `out/webinars/plan.json` |
 | Озвучка (TTS) | `## Текст озвучки` → слайды | `out/webinars/audio/<hash>.mp3` + `audio-manifest.json` |
-| Кадры (ART) | тема слайда + ротация камеры | `out/webinars/art/<slideId>-c1.png` |
+| Кадры (ART) | тема слайда + детерминированный разброс по хэшу id слайда (герой/камера/эмоция/мотив/свет/фактура) | `out/webinars/art/<slideId>-c1.png` |
 | Сборка (ffmpeg) | кадры + озвучка | `out/webinars/video/<audience>/<slug>.{9x16,16x9}.mp4` |
 
 Разбиение на слайды: абзацы до первого `### ` — слайд «Вступление», дальше каждый заголовок `### ` — один слайд (подпись на кадре = этот заголовок). id слайда детерминирован: `<audience>-<slug>-sNN`, аудио-ключ — `sha1(narration)[:16]` (та же функция, что в `scripts/yandex-tts.ts` и `render-cinema.ts`). Полные дубликаты реплик озвучиваются один раз.
