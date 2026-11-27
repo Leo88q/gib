@@ -34,3 +34,6 @@ tsconfig.tsbuildinfo
 .gib-postgres-import-*/
 __pycache__/
 *.pyc
+
+# Локальный venv для 3D-превиза (numpy/Pillow), не в git
+.venv-3d/
