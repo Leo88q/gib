@@ -34,12 +34,17 @@ kbd{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
 <div class="top"><b>Студия «Дубль»</b><span>Look-dev песочница (не часть приложения). Тяните, чтобы вращать; щипок — масштаб. Клавиши: <kbd>1–7</kbd> планы, <kbd>Пробел</kbd> — свет.</span></div>
 <div class="bar" id="bar"></div>
 <div id="err">Не удалось запустить 3D на этом устройстве.</div>
+<script>
+window.__dubbleErr=function(m){var el=document.getElementById('err');if(el){el.textContent='Ошибка 3D: '+m;el.style.cssText+=';display:block;white-space:pre-wrap';}};
+window.addEventListener('error',function(e){window.__dubbleErr((e.message||e.error||'unknown')+(e.filename?(' @ '+String(e.filename).split('/').pop()+':'+e.lineno):''));},true);
+window.addEventListener('unhandledrejection',function(e){window.__dubbleErr('Promise: '+(e.reason&&(e.reason.message||e.reason)||'rejection'));});
+</script>
 <script src="./vendor/three.min.js"></script>
 <script>
 (function(){
 'use strict';
 var box=document.getElementById('v'),R;
-try{R=new THREE.WebGLRenderer({antialias:true});}catch(e){document.getElementById('err').style.display='block';return;}
+try{R=new THREE.WebGLRenderer({antialias:true});}catch(e){window.__dubbleErr('renderer: '+(e&&e.message||e));return;}
 R.setPixelRatio(Math.min(window.devicePixelRatio||1,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.85;var AN=R.capabilities.getMaxAnisotropy();
 box.appendChild(R.domElement);
 var S=new THREE.Scene();S.background=new THREE.Color(0xf6dcc4);S.fog=new THREE.Fog(0xf6dcc4,18,44);
@@ -146,7 +151,7 @@ var wd2=M(0xb98a5c,.8);B(.08,.08,5.3,wd2,-5.93,2.78,.6);B(.08,.08,5.3,wd2,-5.93,
 var barre=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,5,12),wd2);barre.rotation.x=Math.PI/2;barre.position.set(-5.5,1.05,.6);S.add(barre);
 var bg=new THREE.Group();bg.position.set(5.95,2.0,2.4);bg.rotation.y=-Math.PI/2;S.add(bg);B(1.4,1.55,.04,M(0x6a4636,.8),0,0,0,bg);
 var bc=[0xec6f38,0xf3c14b,0x2e9e80,0x5a68c6,0xa8d0e6,0xd9b8e8];
-for(var c=0;c<6;c++)for(var rr=0;rr<8;rr++){var on=(c*8+rr)<11;var q=new THREE.Mesh(new THREE.PlaneGeometry(.15,.15),new THREE.MeshBasicMaterial({color:on?bc[c]:0xcbb39d}));q.position.set(-.5+c*.2,.6-rr*.17,.035);bg.add(q);}
+for(var c=0;c<6;c++)for(var ri=0;ri<8;ri++){var on=(c*8+ri)<11;var q=new THREE.Mesh(new THREE.PlaneGeometry(.15,.15),new THREE.MeshBasicMaterial({color:on?bc[c]:0xcbb39d}));q.position.set(-.5+c*.2,.6-ri*.17,.035);bg.add(q);}
 var tt=new THREE.Mesh(new THREE.PlaneGeometry(1.4,.26),new THREE.MeshBasicMaterial({map:CT(512,96,function(g,w,h){g.fillStyle='#fdf4e9';g.font='bold 44px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('Паспорт сцен',w/2,h/2);}),transparent:true}));tt.position.set(0,.98,.03);bg.add(tt);
 B(1.6,2,.4,wd2,-5.1,1,-5.15);[.5,1,1.5].forEach(function(y){B(1.6,.04,.42,wd2,-5.1,y,-5.15);});
 [[0xec6f38,-5.5,.62],[0x2e9e80,-5.1,.62],[0xf3c14b,-4.7,1.12],[0xec6f38,-5.4,1.12],[0x5a68c6,-5.0,1.62]].forEach(function(p){B(.28,.2,.28,M(p[0],.6),p[1],p[2],-5.1);});
