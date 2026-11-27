@@ -270,6 +270,7 @@
     "test:course-complete": "tsx scripts/test-course-complete.ts",
     "test:design-tokens": "node --experimental-strip-types scripts/test-design-tokens.ts",
     "test:cinema-manifest": "node --experimental-strip-types scripts/test-cinema-manifest.ts",
+    "test:cinema-manifest-v2": "node --experimental-strip-types scripts/test-cinema-manifest-v2.ts",
     "build:frames": "tsx scripts/build-frame-catalog.ts",
     "test:frames": "node --experimental-strip-types scripts/test-frames.ts",
     "art:frames": "tsx scripts/yandex-art-frames.ts",
