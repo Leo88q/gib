@@ -15,6 +15,7 @@ body{position:relative}
 canvas{display:block;width:100%;height:100%}
 .top{position:fixed;top:0;left:0;right:0;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 8px;pointer-events:none}
 .top b{display:block;font-size:17px}.top span{font-size:12px;opacity:.85;max-width:640px;display:block}
+.take{display:inline-block;margin-top:5px;font-size:11px;letter-spacing:.16em;font-weight:800;color:#241d31;background:#f2b544;border-radius:4px;padding:2px 9px}
 .bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
 .grp{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:0 6px;border-left:1px solid var(--line)}
 .grp:first-child{border-left:0}
@@ -31,7 +32,7 @@ kbd{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
 </head>
 <body>
 <div id="v"></div><div class="vg"></div><div id="fade"></div>
-<div class="top"><b>Студия «Дубль»</b><span>Look-dev песочница (не часть приложения). Тяните, чтобы вращать; щипок — масштаб. Клавиши: <kbd>1–7</kbd> планы, <kbd>Пробел</kbd> — свет.</span></div>
+<div class="top"><b>Студия «Дубль»</b><span>Look-dev песочница (не часть приложения). Тяните, чтобы вращать; щипок — масштаб. Клавиши: <kbd>1–7</kbd> планы, <kbd>Пробел</kbd> — свет, <kbd>D</kbd> — новый дубль.</span><span class="take" id="takeChip">ДУБЛЬ 1</span></div>
 <div class="bar" id="bar"></div>
 <div id="err">Не удалось запустить 3D на этом устройстве.</div>
 <script>
@@ -81,7 +82,13 @@ B(7.2,.35,3.4,sw,0,.175,-3.7);B(2.4,.175,.5,sw,0,.0875,-1.75);
 var ind=M(0xead3b8,.7);B(.4,3.7,.4,ind,-3.9,1.85,-2);B(.4,3.7,.4,ind,3.9,1.85,-2);B(8.2,.5,.4,ind,0,3.65,-2);
 var curtainMatA=M(0x5e1f28,.95);
 var panelCount=56;
-for(var i=0;i<panelCount;i++){var shd=.78+.28*Math.sin(i*1.15);var col=new THREE.Color(0x5e1f28).multiplyScalar(shd);B(.135,2.9,.16,M(col,.95),-3.45+i*.125,1.8,-5.28+Math.sin(i*1.15)*.055);}
+var curtainPanels=[];
+for(var i=0;i<panelCount;i++){var shd=.78+.28*Math.sin(i*1.15);var col=new THREE.Color(0x5e1f28).multiplyScalar(shd);var cp=B(.135,2.9,.16,M(col,.95),-3.45+i*.125,1.8,-5.28+Math.sin(i*1.15)*.055);curtainPanels.push({m:cp,baseX:cp.position.x});}
+/* закулисье за занавесом (видно, когда он открыт) */
+var backstage=B(9.2,4.2,.02,new THREE.MeshStandardMaterial({color:0x17100e,roughness:.95}),0,2.1,-5.385);backstage.castShadow=backstage.receiveShadow=false;
+var glowStrip=new THREE.Mesh(new THREE.BoxGeometry(8.6,.05,.05),new THREE.MeshStandardMaterial({color:0x2a1d12,emissive:0xffb36b,emissiveIntensity:.85,roughness:.8}));glowStrip.position.set(0,.18,-5.37);S.add(glowStrip);
+var ropeM=M(0x3a2a1c,.7);[-1.7,1.7].forEach(function(x){var rp=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,3.2,8),ropeM);rp.position.set(x,2.6,-5.31);S.add(rp);var sb=B(.5,.22,.22,M(0x4a3826,.9),x,.11,-5.3);sb.castShadow=false;});
+var curtain=0,curtainTarget=0;
 var sideA=M(0x712834,.95),sideB=M(0x51202a,.95);
 [-2.55,-3.85,-5.15].forEach(function(z,k){B(.95,2.9,.1,k%2?sideA:sideB,-3.85,1.8,z);B(.95,2.9,.1,k%2?sideA:sideB,3.85,1.8,z);});
 var tie=M(0xf2b544,.6);[-3.85,3.85].forEach(function(x){var t=new THREE.Mesh(new THREE.TorusGeometry(.16,.045,10,20),tie);t.rotation.x=Math.PI/2;t.position.set(x,1.62,-2.05);S.add(t);});
@@ -144,7 +151,16 @@ var cable=new THREE.Mesh(new THREE.TubeGeometry(cableCurve,32,.028,8),M(0x1c1410
 /* столик с одной страницей и хлопушкой */
 B(1.7,.07,.4,M(0xb98a5c,.8),0,.34,3.9);B(.05,.34,.36,M(0x33231a,.5,.3),-.82,.17,3.9);B(.05,.34,.36,M(0x33231a,.5,.3),.82,.17,3.9);
 var page=new THREE.Mesh(new THREE.PlaneGeometry(.34,.24),new THREE.MeshStandardMaterial({color:0xfdf4e9,roughness:.9}));page.rotation.x=-Math.PI/2;page.rotation.z=.12;page.position.set(-.4,.379,3.9);S.add(page);
-var clap=B(.3,.2,.02,new THREE.MeshStandardMaterial({map:CT(256,160,function(g,w,h){g.fillStyle='#241d31';g.fillRect(0,0,w,h);g.fillStyle='#fdf4e9';g.font='bold 56px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('ДУБЛЬ',w/2,h/2);}),roughness:.7}),.35,.5,3.9);clap.rotation.y=.5;clap.rotation.x=-.1;
+var takeCanvas=document.createElement('canvas');takeCanvas.width=256;takeCanvas.height=160;
+function drawTake(n){var g=takeCanvas.getContext('2d');g.fillStyle='#241d31';g.fillRect(0,0,256,160);g.strokeStyle='#fdf4e9';g.lineWidth=9;g.strokeRect(10,10,236,140);g.fillStyle='#f2b544';g.fillRect(10,10,236,34);g.fillStyle='#241d31';g.font='bold 22px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('С Т У Д И Я   « Д У Б Л Ь »',128,28);g.fillStyle='#fdf4e9';g.font='bold 52px system-ui,sans-serif';g.fillText('ДУБЛЬ '+n,128,100);}
+drawTake(1);
+var takeTex=new THREE.CanvasTexture(takeCanvas);takeTex.encoding=THREE.sRGBEncoding;
+var clap=B(.3,.2,.02,new THREE.MeshStandardMaterial({map:takeTex,roughness:.7}),.35,.5,3.9);clap.rotation.y=.5;clap.rotation.x=-.1;
+var take=1,takeHit=0;
+var takeChip=document.getElementById('takeChip');
+var __ac=null;
+function clapSound(){try{var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;__ac=__ac||new AC();if(__ac.state==='suspended'){__ac.resume();}var len=Math.floor(__ac.sampleRate*.05);var buf=__ac.createBuffer(1,len,__ac.sampleRate);var d=buf.getChannelData(0);for(var i=0;i<len;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.3);}var src=__ac.createBufferSource();src.buffer=buf;var f=__ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1700;f.Q.value=1.1;var gn=__ac.createGain();gn.gain.value=.55;src.connect(f);f.connect(gn);gn.connect(__ac.destination);src.start(0);}catch(e){}}
+function newTake(){take+=1;drawTake(take);takeTex.needsUpdate=true;takeHit=1;if(takeChip){takeChip.textContent='ДУБЛЬ '+take;}clapSound();}
 /* зеркало + станок; полка с коробками; доска «Паспорт сцен»; торшер — как в черновике */
 var mirror=B(.06,2.3,5.2,new THREE.MeshStandardMaterial({color:0xf2f6ff,roughness:.03,metalness:.9,emissive:0x33231a,emissiveIntensity:.3}),-5.96,1.6,.6);mirror.castShadow=false;
 var wd2=M(0xb98a5c,.8);B(.08,.08,5.3,wd2,-5.93,2.78,.6);B(.08,.08,5.3,wd2,-5.93,.42,.6);
@@ -267,7 +283,8 @@ function grp(label){var g=document.createElement('div');g.className='grp';var i=
 function btn(g,label,fn,pressed){var b=document.createElement('button');b.textContent=label;b.setAttribute('aria-pressed',pressed?'true':'false');b.onclick=function(){fn(b);};g.appendChild(b);return b;}
 function planGroup(){var g=grp('Планы'),btns={};Object.keys(views).forEach(function(n,i){var key=String(i+1);btns[n]=btn(g,n,function(){Object.keys(btns).forEach(function(k){btns[k].setAttribute('aria-pressed',k===n?'true':'false');});go(n);},n==='Зал');});var dollyBtn=btn(g,'Тележка',function(){goDolly();},false);btns['Тележка']=dollyBtn;return btns;}
 var master=0;
-function masterGroup(){var g=grp('Показ');var b=btn(g,'Свет: репетиция',function(){master=master?0:1;b.textContent=master?'Свет: выступаем':'Свет: репетиция';b.setAttribute('aria-pressed',master?'true':'false');},false);return b;}
+function masterGroup(){var g=grp('Показ');var b=btn(g,'Свет: репетиция',function(){master=master?0:1;b.textContent=master?'Свет: выступаем':'Свет: репетиция';b.setAttribute('aria-pressed',master?'true':'false');curtainTarget=master;if(stageCue.curtainBtn){stageCue.curtainBtn.setAttribute('aria-pressed',master?'true':'false');}},false);return b;}
+function actionGroup(){var g=grp('Действие');var cz=btn(g,'Занавес',function(b){curtainTarget=curtainTarget?0:1;b.setAttribute('aria-pressed',curtainTarget?'true':'false');},false);stageCue.curtainBtn=cz;btn(g,'Новый дубль',function(){newTake();},false);return g;}
 function lightGroup(){
   var g=grp('Свет');
   var defs=[['Прож L','spot0'],['Прож Ц','spot1'],['Прож П','spot2'],['Рампа','ramp'],['Торшер','lamp'],['Окно','window'],['Экран','screen']];
@@ -276,10 +293,11 @@ function lightGroup(){
   return btns;
 }
 function cassetteGroup(){var g=grp('Кассеты');[['Дом',1],['Мастерская',2],['Библиотека',3]].forEach(function(d){btn(g,d[0],function(b){var willBe=(cassetteMode===d[1])?0:d[1];setCassettes(d[1]);g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed','false');});if(willBe){b.setAttribute('aria-pressed','true');}},false);});return g;}
-var planBtns=planGroup();var masterBtn=masterGroup();var lightBtns=lightGroup();var cassetteGrp=cassetteGroup();
+var stageCue={curtainBtn:null};var planBtns=planGroup();var masterBtn=masterGroup();var actionGrp=actionGroup();var lightBtns=lightGroup();var cassetteGrp=cassetteGroup();
 var planKeys=Object.keys(views);
 document.addEventListener('keydown',function(e){
   if(e.code==='Space'){e.preventDefault();masterBtn.click();return;}
+  if(e.code==='KeyD'){e.preventDefault();newTake();return;}
   var n=parseInt(e.key,10);
   if(n>=1&&n<=planKeys.length){planBtns[planKeys[n-1]].click();}
 });
@@ -300,6 +318,9 @@ function loop(now){
     if(tw){var k=Math.min(1,(now-tw.s)/tw.dur),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;T.t.lerpVectors(tw.t0,tw.t1,e);T.r=tw.r0+(tw.r1-tw.r0)*e;T.th=tw.th0+(tw.th1-tw.th0)*e;T.ph=tw.ph0+(tw.ph1-tw.ph0)*e;if(k>=1)tw=null;}
     put();
   }
+  curtain+=(curtainTarget-curtain)*.07;var ce=curtain<.5?2*curtain*curtain:1-Math.pow(-2*curtain+2,2)/2;
+  for(var ci=0;ci<curtainPanels.length;ci++){var cpn=curtainPanels[ci];var cdir=cpn.baseX<0?-1:1;cpn.m.position.x=cpn.baseX+(cdir*4.02-cpn.baseX)*ce;cpn.m.scale.x=1-(1-.32)*ce;}
+  if(takeHit>0){takeHit=Math.max(0,takeHit-.045);clap.rotation.z=.16*Math.sin(takeHit*Math.PI*3)*takeHit;clap.position.y=.5+.06*Math.sin(takeHit*Math.PI)*takeHit;}
   cassettes.forEach(function(c,i){c.cur+=(cassetteTargetX[i]-c.cur)*.09;c.grp.position.x=c.cur;});
   var sT=now*.001;
   heroes.forEach(function(h,i){h.position.y=.35+Math.sin(sT*1.6+i*1.7)*.02;h.rotation.y=Math.sin(sT*.8+i)*.08;});

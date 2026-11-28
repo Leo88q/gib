@@ -1,5 +1,5 @@
 import {
-  fmvFor, normalizeManifestV2, pickFmvSource, FMV_LAYER_ORDER, type FmvManifest,
+  fmvFor, normalizeManifestV2, pickFmvSource, FMV_LAYER_ORDER, FMV_LIGHT_ORDER, type FmvManifest,
 } from '../lib/cinema/manifest-v2.ts';
 
 let failures = 0;
@@ -64,6 +64,45 @@ check('pickFmvSource: без HEVC — VP9', pickFmvSource(src, (k) => k === 'vp9
 check('pickFmvSource: без альфы — mp4', pickFmvSource(src, (k) => k === 'mp4')?.kind === 'mp4');
 check('pickFmvSource: ничего не играет — null', pickFmvSource(src, () => false) === null);
 check('pickFmvSource: только mp4, но и он не играет — null', pickFmvSource({ mp4: '/x.mp4' }, () => false) === null);
+
+// --- Пресет режиссуры (scene): fail-soft, сегмент не страдает ---
+const sceneRaw = {
+  version: 2,
+  entries: {
+    'w1d1/8-10': {
+      segments: [
+        { id: 'plate', layer: 'set', src: { mp4: '/s.mp4' },
+          scene: { camera: 'stage', light: 'show', curtain: 'open', cassettes: 'dom', screen: 'repertoire',
+                   lightsOn: ['ramp', 'spotL', 'spotL', 'bogusLight'],
+                   heroes: { mira: 'relief', tima: 'thinking', lis: 'nervous', stranger: 'calm' } } },
+        { id: 'half-cue', layer: 'character', src: { vp9: '/c.webm' },
+          scene: { camera: 'orbit', light: 'noon', curtain: 'ajar', cassettes: 'garage', screen: 'popup',
+                   lightsOn: 'not-array', heroes: 'nope' } },
+        { id: 'not-object', layer: 'character', src: { vp9: '/d.webm' }, scene: 'lights' },
+        { id: 'null-scene', layer: 'zlata', src: { vp9: '/e.webm' }, scene: null },
+      ],
+    },
+  },
+};
+const sceneManifest = normalizeManifestV2(sceneRaw);
+const segs = sceneManifest.entries['w1d1/8-10']?.segments ?? [];
+const plate = segs.find((x) => x.id === 'plate');
+check('scene: пресет сохранён у сегмента', !!plate?.scene);
+check('scene: камера/свет/занавес/кассеты/экран валидны',
+  plate?.scene?.camera === 'stage' && plate?.scene?.light === 'show' && plate?.scene?.curtain === 'open'
+  && plate?.scene?.cassettes === 'dom' && plate?.scene?.screen === 'repertoire');
+check('scene: lightsOn — дедуп, порядок из FMV_LIGHT_ORDER, мусор убран',
+  JSON.stringify(plate?.scene?.lightsOn) === JSON.stringify(['spotL', 'ramp']));
+check('scene: heroes — неизвестные герои и настроения отброшены',
+  JSON.stringify(Object.keys(plate?.scene?.heroes ?? {})) === JSON.stringify(['tima', 'mira'])
+  && plate?.scene?.heroes?.tima === 'thinking' && plate?.scene?.heroes?.mira === 'relief');
+const half = segs.find((x) => x.id === 'half-cue');
+check('scene: все значения битые — пресет опущен, сегмент жив', !!half && half.scene === undefined);
+const notObj = segs.find((x) => x.id === 'not-object');
+check('scene: не объект — опущен, сегмент жив', !!notObj && notObj.scene === undefined);
+const nullScene = segs.find((x) => x.id === 'null-scene');
+check('scene: null — опущен, сегмент жив', !!nullScene && nullScene.scene === undefined);
+check('FMV_LIGHT_ORDER стабилен', FMV_LIGHT_ORDER.join(',') === 'spotL,spotC,spotR,ramp,floorLamp,window,screen');
 
 const v2: FmvManifest = manifest;
 check('итог: version=2', v2.version === 2);
