@@ -26,14 +26,33 @@ button:focus-visible{outline:3px solid var(--on);outline-offset:2px}
 .vg{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(40,18,10,.4) 100%);z-index:3}
 #fade{position:fixed;inset:0;background:#0c0705;opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:5}
 #fade.on{opacity:1}
+.scene{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));width:min(640px,94vw);max-height:48vh;overflow:auto;background:rgba(20,14,10,.93);backdrop-filter:blur(10px);border:1px solid #6a5138;border-radius:14px;padding:12px 14px;color:#f7ead9;z-index:6;box-shadow:0 12px 44px rgba(0,0,0,.55)}
+.scene.hidden{display:none}
+.scene-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#sceneKicker{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.8}
+#sceneTake{margin-left:auto;font-size:11px;letter-spacing:.16em;font-weight:800;color:#241d31;background:#f2b544;border-radius:4px;padding:2px 8px}
+#sceneClose{background:none;border:0;color:#f7ead9;opacity:.75;font-size:17px;cursor:pointer;padding:2px 6px;min-height:0}
+#sceneText{font-size:15.5px;line-height:1.5;margin:0 0 10px}
+#sceneText small{display:block;margin-top:6px;font-size:11.5px;opacity:.65}
+.scene-opts{display:flex;flex-direction:column;gap:7px}
+.scene-opts button{text-align:left;background:rgba(253,244,233,.09);border:1px solid rgba(253,244,233,.3);color:#f7ead9;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.4;cursor:pointer;white-space:normal;min-height:0}
+.scene-opts button:hover{background:rgba(253,244,233,.2);border-color:#f2b544}
+.scene-opts button:focus-visible{outline:2px solid #f2b544;outline-offset:2px}
+@media (max-width:700px){.scene{bottom:calc(126px + env(safe-area-inset-bottom,0px));max-height:44vh}}
+@media (prefers-reduced-motion:reduce){.scene{scroll-behavior:auto}}
 #err{display:none;padding:24px;text-align:center}
 kbd{font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px}
 </style>
 </head>
 <body>
 <div id="v"></div><div class="vg"></div><div id="fade"></div>
-<div class="top"><b>Студия «Дубль»</b><span>Look-dev песочница (не часть приложения). Тяните, чтобы вращать; щипок — масштаб. Клавиши: <kbd>1–7</kbd> планы, <kbd>Пробел</kbd> — свет, <kbd>D</kbd> — новый дубль.</span><span class="take" id="takeChip">ДУБЛЬ 1</span></div>
+<div class="top"><b>Студия «Дубль»</b><span>Look-dev песочница (не часть приложения). Тяните, чтобы вращать; щипок — масштаб. Клавиши: <kbd>1–7</kbd> планы, <kbd>Пробел</kbd> — свет, <kbd>D</kbd> — новый дубль, <kbd>R</kbd> — сцена.</span><span class="take" id="takeChip">ДУБЛЬ 1</span></div>
 <div class="bar" id="bar"></div>
+<div class="scene hidden" id="sceneUI" role="dialog" aria-modal="false" aria-label="Сцена «Дубль»">
+  <div class="scene-head"><span id="sceneKicker">Мира · Неделя 1 · День 1</span><span id="sceneTake">ДУБЛЬ 1</span><button id="sceneClose" type="button" aria-label="Завершить сцену">✕</button></div>
+  <p id="sceneText" aria-live="polite"></p>
+  <div class="scene-opts" id="sceneOpts"></div>
+</div>
 <div id="err">Не удалось запустить 3D на этом устройстве.</div>
 <script>
 window.__dubbleErr=function(m){var el=document.getElementById('err');if(el){el.textContent='Ошибка 3D: '+m;el.style.cssText+=';display:block;white-space:pre-wrap';}};
@@ -233,10 +252,14 @@ function setCassettes(mode){
 /* ---------- персонажи (плейсхолдеры, размеры ~3.5 головы) ---------- */
 var ink='#241d31';
 function face(kind){return CT(256,256,function(g){g.fillStyle='rgba(255,92,147,.45)';[[70,150],[186,150]].forEach(function(p){g.beginPath();g.ellipse(p[0],p[1],26,15,0,0,7);g.fill();});g.fillStyle=ink;g.strokeStyle=ink;g.lineWidth=11;g.lineCap='round';
-[[88,110],[168,110]].forEach(function(p){g.beginPath();g.ellipse(p[0],p[1],15,19,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(p[0]-5,p[1]-7,5,0,7);g.fill();g.fillStyle=ink;});
+if(kind=='relief'){[88,168].forEach(function(x){g.beginPath();g.arc(x,110,16,Math.PI*1.12,Math.PI*1.88);g.stroke();});}
+else{[[88,110],[168,110]].forEach(function(p){g.beginPath();g.ellipse(p[0],p[1],15,19,0,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(p[0]-5,p[1]-7,5,0,7);g.fill();g.fillStyle=ink;});}
 if(kind=='o'){g.beginPath();g.ellipse(128,176,12,17,0,0,7);g.fill();g.beginPath();g.moveTo(66,66);g.quadraticCurveTo(88,48,108,66);g.moveTo(148,66);g.quadraticCurveTo(168,48,190,66);g.stroke();}
 else if(kind=='big'){g.beginPath();g.moveTo(88,160);g.lineTo(168,160);g.arc(128,160,40,0,Math.PI);g.fill();g.fillStyle='#ff6a96';g.beginPath();g.ellipse(128,190,18,12,0,0,7);g.fill();}
+else if(kind=='thinking'){g.beginPath();g.moveTo(96,170);g.lineTo(160,170);g.stroke();g.beginPath();g.moveTo(66,70);g.quadraticCurveTo(90,50,116,68);g.moveTo(148,68);g.quadraticCurveTo(172,50,198,70);g.stroke();}
+else if(kind=='relief'){g.beginPath();g.moveTo(86,162);g.quadraticCurveTo(128,214,170,162);g.stroke();}
 else{g.beginPath();g.moveTo(98,168);g.quadraticCurveTo(128,196,158,168);g.stroke();}});}
+function setHeroMood(i,kind){var f=heroes[i].children[1];var old=f.material.map;f.material.map=face(kind);f.material.needsUpdate=true;if(old){try{old.dispose();}catch(e){}}}
 function rr(s,w,h,r){s.moveTo(-w/2+r,0);s.lineTo(w/2-r,0);s.quadraticCurveTo(w/2,0,w/2,r);s.lineTo(w/2,h-r);s.quadraticCurveTo(w/2,h,w/2-r,h);s.lineTo(-w/2+r,h);s.quadraticCurveTo(-w/2,h,-w/2,h-r);s.lineTo(-w/2,r);s.quadraticCurveTo(-w/2,0,-w/2+r,0);}
 function ext(s){var g=new THREE.ExtrudeGeometry(s,{depth:.35,bevelEnabled:true,bevelThickness:.08,bevelSize:.08,bevelSegments:4,curveSegments:24});g.translate(0,0,-.175);return g;}
 function hero(geo,col,x,z,kind,fy,fs,fz){var g=new THREE.Group();g.position.set(x,.35,z);var m=new THREE.Mesh(geo,new THREE.MeshPhysicalMaterial({color:col,roughness:.45,clearcoat:.6,clearcoatRoughness:.35,envMapIntensity:.5}));m.castShadow=true;g.add(m);var f=new THREE.Mesh(new THREE.PlaneGeometry(fs,fs),new THREE.MeshBasicMaterial({map:face(kind),transparent:true}));f.position.set(0,fy,fz);g.add(f);
@@ -248,7 +271,7 @@ var sph=new THREE.SphereGeometry(.55,40,28);sph.translate(0,.55,0);
 var heroes=[
   hero(ext(arcS),0xec6f38,hp[0][0],hp[0][1],'calm',.95,.8,.27),
   hero(sph,0x5a68c6,hp[1][0],hp[1][1],'big',.55,.8,.57),
-  hero(ext(sqS),0x2e9e80,hp[2][0],hp[2][1],'o',.5,.8,.27)
+  hero(ext(sqS),0x2e9e80,hp[2][0],hp[2][1],'thinking',.5,.8,.27)
 ];
 
 /* ---------- камеры: планы и тележка ---------- */
@@ -277,6 +300,161 @@ box.addEventListener('pointermove',function(e){var o=P[e.pointerId];if(!o)return
 else{var a=P[ids[0]],b=P[ids[1]],d0=Math.hypot(a[0]-b[0],a[1]-b[1]);P[e.pointerId]=[e.clientX,e.clientY];a=P[ids[0]];b=P[ids[1]];var d1=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d0>0)T.r=Math.min(18,Math.max(2.2,T.r*d0/d1));return;}P[e.pointerId]=[e.clientX,e.clientY];});
 box.addEventListener('wheel',function(e){e.preventDefault();tw=null;dolly=null;T.r=Math.min(18,Math.max(2.2,T.r*(1+e.deltaY*.001)));},{passive:false});
 
+/* ---------- сцена «Дубль»: w1d1 «Мира» (8–10) ----------
+   Канон-текст: content/ink/deep/w1d1-8-10.ink (наши материалы, без изменений смысла).
+   6 концовок = 3 первых выбора × 2 вторых. Репертуар хранится локально
+   (localStorage) — это look-dev; в продукте — story_takes (docs/dubble.md §8). */
+var SCENE = {
+  kicker: 'Мира · Неделя 1 · День 1 · 8–10',
+  situation: 'Мира заметила, что её поделку случайно смяли. Она пока молчит.',
+  prompt: 'Как друг может её поддержать?',
+  choices: [
+    { t: 'Спросить, хочет ли она поговорить',
+      follow: 'Мира может рассказать о своих чувствах или пока оставить их при себе. Что может сделать друг?',
+      second: [ { t: 'Дать ей время', end: 'e1' }, { t: 'Предложить поговорить позже', end: 'e2' } ] },
+    { t: 'Предложить помочь с поделкой',
+      follow: 'Помощь можно предложить, но решение принять её остаётся за Мирой. Что дальше?',
+      second: [ { t: 'Уточнить, какая помощь ей нужна', end: 'e3' }, { t: 'Подождать, пока она решит', end: 'e4' } ] },
+    { t: 'Остаться рядом и дать ей время',
+      follow: 'Время и спокойное присутствие тоже могут быть поддержкой. Друг остался рядом. Что можно предложить?',
+      second: [ { t: 'Спросить, хочет ли она компании', end: 'e5' }, { t: 'Заняться своей работой поблизости', end: 'e6' } ] }
+  ]
+};
+var ENDINGS = {
+  e1: { n: 'Тихая рядом', text: 'Друг ждёт, не требуя ответа. Мира сама решает, хочет ли что-то рассказать.',
+        director: 'Оставляя право молчать, ты дал ей время стать готовой. Это и есть поддержка.' },
+  e2: { n: 'Позже, когда будет готова', text: 'Друг говорит, что готов поговорить позже, если Мира захочет. Она может и не возвращаться к этому разговору.',
+        director: 'Ты не форсировал разговор — ты оставил дверь открытой. Это смелость другого рода.' },
+  e3: { n: 'Помогу — скажи чем', text: 'Мира может попросить о конкретной помощи или сказать, что не хочет её. Друг не исправляет поделку без разрешения.',
+        director: 'Предложил помощь и услышал ответ. Помощь без разрешения перестаёт быть помощью.' },
+  e4: { n: 'Место рядом', text: 'Друг оставляет материалы рядом и не торопит Миру. Она сама решает, что делать с поделкой.',
+        director: 'Ты не торопил — ты ждал. Иногда лучшая помощь — не трогать.' },
+  e5: { n: 'Компания по запросу', text: 'Друг спрашивает, удобно ли ей, что он рядом. Мира может попросить компанию или пространство.',
+        director: 'Ты спросил про компанию прежде, чем её дать, — это уважение к границам.' },
+  e6: { n: 'Занят рядом', text: 'Друг продолжает свою работу. Мира может обратиться к нему, когда захочет, или заняться своим делом.',
+        director: 'Быть рядом, не требуя внимания, — редкий и сильный вид заботы.' }
+};
+var ENDING_IDS = ['e1','e2','e3','e4','e5','e6'];
+var REP_KEY = 'dubble-repertoire-w1d1';
+function getRep(){ try { var r = JSON.parse(localStorage.getItem(REP_KEY) || '[]'); if (!Array.isArray(r)) return []; return r.filter(function(x){ return ENDING_IDS.indexOf(x) > -1; }); } catch (e) { return []; } }
+function addRep(id){ var r = getRep(); if (r.indexOf(id) < 0) { r.push(id); try { localStorage.setItem(REP_KEY, JSON.stringify(r)); } catch (e) {} } return r; }
+
+var sceneUI=document.getElementById('sceneUI'), sceneKicker=document.getElementById('sceneKicker'),
+    sceneText=document.getElementById('sceneText'), sceneOpts=document.getElementById('sceneOpts'),
+    sceneTakeEl=document.getElementById('sceneTake'), sceneCloseBtn=document.getElementById('sceneClose');
+var sceneState='idle', savedSceneEnv=null, sceneFirst=-1, sceneToggleBtn=null;
+var repCanvas=document.createElement('canvas');repCanvas.width=1024;repCanvas.height=288;
+
+function syncLightsUI(){ var map={spot0:'spot0',spot1:'spot1',spot2:'spot2',ramp:'ramp',lamp:'lamp',window:'window',screen:'screen'}; Object.keys(map).forEach(function(k){ var b=lightBtns && lightBtns[k]; if(b){ b.setAttribute('aria-pressed', ui[k] ? 'true' : 'false'); } }); if(masterBtn){ masterBtn.textContent = master ? 'Свет: выступаем' : 'Свет: репетиция'; masterBtn.setAttribute('aria-pressed', master ? 'true' : 'false'); } if(stageCue.curtainBtn){ stageCue.curtainBtn.setAttribute('aria-pressed', curtainTarget ? 'true' : 'false'); } }
+
+function drawRepertoire(endId){
+  var g=repCanvas.getContext('2d'); var e=ENDINGS[endId]; var rep=getRep();
+  var grad=g.createRadialGradient(512,120,20,512,144,560); grad.addColorStop(0,'#241a12'); grad.addColorStop(1,'#100b08');
+  g.fillStyle=grad; g.fillRect(0,0,1024,288);
+  g.fillStyle='#f2b544'; g.font='700 30px system-ui,sans-serif'; g.textAlign='center'; g.letterSpacing='6px';
+  g.fillText('Р Е П Е Р Т У А Р',512,66);
+  g.fillStyle='#fdf4e9'; g.font='400 58px Georgia,serif';
+  g.fillText('«' + e.n + '»',512,158);
+  for (var i=0;i<6;i++){ var x=512-105+i*42; g.beginPath(); g.arc(x,222,11,0,7); if (i<rep.length){ g.fillStyle='#f2b544'; g.fill(); } else { g.strokeStyle='#8a7355'; g.lineWidth=3; g.stroke(); } }
+}
+
+function setRepertoireScreen(endId){
+  drawRepertoire(endId);
+  var tex=new THREE.CanvasTexture(repCanvas); tex.encoding=THREE.sRGBEncoding;
+  if (screenMat.map) { try { screenMat.map.dispose(); } catch (e) {} }
+  screenMat.map=tex; screenMat.needsUpdate=true;
+  ui.screen=1;
+}
+function clearRepertoireScreen(){ if (screenMat.map){ try { screenMat.map.dispose(); } catch (e) {} screenMat.map=null; screenMat.needsUpdate=true; } ui.screen=0; }
+
+function hideSceneUI(){ sceneUI.classList.add('hidden'); }
+function showSceneUI(){ sceneUI.classList.remove('hidden'); syncTakeLabels(); }
+function syncTakeLabels(){ sceneTakeEl.textContent='ДУБЛЬ ' + take; if (takeChip){ takeChip.textContent='ДУБЛЬ ' + take; } }
+function renderScene(kicker, textHTML, opts, footnote){
+  sceneKicker.textContent = kicker;
+  sceneText.innerHTML = textHTML + (footnote ? '<small>' + footnote + '</small>' : '');
+  sceneOpts.innerHTML = '';
+  opts.forEach(function(o){
+    var b=document.createElement('button'); b.type='button'; b.textContent=o.label;
+    b.addEventListener('click', o.fn);
+    sceneOpts.appendChild(b);
+  });
+  var first=sceneOpts.querySelector('button'); if (first && sceneState!=='idle'){ first.focus({preventScroll:true}); }
+}
+function releaseSceneFocus(){ if (sceneToggleBtn){ sceneToggleBtn.focus({preventScroll:true}); } }
+
+function sceneGotoSituation(){
+  sceneState='situation'; sceneFirst=-1;
+  master=0; curtainTarget=0; ui.spot0=0; ui.spot2=0; ui.spot1=1; syncLightsUI();
+  setHeroMood(2,'thinking');
+  go('Сцена');
+  renderScene(SCENE.kicker, SCENE.situation + '<br><b>' + SCENE.prompt + '</b>',
+    SCENE.choices.map(function(c, i){
+      return { label: c.t, fn: function(){ sceneChooseFirst(i); } };
+    }), 'Выбери реплику. Можно потом переиграть.');
+}
+function sceneChooseFirst(i){
+  sceneFirst = i; sceneState='choice2';
+  go('Крупный: Мира');
+  var c = SCENE.choices[i];
+  renderScene(SCENE.kicker, c.follow,
+    c.second.map(function(s2){
+      return { label: s2.t, fn: function(){ sceneApplyEnding(s2.end); } };
+    }), 'Что дальше?');
+}
+function sceneApplyEnding(endId){
+  sceneState='ending';
+  var rep = addRep(endId);
+  var e = ENDINGS[endId];
+  master=1; curtainTarget=1; ui.screen=1; syncLightsUI();
+  setHeroMood(2,'relief');
+  go('Три четверти');
+  setRepertoireScreen(endId);
+  var foot = rep.length < 6 ? ('Открыто ' + rep.length + ' из 6 концовок') : 'Все 6 концовок открыты — репертуар полон';
+  renderScene('Концовка: «' + e.n + '»', e.text, [
+    { label: 'Снять дубль с другого ответа', fn: sceneRetake },
+    { label: 'К разбору', fn: function(){ sceneReviewWith(endId); } }
+  ], foot);
+}
+function sceneReviewWith(endId){
+  sceneState='review';
+  go('Сверху');
+  renderScene('Режиссёрский разбор', ENDINGS[endId].director, [
+    { label: 'Снять дубль', fn: sceneRetake },
+    { label: 'Занавес — завершить вечер', fn: function(){ sceneExit(false); } }
+  ], 'Без оценок: здесь нет «правильной» концовки.');
+}
+function sceneRetake(){
+  newTake(); syncTakeLabels();
+  clearRepertoireScreen();
+  sceneGotoSituation();
+}
+function sceneEnter(){
+  if (sceneState !== 'idle'){ return; }
+  savedSceneEnv = { master: master, curtain: curtainTarget, spot0: ui.spot0, spot1: ui.spot1, spot2: ui.spot2, screen: ui.screen };
+  sceneState='frame'; sceneFirst=-1;
+  master=0; curtainTarget=0; ui.spot0=0; ui.spot2=0; ui.spot1=1; syncLightsUI();
+  setHeroMood(2,'thinking');
+  go('Зал');
+  showSceneUI();
+  renderScene(SCENE.kicker, '<b>Тишина.</b><br>' + SCENE.situation, [
+    { label: 'Смотреть', fn: sceneGotoSituation }
+  ], 'Шаги: ситуация → выбор → концовка → разбор. Выход — «завершить сцену».');
+}
+function sceneExit(){
+  if (savedSceneEnv){ master=savedSceneEnv.master; curtainTarget=savedSceneEnv.curtain; ui.spot0=savedSceneEnv.spot0; ui.spot1=savedSceneEnv.spot1; ui.spot2=savedSceneEnv.spot2; ui.screen=savedSceneEnv.screen; }
+  clearRepertoireScreen();
+  syncLightsUI();
+  setHeroMood(2,'thinking');
+  go('Зал');
+  sceneState='idle'; savedSceneEnv=null;
+  hideSceneUI();
+  if (sceneToggleBtn){ sceneToggleBtn.textContent='Сыграть «w1d1»'; sceneToggleBtn.setAttribute('aria-pressed','false'); }
+  releaseSceneFocus();
+}
+sceneCloseBtn.addEventListener('click', function(){ sceneExit(); });
+document.addEventListener('keydown', function(e){ if (e.code === 'Escape' && sceneState !== 'idle'){ sceneExit(); } });
+
 /* ---------- UI ---------- */
 var barEl=document.getElementById('bar');
 function grp(label){var g=document.createElement('div');g.className='grp';var i=document.createElement('i');i.textContent=label;g.appendChild(i);barEl.appendChild(g);return g;}
@@ -285,6 +463,7 @@ function planGroup(){var g=grp('Планы'),btns={};Object.keys(views).forEach(
 var master=0;
 function masterGroup(){var g=grp('Показ');var b=btn(g,'Свет: репетиция',function(){master=master?0:1;b.textContent=master?'Свет: выступаем':'Свет: репетиция';b.setAttribute('aria-pressed',master?'true':'false');curtainTarget=master;if(stageCue.curtainBtn){stageCue.curtainBtn.setAttribute('aria-pressed',master?'true':'false');}},false);return b;}
 function actionGroup(){var g=grp('Действие');var cz=btn(g,'Занавес',function(b){curtainTarget=curtainTarget?0:1;b.setAttribute('aria-pressed',curtainTarget?'true':'false');},false);stageCue.curtainBtn=cz;btn(g,'Новый дубль',function(){newTake();},false);return g;}
+function sceneGroup(){var g=grp('Сцена');var b=btn(g,'Сыграть «w1d1»',function(){if(sceneState==='idle'){sceneEnter();b.textContent='Завершить сцену';b.setAttribute('aria-pressed','true');}else{sceneExit();}},false);sceneToggleBtn=b;return g;}
 function lightGroup(){
   var g=grp('Свет');
   var defs=[['Прож L','spot0'],['Прож Ц','spot1'],['Прож П','spot2'],['Рампа','ramp'],['Торшер','lamp'],['Окно','window'],['Экран','screen']];
@@ -293,11 +472,12 @@ function lightGroup(){
   return btns;
 }
 function cassetteGroup(){var g=grp('Кассеты');[['Дом',1],['Мастерская',2],['Библиотека',3]].forEach(function(d){btn(g,d[0],function(b){var willBe=(cassetteMode===d[1])?0:d[1];setCassettes(d[1]);g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed','false');});if(willBe){b.setAttribute('aria-pressed','true');}},false);});return g;}
-var stageCue={curtainBtn:null};var planBtns=planGroup();var masterBtn=masterGroup();var actionGrp=actionGroup();var lightBtns=lightGroup();var cassetteGrp=cassetteGroup();
+var stageCue={curtainBtn:null};var sceneBtn=sceneGroup();var planBtns=planGroup();var masterBtn=masterGroup();var actionGrp=actionGroup();var lightBtns=lightGroup();var cassetteGrp=cassetteGroup();
 var planKeys=Object.keys(views);
 document.addEventListener('keydown',function(e){
   if(e.code==='Space'){e.preventDefault();masterBtn.click();return;}
   if(e.code==='KeyD'){e.preventDefault();newTake();return;}
+  if(e.code==='KeyR'){e.preventDefault();if(sceneToggleBtn){sceneToggleBtn.click();}return;}
   var n=parseInt(e.key,10);
   if(n>=1&&n<=planKeys.length){planBtns[planKeys[n-1]].click();}
 });
